@@ -1,0 +1,27 @@
+                                       String(r.rollNo) === String(student.rollNo) || String(r.regNo) === String(student.regNo || student.id)
+                                    );
+                                 } else {
+                                    // Fallback: search in any exam sheet of the same type for this student's roll number
+                                    const fallbackExams = results.filter((exam: any) => String(exam.examType).trim() === String(selectedReportExamType).trim());
+                                    for (const exam of fallbackExams) {
+                                       const rec = (exam.records || []).find((r: any) => 
+                                          String(r.rollNo) === String(student.rollNo) || String(r.regNo) === String(student.regNo || student.id)
+                                       );
+                                       if (rec) {
+                                          globalRecord = rec;
+                                          break;
+                                       }
+                                    }
+                                 }
+                                 
+                                 const result = studentResult || globalRecord;
+                                 const totalBooks = result ? Object.keys(result.marks || {}).length : 0;
+                                 const totalMarks = totalBooks * 100;
+                                 
+                                 return (
+                                    <tr key={student.id} className="border-b transition-colors hover:bg-slate-50">
+                                       <td className="py-4 px-4 text-center text-slate-400 font-mono border-l">{idx + 1}</td>
+                                       <td className="py-4 px-4 text-center text-slate-700 font-mono font-bold border-l">{student.rollNo || '---'}</td>
+                                       <td className="py-4 px-6 text-slate-800 font-bold font-urdu border-l">{student.name}</td>
+                                       <td className="py-4 px-6 text-slate-500 font-urdu border-l">{student.fatherName}</td>
+                                       <td className="py-4 px-6 text-center text-slate-700 font-mono font-bold border-l">{result ? `${result.obtained} / ${totalMarks}` : '---'}</td>

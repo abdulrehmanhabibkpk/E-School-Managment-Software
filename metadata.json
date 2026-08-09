@@ -1,0 +1,6 @@
+{
+  "name": "EduCore ERP",
+  "description": "A comprehensive School Management System featuring student attendance, fees management, AI-powered paper generation, examination tracking, and automated report cards.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
