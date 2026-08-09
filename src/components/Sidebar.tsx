@@ -15,7 +15,8 @@ import {
   Library, 
   Settings,
   Bell,
-  LogOut
+  LogOut,
+  Globe
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -73,9 +74,16 @@ export default function Sidebar({ activeTab, setActiveTab }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
-        <button className="w-full flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors">
-          <LogOut size={20} />
+      <div className="p-4 border-t border-slate-100 space-y-1">
+        <a 
+          href="/portal" 
+          className="w-full flex items-center gap-3 px-4 py-2.5 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors text-sm font-bold"
+        >
+          <Globe size={18} className="text-emerald-600" />
+          <span>Assan School Portal</span>
+        </a>
+        <button className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors text-sm">
+          <LogOut size={18} />
           <span>Logout</span>
         </button>
       </div>

@@ -95,38 +95,38 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 font-urdu" dir="rtl">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 font-sans" dir="ltr">
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5 rotate-180" />
           </button>
-          <h1 className="text-xl font-bold text-slate-800">پیپر چیکر (Paper Checker)</h1>
+          <h1 className="text-xl font-bold text-slate-800">Paper Checker / Grading Center</h1>
         </div>
       </header>
 
       <div className="p-6 bg-white border-b border-slate-200 shadow-sm z-10 relative">
         <div className="max-w-4xl mx-auto flex gap-6">
           <div className="flex-1">
-            <label className="block text-sm font-bold text-slate-600 mb-2">درجہ منتخب کریں</label>
+            <label className="block text-sm font-bold text-slate-600 mb-2">Select Grade</label>
             <select 
               value={selectedDarja} 
               onChange={(e) => { setSelectedDarja(e.target.value); setSelectedBook(''); }}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
             >
-              <option value="">-- منتخب کریں --</option>
+              <option value="">-- Select Grade --</option>
               {darjas.map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-bold text-slate-600 mb-2">کتاب منتخب کریں</label>
+            <label className="block text-sm font-bold text-slate-600 mb-2">Select Subject</label>
             <select 
               value={selectedBook} 
               onChange={(e) => setSelectedBook(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
               disabled={!selectedDarja}
             >
-              <option value="">-- منتخب کریں --</option>
+              <option value="">-- Select Subject --</option>
               {books.filter(b => b.grade === selectedDarja).map(b => (
                 <option key={b.id} value={b.name}>{b.name}</option>
               ))}
@@ -141,8 +141,8 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
             {/* Paper View */}
             <div className="flex-1 bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
               <div className="bg-slate-800 text-white p-3 text-center text-sm font-bold flex justify-between items-center">
-                <span>پیپر {currentIndex + 1} از {papers.length}</span>
-                <span className="bg-red-500/20 text-red-200 px-3 py-1 rounded-full text-xs">خفیہ (Anonymous)</span>
+                <span>Paper {currentIndex + 1} of {papers.length}</span>
+                <span className="bg-red-500/20 text-red-200 px-3 py-1 rounded-full text-xs">Anonymous</span>
               </div>
               <div className="flex-1 bg-slate-100 overflow-auto flex items-center justify-center p-4">
                 {currentPaper.paperPath && currentPaper.paperPath.endsWith('.pdf') ? (
@@ -166,11 +166,11 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
 
             {/* Checking Controls */}
             <div className="w-96 bg-white rounded-2xl shadow-lg border border-slate-200 p-6 flex flex-col">
-              <h3 className="text-lg font-bold text-slate-800 mb-6 border-b pb-2">نمبرات اور تبصرہ</h3>
+              <h3 className="text-lg font-bold text-slate-800 mb-6 border-b pb-2">Grading & Comments</h3>
               
               <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar space-y-6">
                 <div>
-                  <label className="block text-sm font-bold text-slate-600 mb-3">نمبر دیں (1 سے 33)</label>
+                  <label className="block text-sm font-bold text-slate-600 mb-3">Assign Marks (1 to 100)</label>
                   <div className="grid grid-cols-5 gap-2" dir="ltr">
                     {Array.from({ length: 33 }, (_, i) => i + 1).map(num => (
                       <button
@@ -185,12 +185,12 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-600 mb-2">تبصرہ (Feedback)</label>
+                  <label className="block text-sm font-bold text-slate-600 mb-2">Feedback / Comments</label>
                   <textarea
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    placeholder="یہاں تبصرہ لکھیں..."
-                    className="w-full h-32 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none font-urdu"
+                    placeholder="Write feedback here..."
+                    className="w-full h-32 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 resize-none font-sans"
                   />
                 </div>
               </div>
@@ -201,7 +201,7 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
                   className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 transition-all active:scale-95"
                 >
                   <Save className="w-5 h-5" />
-                  محفوظ کریں اور آگے بڑھیں
+                  Save & Next
                 </button>
               </div>
             </div>
@@ -209,8 +209,8 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
         ) : (
           <div className="w-full max-w-4xl bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center justify-center text-slate-400 h-64 mt-12">
             <CheckCircle className="w-16 h-16 text-emerald-400 mb-4 opacity-50" />
-            <p className="text-lg font-bold text-slate-600">کوئی پیپر چیک کرنے کے لیے باقی نہیں ہے</p>
-            <p className="text-sm">درجہ اور کتاب تبدیل کر کے دیکھیں</p>
+            <p className="text-lg font-bold text-slate-600">No papers pending for grading</p>
+            <p className="text-sm">Change grade or subject to view papers</p>
           </div>
         )}
       </main>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, ChevronRight, ChevronDown, GripVertical } from 'lucide-react';
+import { Printer, ChevronLeft, ChevronDown, GripVertical } from 'lucide-react';
 import { getMadrassaName } from '../config';
 
 interface AttendanceSheetProps {
@@ -10,8 +10,8 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
   const [teachers, setTeachers] = useState<string[]>(Array(10).fill(''));
   const [books, setBooks] = useState<string[]>(Array(10).fill(''));
   const [students, setStudents] = useState<any[]>([]);
-  const [selectedGrade, setSelectedGrade] = useState('دورہ حدیث');
-  const [grades, setGrades] = useState<string[]>(["دورہ حدیث", "موقوف علیہ", "سادسہ", "خامسہ", "رابعہ", "ثالثہ", "ثانیہ", "اولیٰ"]);
+  const [selectedGrade, setSelectedGrade] = useState('Grade 1');
+  const [grades, setGrades] = useState<string[]>(["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6", "Grade 7", "Grade 8"]);
   const [isReordering, setIsReordering] = useState(false);
   const [periodCount, setPeriodCount] = useState(() => {
     const saved = localStorage.getItem('attendance_period_count');
@@ -48,12 +48,11 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
         }
       }
 
-      // 2. Load Staff (Ustad) from "Staff Management"
+      // 2. Load Staff from "Staff Management"
       const savedStaff = localStorage.getItem('staff');
       if (savedStaff) {
         const parsed = JSON.parse(savedStaff);
         if (Array.isArray(parsed)) {
-          // You can filter by role here if your staff has a 'role' or 'jobTitle'
           setAvailableStaff(parsed.map((s: any) => s.name));
         }
       }
@@ -106,27 +105,27 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
     .map(b => b.name);
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 font-urdu" dir="rtl">
+    <div className="flex flex-col h-full bg-slate-50 font-sans" dir="ltr">
       {/* Header */}
       <header className="h-16 md:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 print:hidden shadow-sm">
         <div className="flex items-center gap-2 md:gap-4">
           <button onClick={onBack} className="bg-slate-100 text-slate-600 p-2 rounded-xl hover:bg-slate-200 transition-all flex flex-col items-center justify-center gap-0">
-            <ChevronRight className="w-6 h-6" />
+            <ChevronLeft className="w-6 h-6" />
             <span className="text-[8px] font-normal opacity-70">Back</span>
           </button>
           <div className="flex flex-col">
-            <h1 className="text-lg md:text-xl font-bold text-slate-800">حاضری شیٹ</h1>
-            <span className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none">Attendance Sheet</span>
+            <h1 className="text-lg md:text-xl font-bold text-slate-800">Attendance Sheet Generator</h1>
+            <span className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none">Daily Student Attendance Sheet</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <div className="flex flex-col">
-            <span className="text-[9px] font-bold text-slate-400 mr-1 uppercase">Class (درجہ)</span>
+            <span className="text-[9px] font-bold text-slate-400 ml-1 uppercase">Class / Grade</span>
             <select 
               value={selectedGrade} onChange={(e) => setSelectedGrade(e.target.value)}
               className="bg-slate-100 border-none rounded-xl px-4 py-2 text-sm outline-none font-bold min-w-[140px]"
             >
-              <option value="All">تمام طلبہ</option>
+              <option value="All">All Students</option>
               {grades.map((g, i) => <option key={i} value={g}>{g}</option>)}
             </select>
           </div>
@@ -135,14 +134,12 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
             onClick={() => setIsReordering(!isReordering)} 
             className={`px-6 py-2 rounded-xl text-sm font-bold shadow-md transition-all self-end flex flex-col items-center justify-center gap-0 ${isReordering ? 'bg-amber-400 text-slate-900 hover:bg-amber-500 font-bold border border-amber-500' : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'}`}
           >
-            <span>{isReordering ? 'ترتیب بند (لاک) کریں' : 'ترتیب کھولیں'}</span>
-            <span className="text-[10px] font-normal opacity-70">{isReordering ? 'Lock Order' : 'Unlock Order'}</span>
+            <span>{isReordering ? 'Lock Order' : 'Unlock Order'}</span>
           </button>
           <button onClick={handlePrint} className="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-bold flex flex-col items-center justify-center gap-0 shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition-all self-end">
             <div className="flex items-center gap-2">
-              <Printer className="w-4 h-4" /> <span>پرنٹ</span>
+              <Printer className="w-4 h-4" /> <span>Print Sheet</span>
             </div>
-            <span className="text-[10px] font-normal opacity-70">Print Sheet</span>
           </button>
         </div>
       </header>
@@ -155,17 +152,15 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
             <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2">
                <h3 className="text-xs font-bold text-slate-500 flex flex-col items-start gap-0">
                  <div className="flex items-center gap-2">
-                  <Users className="w-3 h-3" /> اساتذہ اور کتب منتخب کریں
+                  <Users className="w-3 h-3" /> Select Teachers & Subject Books
                  </div>
-                 <span className="text-[10px] font-normal opacity-60 uppercase tracking-widest leading-none mt-1">Select Teachers & Books</span>
                </h3>
-               <span className="text-[10px] text-blue-600 font-bold">منتخب کردہ درجہ: {selectedGrade}</span>
+               <span className="text-[10px] text-blue-600 font-bold">Selected Class: {selectedGrade}</span>
             </div>
 
             <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
               <div className="flex flex-col items-start gap-0">
-                <span className="text-xs font-bold text-slate-700">پیریڈز (گھنٹے) کی تعداد ایڈجسٹ کریں:</span>
-                <span className="text-[9px] font-normal text-slate-400 uppercase tracking-widest leading-none">Adjust Number of Periods</span>
+                <span className="text-xs font-bold text-slate-700">Adjust Number of Periods:</span>
               </div>
               <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg p-0.5">
                 <button 
@@ -199,20 +194,20 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
                 <div key={i} className="relative">
                   <button 
                     onClick={() => setActiveDropdown({ type: 'teacher', index: i })}
-                    className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-right truncate flex items-center justify-between hover:border-blue-500 transition-colors"
+                    className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-left truncate flex items-center justify-between hover:border-blue-500 transition-colors"
                   >
-                    {t || `استاد ${i+1}`}
+                    {t || `Teacher ${i+1}`}
                     <ChevronDown className="w-3 h-3 text-slate-400" />
                   </button>
                   {activeDropdown?.type === 'teacher' && activeDropdown.index === i && (
-                    <div className="absolute top-full right-0 w-48 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto">
-                      <div className="p-2 bg-slate-50 text-[8px] font-bold text-slate-400 border-b">عملہ کی فہرست (Staff)</div>
+                    <div className="absolute top-full left-0 w-48 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto">
+                      <div className="p-2 bg-slate-50 text-[8px] font-bold text-slate-400 border-b">Staff List</div>
                       {availableStaff.map((name, idx) => (
-                        <div key={idx} onClick={() => selectItem(name)} className="px-3 py-2 text-[10px] hover:bg-blue-50 cursor-pointer border-b border-slate-50 font-urdu">{name}</div>
+                        <div key={idx} onClick={() => selectItem(name)} className="px-3 py-2 text-[10px] hover:bg-blue-50 cursor-pointer border-b border-slate-50 font-sans">{name}</div>
                       ))}
-                      {availableStaff.length === 0 && <div className="p-3 text-[9px] text-slate-400 italic">کوئی استاد نہیں ملا۔</div>}
+                      {availableStaff.length === 0 && <div className="p-3 text-[9px] text-slate-400 italic">No teachers found.</div>}
                       <div className="p-2">
-                        <input autoFocus placeholder="دستی نام لکھیں..." className="w-full px-2 py-1 text-[10px] border rounded outline-none" onKeyDown={e => e.key === 'Enter' && selectItem((e.target as HTMLInputElement).value)} />
+                        <input autoFocus placeholder="Type custom name..." className="w-full px-2 py-1 text-[10px] border rounded outline-none" onKeyDown={e => e.key === 'Enter' && selectItem((e.target as HTMLInputElement).value)} />
                       </div>
                     </div>
                   )}
@@ -225,20 +220,20 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
                 <div key={i} className="relative">
                   <button 
                     onClick={() => setActiveDropdown({ type: 'book', index: i })}
-                    className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-right truncate flex items-center justify-between hover:border-blue-500 transition-colors"
+                    className="w-full px-2 py-2 bg-white border border-slate-200 rounded-lg text-[9px] font-bold text-left truncate flex items-center justify-between hover:border-blue-500 transition-colors"
                   >
-                    {b || `کتاب ${i+1}`}
+                    {b || `Subject ${i+1}`}
                     <ChevronDown className="w-3 h-3 text-slate-400" />
                   </button>
                   {activeDropdown?.type === 'book' && activeDropdown.index === i && (
-                    <div className="absolute top-full right-0 w-48 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto">
-                      <div className="p-2 bg-slate-50 text-[8px] font-bold text-slate-400 border-b">درجہ "{selectedGrade}" کی کتب</div>
+                    <div className="absolute top-full left-0 w-48 mt-1 bg-white border border-slate-200 rounded-xl shadow-2xl z-[100] max-h-48 overflow-y-auto">
+                      <div className="p-2 bg-slate-50 text-[8px] font-bold text-slate-400 border-b">Books for "{selectedGrade}"</div>
                       {filteredAvailableBooks.map((title, idx) => (
-                        <div key={idx} onClick={() => selectItem(title)} className="px-3 py-2 text-[10px] hover:bg-blue-50 cursor-pointer border-b border-slate-50 font-urdu">{title}</div>
+                        <div key={idx} onClick={() => selectItem(title)} className="px-3 py-2 text-[10px] hover:bg-blue-50 cursor-pointer border-b border-slate-50 font-sans">{title}</div>
                       ))}
-                      {filteredAvailableBooks.length === 0 && <div className="p-3 text-[9px] text-slate-400 italic">اس درجہ کی کوئی کتاب نہیں ملی۔</div>}
+                      {filteredAvailableBooks.length === 0 && <div className="p-3 text-[9px] text-slate-400 italic">No books found for this grade.</div>}
                       <div className="p-2">
-                        <input autoFocus placeholder="دستی کتاب لکھیں..." className="w-full px-2 py-1 text-[10px] border rounded outline-none" onKeyDown={e => e.key === 'Enter' && selectItem((e.target as HTMLInputElement).value)} />
+                        <input autoFocus placeholder="Type custom book..." className="w-full px-2 py-1 text-[10px] border rounded outline-none" onKeyDown={e => e.key === 'Enter' && selectItem((e.target as HTMLInputElement).value)} />
                       </div>
                     </div>
                   )}
@@ -249,16 +244,16 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
               {periods.slice(0, periodCount).map((p, i) => (
                 <div key={i} className="flex flex-col gap-1 border border-slate-200 rounded p-1 bg-white">
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] text-slate-400 w-6">آمد:</span>
-                    <input className="text-[10px] w-full outline-none font-bold" value={p.end} onChange={(e) => {
-                      const np = [...periods]; np[i].end = e.target.value; setPeriods(np);
+                    <span className="text-[8px] text-slate-400 w-6">In:</span>
+                    <input className="text-[10px] w-full outline-none font-bold" value={p.start} onChange={(e) => {
+                      const np = [...periods]; np[i].start = e.target.value; setPeriods(np);
                     }} />
                   </div>
                   <div className="h-px bg-slate-100 w-full" />
                   <div className="flex items-center gap-1">
-                    <span className="text-[8px] text-slate-400 w-6">رفت:</span>
-                    <input className="text-[10px] w-full outline-none font-bold" value={p.start} onChange={(e) => {
-                      const np = [...periods]; np[i].start = e.target.value; setPeriods(np);
+                    <span className="text-[8px] text-slate-400 w-6">Out:</span>
+                    <input className="text-[10px] w-full outline-none font-bold" value={p.end} onChange={(e) => {
+                      const np = [...periods]; np[i].end = e.target.value; setPeriods(np);
                     }} />
                   </div>
                 </div>
@@ -266,20 +261,20 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
             </div>
           </div>
 
-          {/* THE SHEET (EXACT REPLICA) */}
+          {/* THE SHEET */}
           <div className="border-[1.5px] border-black">
              <div className="flex border-b-[1.5px] border-black h-16">
-                <div className="w-32 border-l-[1.5px] border-black flex items-center justify-center font-bold text-xl">{selectedGrade}</div>
+                <div className="w-32 border-r-[1.5px] border-black flex items-center justify-center font-bold text-xl">{selectedGrade}</div>
                 <div className="flex-1 flex items-center justify-center">
-                  <h2 className="text-xl md:text-2xl font-bold font-urdu">یومیہ حاضری شیٹ برائے اساتذہ کرام {getMadrassaName()}</h2>
+                  <h2 className="text-xl md:text-2xl font-bold font-sans">Daily Attendance Sheet - {getMadrassaName()}</h2>
                 </div>
              </div>
 
              <table className="w-full border-collapse">
                <thead>
                  <tr className="h-20">
-                   <th className="border-[1.5px] border-black w-12 text-[10px] font-bold" rowSpan={4}>نمبر شمار</th>
-                   <th className="border-[1.5px] border-black w-28 text-sm font-bold bg-slate-50">تفصیل / نام</th>
+                   <th className="border-[1.5px] border-black w-12 text-[10px] font-bold" rowSpan={4}>Sr. No</th>
+                   <th className="border-[1.5px] border-black w-28 text-sm font-bold bg-slate-50">Teacher Name</th>
                    {teachers.slice(0, periodCount).map((t, i) => (
                      <th key={i} className="border-[1.5px] border-black text-[10px] p-1 font-bold leading-tight" colSpan={2}>
                         {t || ""}
@@ -287,7 +282,7 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
                    ))}
                  </tr>
                  <tr className="h-10">
-                   <th className="border-[1.5px] border-black text-sm font-bold bg-slate-50">نام کتب</th>
+                   <th className="border-[1.5px] border-black text-sm font-bold bg-slate-50">Subject / Book</th>
                    {books.slice(0, periodCount).map((b, i) => (
                      <th key={i} className="border-[1.5px] border-black text-[9px] p-1 font-bold bg-slate-50 leading-tight" colSpan={2}>
                         {b || ""}
@@ -295,20 +290,20 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
                    ))}
                  </tr>
                  <tr className="h-6">
-                   <th className="border-[1.5px] border-black text-[10px] font-bold">آمد / رفت</th>
+                   <th className="border-[1.5px] border-black text-[10px] font-bold">In / Out</th>
                    {periods.slice(0, periodCount).map((_, i) => (
                      <React.Fragment key={i}>
-                       <th className="border-[1.5px] border-black text-[8px] w-6">رفت</th>
-                       <th className="border-[1.5px] border-black text-[8px] w-6">آمد</th>
+                       <th className="border-[1.5px] border-black text-[8px] w-6">In</th>
+                       <th className="border-[1.5px] border-black text-[8px] w-6">Out</th>
                      </React.Fragment>
                    ))}
                  </tr>
                  <tr className="h-6 bg-slate-50">
-                   <th className="border-[1.5px] border-black text-[10px] font-bold">طلباء کرام</th>
+                   <th className="border-[1.5px] border-black text-[10px] font-bold">Student Name</th>
                    {periods.slice(0, periodCount).map((p, i) => (
                      <React.Fragment key={i}>
-                       <th className="border-[1.5px] border-black text-[8px]">{p.end}</th>
                        <th className="border-[1.5px] border-black text-[8px]">{p.start}</th>
+                       <th className="border-[1.5px] border-black text-[8px]">{p.end}</th>
                      </React.Fragment>
                    ))}
                  </tr>
@@ -376,7 +371,7 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
                          <span>{idx + 1}</span>
                        </div>
                      </td>
-                     <td className="border-[1.5px] border-black pr-2 text-right text-xs font-bold truncate max-w-[100px]">
+                     <td className="border-[1.5px] border-black pl-2 text-left text-xs font-bold truncate max-w-[100px]">
                        {student?.name || ""}
                      </td>
                      {Array.from({ length: 2 * periodCount }).map((_, i) => (
@@ -401,11 +396,11 @@ export default function AttendanceSheetGenerator({ onBack }: AttendanceSheetProp
           </div>
 
           <div className="hidden print:flex justify-between items-center mt-6 text-[10px] font-bold px-4">
-             <span>تاریخ: ________________</span>
+             <span>Date: ________________</span>
              <div className="flex gap-16">
-                <span>دستخط معلم</span>
-                <span>دستخط ناظمِ تعلیمات</span>
-                <span>دستخط صدر المدرسین</span>
+                <span>Teacher Signature</span>
+                <span>Academic Incharge</span>
+                <span>Principal Signature</span>
              </div>
           </div>
         </div>

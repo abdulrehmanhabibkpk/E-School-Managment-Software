@@ -120,22 +120,22 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
   const studentBooks = books.filter(b => b.grade === selectedDarja);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 font-urdu" dir="rtl">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 font-sans" dir="ltr">
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={onBack} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500">
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5 rotate-180" />
           </button>
-          <h1 className="text-xl font-bold text-slate-800">پیپر اپلوڈر (Paper Uploader)</h1>
+          <h1 className="text-xl font-bold text-slate-800">Upload Center / Paper Uploader</h1>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Darja Selection */}
+          {/* Grade Selection */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">درجہ کا انتخاب کریں</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Select Class / Grade</h2>
             <div className="space-y-2">
               {darjas.map(darja => (
                 <button
@@ -145,18 +145,18 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
                     setSelectedStudent(null);
                     setUploadStatus({});
                   }}
-                  className={`w-full text-right px-4 py-3 rounded-lg font-bold transition-all ${selectedDarja === darja ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                  className={`w-full text-left px-4 py-3 rounded-lg font-bold transition-all ${selectedDarja === darja ? 'bg-blue-600 text-white shadow-md' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
                 >
                   {darja}
                 </button>
               ))}
-              {darjas.length === 0 && <p className="text-slate-500 text-sm">کوئی درجہ دستیاب نہیں ہے۔</p>}
+              {darjas.length === 0 && <p className="text-slate-500 text-sm">No grades or classes available.</p>}
             </div>
           </div>
 
           {/* Student List */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">طلبہ کی فہرست</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Student List</h2>
             {selectedDarja ? (
               <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                 {filteredStudents.map(student => (
@@ -166,31 +166,31 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
                       setSelectedStudent(student);
                       setUploadStatus({});
                     }}
-                    className={`w-full text-right px-4 py-3 rounded-lg font-bold flex items-center justify-between transition-all ${selectedStudent?.id === student.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
+                    className={`w-full text-left px-4 py-3 rounded-lg font-bold flex items-center justify-between transition-all ${selectedStudent?.id === student.id ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}
                   >
                     <div className="flex items-center gap-2">
                       <User className="w-4 h-4" />
                       <span>{student.name}</span>
                     </div>
-                    <span className="text-xs opacity-80">{student.rollNo}</span>
+                    <span className="text-xs opacity-80">Roll #{student.rollNo}</span>
                   </button>
                 ))}
-                {filteredStudents.length === 0 && <p className="text-slate-500 text-sm">اس درجہ میں کوئی طالب علم نہیں ہے۔</p>}
+                {filteredStudents.length === 0 && <p className="text-slate-500 text-sm">No students in this grade.</p>}
               </div>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-400">
-                پہلے درجہ منتخب کریں
+                Select Grade First
               </div>
             )}
           </div>
 
           {/* Book List & Upload */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">کتب اور اپلوڈ</h2>
+            <h2 className="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Subjects & Upload</h2>
             {selectedStudent ? (
               <div className="space-y-4">
                 <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 mb-4">
-                  <p className="text-sm font-bold text-emerald-800">طالب علم: {selectedStudent.name}</p>
+                  <p className="text-sm font-bold text-emerald-800">Student: {selectedStudent.name}</p>
                 </div>
                 
                 {studentBooks.length > 0 ? studentBooks.map(book => (
@@ -203,14 +203,14 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
                     <div className="flex items-center justify-between">
                       {uploadStatus[book.name] === 'success' ? (
                         <div className="flex items-center gap-1 text-emerald-600 text-sm font-bold">
-                          <CheckCircle className="w-4 h-4" /> اپلوڈ ہو گیا
+                          <CheckCircle className="w-4 h-4" /> Uploaded
                         </div>
                       ) : uploadStatus[book.name] === 'uploading' ? (
-                        <div className="text-blue-600 text-sm font-bold animate-pulse">اپلوڈ ہو رہا ہے...</div>
+                        <div className="text-blue-600 text-sm font-bold animate-pulse">Uploading...</div>
                       ) : (
                         <label className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer flex items-center gap-2 transition-all shadow-md">
                           <Upload className="w-4 h-4" />
-                          پیپر اپلوڈ کریں
+                          Upload Paper
                           <input 
                             type="file" 
                             accept="image/*,.pdf" 
@@ -222,12 +222,12 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
                     </div>
                   </div>
                 )) : (
-                  <p className="text-slate-500 text-sm">اس درجہ کی کوئی کتاب درج نہیں ہے۔</p>
+                  <p className="text-slate-500 text-sm">No subjects listed for this class.</p>
                 )}
               </div>
             ) : (
               <div className="h-full flex items-center justify-center text-slate-400">
-                پہلے طالب علم منتخب کریں
+                Select Student First
               </div>
             )}
           </div>

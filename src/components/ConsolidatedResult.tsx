@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Printer, Download, Search, Trash2, Pencil, Save, ArrowUpDown, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Printer, Download, Search, Trash2, Pencil, Save, ArrowUpDown, ArrowUp, ArrowDown, GripVertical } from 'lucide-react';
 import { syncToServer } from '../syncService';
 
 interface ConsolidatedResultProps {
@@ -85,10 +85,10 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
       if (gradeNames.length > 0) {
         loadedClasses = gradeNames;
       } else {
-        loadedClasses = ['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ'];
+        loadedClasses = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
       }
     } catch (e) {
-      loadedClasses = ['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ'];
+      loadedClasses = ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6'];
     }
     setClasses(loadedClasses);
     if (loadedClasses.length > 0) {
@@ -97,7 +97,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
 
     // Load exam types from Settings + custom records
     const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
-    const defaultExams = savedExams.length > 0 ? savedExams : ['سالانہ', 'ششماہی', 'سہ ماہی'];
+    const defaultExams = savedExams.length > 0 ? savedExams : ['Annual Exam', 'Midterm Exam', 'Quarterly Exam'];
     const savedHeaders = JSON.parse(localStorage.getItem('examRecords') || '[]');
     const headerTitles = savedHeaders.map((h: any) => h.title || h.name).filter(Boolean);
     const combinedExams = Array.from(new Set([...defaultExams, ...headerTitles]));
@@ -120,8 +120,8 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
     const allBooks = JSON.parse(localStorage.getItem('books_list') || '[]');
     const classBooks = allBooks.filter((b: any) => (b.grade || b.darja || b.class || '').toString().trim() === selectedClass.trim()).map((b: any) => b.name);
     
-    // Default standard Islamic subjects if none are registered for the class
-    const finalSubjects = classBooks.length > 0 ? classBooks : ['القرآن الكريم', 'الحديث النبوي', 'الفقه', 'اللغة العربية', 'العقيدة'];
+    // Default subjects if none are registered for the class
+    const finalSubjects = classBooks.length > 0 ? classBooks : ['English', 'Mathematics', 'Science', 'Computer', 'General Knowledge'];
     setSubjects(finalSubjects);
 
     // 2. Load all students belonging to selected class
@@ -169,7 +169,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
         if (!studentMap.has(key)) {
           studentMap.set(key, {
             rollNo: exRec.rollNo || '---',
-            name: exRec.name || exRec.studentName || 'طالب علم',
+            name: exRec.name || exRec.studentName || 'Student',
             fatherName: exRec.fatherName || '---',
             studentObj: null
           });
@@ -232,11 +232,11 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
         status = result.status;
       } else if (hasMarks) {
         if (percentage < 33) {
-          status = 'راسب';
+          status = 'Fail';
         } else if (isFail) {
-          status = 'معيد';
+          status = 'Compartment';
         } else {
-          status = 'ناجح';
+          status = 'Pass';
         }
       }
 
@@ -265,7 +265,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
   const totalMaxMarks = subjects.length * 100;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-urdu p-6 print:p-0 print:bg-white" dir="rtl">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6 print:p-0 print:bg-white" dir="ltr">
       <style>{`
         @media print {
           @page {
@@ -287,7 +287,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
       `}</style>
 
       {/* Dedicated Print Only View - Clean A4 Landscape */}
-      <div className="hidden print:block w-full text-black font-urdu p-2 bg-white" dir="rtl">
+      <div className="hidden print:block w-full text-black font-sans p-2 bg-white" dir="ltr">
         <div className="w-full border-2 border-black p-4 bg-white text-black">
           {/* Header */}
           <div className="flex justify-between items-start mb-4">
@@ -295,21 +295,21 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
               {systemSettings.monogram ? (
                 <img src={systemSettings.monogram} alt="Seal" className="w-full h-full object-contain grayscale" />
               ) : (
-                <div className="text-[10px] font-bold text-center">جامعہ</div>
+                <div className="text-[10px] font-bold text-center">Seal</div>
               )}
             </div>
 
             <div className="flex-1 text-center">
-              <h1 style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu', fontSize: '22px', lineHeight: '1.2' }} className="font-bold text-black font-urdu">
-                {systemSettings.jamiaName || 'جامعہ عربیہ سراج العلوم'}
+              <h1 className="text-xl font-bold text-black font-sans">
+                {systemSettings.jamiaName || 'Academic Institute & Educational System'}
               </h1>
-              <h2 className="text-sm font-bold font-urdu mt-1 text-black">
-                جدول نتائج امتحانات (Examination Result Ledger Sheet)
+              <h2 className="text-sm font-bold font-sans mt-1 text-black">
+                Examination Result Ledger Sheet
               </h2>
               <div className="text-xs font-bold mt-1 text-black">
-                درجہ: <span className="underline ml-4">{selectedClass || '---'}</span>
-                امتحان: <span className="underline ml-4">{selectedExamType || '---'}</span>
-                تعداد طلبہ: <span className="underline">{filteredRecords.length}</span>
+                Class: <span className="underline mr-4">{selectedClass || '---'}</span>
+                Exam: <span className="underline mr-4">{selectedExamType || '---'}</span>
+                Total Students: <span className="underline">{filteredRecords.length}</span>
               </div>
             </div>
 
@@ -317,27 +317,27 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
           </div>
 
           {/* Table */}
-          <table className="w-full text-center border-collapse border-2 border-black text-[10px] font-bold font-urdu">
+          <table className="w-full text-center border-collapse border-2 border-black text-[10px] font-bold font-sans">
             <thead>
               <tr className="bg-gray-100 border-b-2 border-black">
-                <th className="border border-black py-1 px-1 w-8">شمار</th>
-                <th className="border border-black py-1 px-1 w-16">رول نمبر</th>
-                <th className="border border-black py-1 px-2 text-right min-w-[120px]">اسم الطالب</th>
+                <th className="border border-black py-1 px-1 w-8">#</th>
+                <th className="border border-black py-1 px-1 w-16">Roll No</th>
+                <th className="border border-black py-1 px-2 text-left min-w-[120px]">Student Name</th>
                 {subjects.map((sub: string) => (
                   <th key={sub} className="border border-black py-1 px-1 text-[9px]">
                     {sub}
                   </th>
                 ))}
-                <th className="border border-black py-1 px-1 w-20">المجموع</th>
-                <th className="border border-black py-1 px-1 w-16">النتيجة</th>
-                <th className="border border-black py-1 px-1 w-16">المعدل</th>
+                <th className="border border-black py-1 px-1 w-20">Total</th>
+                <th className="border border-black py-1 px-1 w-16">Status</th>
+                <th className="border border-black py-1 px-1 w-16">Percentage</th>
               </tr>
             </thead>
             <tbody>
               {filteredRecords.length === 0 ? (
                 <tr>
                   <td colSpan={subjects.length + 6} className="border border-black p-6 text-center text-gray-500">
-                    کوئی ریکارڈ موجود نہیں ہے۔
+                    No records found.
                   </td>
                 </tr>
               ) : (
@@ -345,7 +345,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                   <tr key={row.rollNo || idx} className="border-b border-black">
                     <td className="border border-black py-1 font-mono">{idx + 1}</td>
                     <td className="border border-black py-1 font-mono font-bold">{row.rollNo}</td>
-                    <td className="border border-black py-1 px-2 text-right font-bold">{row.name}</td>
+                    <td className="border border-black py-1 px-2 text-left font-bold">{row.name}</td>
                     {subjects.map((sub: string) => (
                       <td key={sub} className="border border-black py-1 font-mono">
                         {row.marks?.[sub] !== undefined ? row.marks[sub] : '---'}
@@ -361,15 +361,15 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
           </table>
 
           {/* Signatures */}
-          <div className="flex justify-between items-end mt-8 px-6 font-bold text-xs font-urdu text-black">
+          <div className="flex justify-between items-end mt-8 px-6 font-bold text-xs font-sans text-black">
             <div className="flex flex-col items-center">
               <div className="w-36 border-b border-black"></div>
-              <span className="pt-1">مدير المركز (Center Director)</span>
+              <span className="pt-1">Center Director</span>
             </div>
             
             <div className="flex flex-col items-center">
               <div className="w-36 border-b border-black"></div>
-              <span className="pt-1">ناظم امتحانات</span>
+              <span className="pt-1">Controller of Exams</span>
             </div>
           </div>
         </div>
@@ -385,11 +385,11 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                 onClick={onBack}
                 className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 p-2.5 rounded-xl transition-all shadow-sm flex flex-col items-center justify-center gap-0"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5" />
                 <span className="text-[8px] font-normal opacity-70">Back</span>
               </button>
               <div>
-                <h2 className="text-xl font-bold text-slate-800 font-urdu">اجتماعی نتیجہ (Grand Tabulation Sheet)</h2>
+                <h2 className="text-xl font-bold text-slate-800 font-sans">Consolidated Result (Grand Tabulation Sheet)</h2>
                 <span className="text-[10px] font-normal text-slate-400 uppercase tracking-widest leading-none">Automated Grand Ledger & Result Portal</span>
               </div>
             </div>
@@ -398,22 +398,18 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
               {selectedClass && selectedExamType && ledgerRecords.length > 0 && (
                 <button 
                   onClick={() => setIsAddingStudent(true)}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm font-urdu w-full md:w-auto flex flex-col items-center justify-center gap-0"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm font-sans w-full md:w-auto flex items-center justify-center gap-2"
                 >
-                  <span>+ نیا طالب علم</span>
-                  <span className="text-[10px] font-normal opacity-70 uppercase tracking-widest">Add New Student</span>
+                  <span>+ Add New Student</span>
                 </button>
               )}
               {selectedClass && selectedExamType && ledgerRecords.length > 0 && (
                 <button 
                   onClick={() => window.print()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex flex-col items-center justify-center gap-0 shadow-lg shadow-blue-500/20 text-sm font-urdu w-full md:w-auto"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 text-sm font-sans w-full md:w-auto"
                 >
-                  <div className="flex items-center gap-2">
-                    <Printer className="w-4 h-4" />
-                    <span>لیجر پرنٹ کریں (Landscape A4)</span>
-                  </div>
-                  <span className="text-[10px] font-normal opacity-70 uppercase tracking-widest">Print Ledger Sheet</span>
+                  <Printer className="w-4 h-4" />
+                  <span>Print Ledger (Landscape A4)</span>
                 </button>
               )}
             </div>
@@ -422,8 +418,8 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
           {/* Roster & Filter Controls */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 pt-6 border-t border-slate-200">
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-urdu text-slate-400 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
-                Class (درجہ منتخب کریں)
+              <label className="text-[10px] font-sans text-slate-400 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
+                Select Class / Grade
               </label>
               <div className="flex flex-wrap gap-2">
                 {classes.map(c => (
@@ -443,30 +439,30 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-urdu text-emerald-600 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
-                Exam Type (امتحان کی قسم)
+              <label className="text-[10px] font-sans text-emerald-600 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
+                Exam Type
               </label>
               <select 
                 value={selectedExamType} 
                 onChange={(e) => setSelectedExamType(e.target.value)}
-                className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 transition-all text-slate-800 font-urdu w-full shadow-sm"
+                className="px-4 py-3 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 transition-all text-slate-800 font-sans w-full shadow-sm"
               >
-                <option value="">-- انتخاب کریں (Exam) --</option>
+                <option value="">-- Select Exam --</option>
                 {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="text-[10px] font-urdu text-amber-600 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
-                Search (تلاش کریں)
+              <label className="text-[10px] font-sans text-amber-600 font-bold flex items-center gap-1 uppercase tracking-widest px-1">
+                Search
               </label>
               <div className="relative">
                 <input 
                   type="text" 
-                  placeholder="نام یا رول نمبر سے تلاش کریں..." 
+                  placeholder="Search by student name or roll no..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 text-slate-800 font-urdu shadow-sm"
+                  className="w-full px-4 py-3 pl-10 bg-white border border-slate-200 rounded-xl text-xs outline-none focus:border-blue-500 text-slate-800 font-sans shadow-sm"
                 />
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
               </div>
@@ -476,44 +472,44 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
           {selectedClass && selectedExamType && editableRecords.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 mt-6 pt-4 border-t border-slate-200 no-print">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-600 font-urdu">ترتیب و پوزیشن (Reorder / Sort):</span>
+                <span className="text-xs font-bold text-slate-600 font-sans">Reorder & Sort:</span>
                 <button
                   onClick={() => setIsReordering(!isReordering)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border font-urdu ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border font-sans ${
                     isReordering
                       ? 'bg-amber-600 text-white border-amber-600 shadow-md'
                       : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'
                   }`}
                 >
                   <ArrowUpDown size={14} />
-                  {isReordering ? 'ترتیب بند کریں (Lock)' : 'ترتیب کا موڈ آن کریں'}
+                  {isReordering ? 'Lock Order' : 'Enable Reorder Mode'}
                 </button>
 
                 <button
                   onClick={sortByRollNo}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-urdu"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-sans"
                 >
-                  رول نمبر کے مطابق
+                  Sort by Roll No
                 </button>
 
                 <button
                   onClick={sortByTotalMarks}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-urdu"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-sans"
                 >
-                  نمبرات (پوزیشن) کے مطابق
+                  Sort by Marks
                 </button>
 
                 <button
                   onClick={sortByName}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-urdu"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all border border-slate-200 font-sans"
                 >
-                  نام کے مطابق
+                  Sort by Name
                 </button>
               </div>
 
               {isReordering && (
-                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 font-urdu">
-                  💡 ڈریگ اینڈ ڈراپ یا اوپر / نیچے ایرو بٹن استعمال کر کے ترتیب دیکھیں۔
+                <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 font-sans">
+                  💡 Drag & drop or use arrow buttons to adjust order.
                 </span>
               )}
             </div>
@@ -523,13 +519,13 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
         {isAddingStudent && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
             <div className="bg-white p-6 rounded-3xl shadow-xl w-full max-w-sm">
-              <h3 className="text-lg font-bold mb-4">نیا طالب علم شامل کریں</h3>
-              <input type="text" placeholder="رول نمبر" value={newStudent.rollNo} onChange={e => setNewStudent({...newStudent, rollNo: e.target.value})} className="w-full p-2 border rounded-lg mb-2" />
-              <input type="text" placeholder="نام" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} className="w-full p-2 border rounded-lg mb-2" />
-              <input type="text" placeholder="ولدیت" value={newStudent.fatherName} onChange={e => setNewStudent({...newStudent, fatherName: e.target.value})} className="w-full p-2 border rounded-lg mb-4" />
+              <h3 className="text-lg font-bold mb-4">Add New Student</h3>
+              <input type="text" placeholder="Roll No" value={newStudent.rollNo} onChange={e => setNewStudent({...newStudent, rollNo: e.target.value})} className="w-full p-2 border rounded-lg mb-2 text-sm" />
+              <input type="text" placeholder="Student Name" value={newStudent.name} onChange={e => setNewStudent({...newStudent, name: e.target.value})} className="w-full p-2 border rounded-lg mb-2 text-sm" />
+              <input type="text" placeholder="Father Name" value={newStudent.fatherName} onChange={e => setNewStudent({...newStudent, fatherName: e.target.value})} className="w-full p-2 border rounded-lg mb-4 text-sm" />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setIsAddingStudent(false)} className="px-4 py-2 bg-slate-100 rounded-lg">منسوخ</button>
-                <button onClick={handleAddStudent} className="px-4 py-2 bg-emerald-600 text-white rounded-lg">شامل کریں</button>
+                <button onClick={() => setIsAddingStudent(false)} className="px-4 py-2 bg-slate-100 rounded-lg text-sm font-bold">Cancel</button>
+                <button onClick={handleAddStudent} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold">Add Student</button>
               </div>
             </div>
           </div>
@@ -537,14 +533,14 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
 
         <div className="max-w-7xl mx-auto bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           {!selectedClass || !selectedExamType ? (
-            <div className="text-center py-16 text-slate-500 font-urdu max-w-md mx-auto">
+            <div className="text-center py-16 text-slate-500 font-sans max-w-md mx-auto">
               <div className="text-5xl mb-4">📊</div>
-              <h4 className="font-bold text-base text-slate-800 mb-2">درجہ اور امتحان کی قسم منتخب کریں</h4>
-              <p className="text-xs text-slate-500">اجتماعی رزلٹ لیجر دیکھنے اور پرنٹ کرنے کے لیے اوپر دیے گئے درجات اور امتحان کے بٹن پر کلک کریں۔</p>
+              <h4 className="font-bold text-base text-slate-800 mb-2">Select Class & Exam Type</h4>
+              <p className="text-xs text-slate-500">Choose a class and exam type above to view and print the consolidated result ledger.</p>
             </div>
           ) : filteredRecords.length === 0 ? (
-            <div className="text-center py-16 text-slate-500 font-urdu">
-              <p>منتخب فلٹر کے مطابق کوئی ریکارڈ دستیاب نہیں ہے۔</p>
+            <div className="text-center py-16 text-slate-500 font-sans">
+              <p>No records found matching selected filters.</p>
             </div>
           ) : (
             <div className="h-[60vh] overflow-y-auto overflow-x-auto min-w-[1000px] bg-white text-black p-8 rounded-xl shadow-lg border border-slate-200">
@@ -554,89 +550,49 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
               </div>
 
               {/* Simulated Landscape A4 Ledger View */}
-              <div className="w-full border-[3px] border-black p-6 relative bg-white text-black" dir="rtl">
-                {/* Islamic Seal & Top Header */}
+              <div className="w-full border-[3px] border-black p-6 relative bg-white text-black" dir="ltr">
+                {/* Header */}
                 <div className="flex justify-between items-start mb-6">
-                  {/* Monochrome Circular Islamic Seal */}
                   <div className="w-20 h-20 rounded-full border-2 border-black flex items-center justify-center p-1 bg-white relative">
                     {systemSettings.monogram ? (
                       <img src={systemSettings.monogram} alt="Seal" className="w-full h-full object-contain grayscale" />
                     ) : (
-                      <div className="text-[10px] font-bold text-center">Islamic Seal</div>
+                      <div className="text-[10px] font-bold text-center">Institute Seal</div>
                     )}
                   </div>
 
                   <div className="flex-1 text-center">
-                    <h1 style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu', fontSize: '28px', lineHeight: '1.2' }} className="font-bold text-black font-urdu">
-                      {systemSettings.jamiaName || 'جامعہ عربیہ سراج العلوم'}
+                    <h1 className="text-2xl font-bold text-black font-sans">
+                      {systemSettings.jamiaName || 'Academic Institute & Educational System'}
                     </h1>
-                    <h2 className="text-base font-bold font-urdu mt-1 text-slate-800 flex flex-col items-center">
-                      <span>جدول نتائج امتحانات</span>
-                      <span className="text-[10px] font-normal uppercase tracking-[0.2em] opacity-60">Examination Result Ledger Sheet</span>
+                    <h2 className="text-base font-bold font-sans mt-1 text-slate-800 flex flex-col items-center">
+                      <span>Examination Result Ledger Sheet</span>
                     </h2>
                     <div className="text-xs font-bold mt-2 text-slate-600">
-                      درجہ (Class): <span className="underline ml-4">{selectedClass}</span>
-                      امتحان (Exam): <span className="underline">{selectedExamType}</span>
+                      Class: <span className="underline mr-4">{selectedClass}</span>
+                      Exam: <span className="underline">{selectedExamType}</span>
                     </div>
                   </div>
 
-                  <div className="w-20"></div> {/* Spacing balance */}
+                  <div className="w-20"></div>
                 </div>
 
                 {/* Table Ledger Sheet Grid */}
-                <table className="w-full text-center border-collapse border-2 border-black text-[11px] font-bold font-urdu">
+                <table className="w-full text-center border-collapse border-2 border-black text-[11px] font-bold font-sans">
                   <thead>
                     <tr className="bg-slate-100 border-b-2 border-black">
-                      <th className="border-2 border-black py-2 px-1 w-10 text-center font-bold">
-                        <div className="flex flex-col items-center">
-                          <span>مسلسل</span>
-                          <span className="text-[8px] font-normal opacity-60">S#</span>
-                        </div>
-                      </th>
-                      <th className="border-2 border-black py-2 px-1 w-20 text-center font-bold">
-                        <div className="flex flex-col items-center">
-                          <span>رقم الامتحان</span>
-                          <span className="text-[8px] font-normal opacity-60">Roll#</span>
-                        </div>
-                      </th>
-                      <th className="border-2 border-black py-2 px-3 text-right font-bold min-w-[150px]">
-                         <div className="flex flex-col items-start">
-                          <span>اسم الطالب</span>
-                          <span className="text-[8px] font-normal opacity-60">Name</span>
-                        </div>
-                      </th>
+                      <th className="border-2 border-black py-2 px-1 w-10 text-center font-bold">#</th>
+                      <th className="border-2 border-black py-2 px-1 w-20 text-center font-bold">Roll No</th>
+                      <th className="border-2 border-black py-2 px-3 text-left font-bold min-w-[150px]">Student Name</th>
                       {subjects.map((sub: string) => (
                         <th key={sub} className="border-2 border-black py-2 px-1 text-center font-bold text-[10px] min-w-[70px]">
-                          <div className="flex flex-col items-center">
-                            <span>{sub}</span>
-                            <span className="text-[7px] font-normal opacity-50 uppercase">Course</span>
-                          </div>
+                          {sub}
                         </th>
                       ))}
-                      <th className="border-2 border-black py-2 px-1 w-24 text-center font-bold">
-                        <div className="flex flex-col items-center">
-                          <span>المجموع</span>
-                          <span className="text-[8px] font-normal opacity-60">Total</span>
-                        </div>
-                      </th>
-                      <th className="border-2 border-black py-2 px-1 w-24 text-center font-bold">
-                         <div className="flex flex-col items-center">
-                          <span>النتيجة</span>
-                          <span className="text-[8px] font-normal opacity-60">Result</span>
-                        </div>
-                      </th>
-                      <th className="border-2 border-black py-2 px-1 w-20 text-center font-bold">
-                         <div className="flex flex-col items-center">
-                          <span>المعدل</span>
-                          <span className="text-[8px] font-normal opacity-60">Grade</span>
-                        </div>
-                      </th>
-                      <th className="border-2 border-black py-2 px-1 w-16 text-center font-bold no-print">
-                         <div className="flex flex-col items-center">
-                          <span>عمل</span>
-                          <span className="text-[8px] font-normal opacity-60">Action</span>
-                        </div>
-                      </th>
+                      <th className="border-2 border-black py-2 px-1 w-24 text-center font-bold">Total Marks</th>
+                      <th className="border-2 border-black py-2 px-1 w-24 text-center font-bold">Result</th>
+                      <th className="border-2 border-black py-2 px-1 w-20 text-center font-bold">Percentage</th>
+                      <th className="border-2 border-black py-2 px-1 w-16 text-center font-bold no-print">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -678,7 +634,7 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                             </div>
                           </td>
                           <td className="border-2 border-black py-2 text-center font-mono font-bold">{row.rollNo}</td>
-                          <td className="border-2 border-black py-2 px-3 text-right font-bold">{row.name}</td>
+                          <td className="border-2 border-black py-2 px-3 text-left font-bold">{row.name}</td>
                           {subjects.map((sub: string) => (
                             <td key={sub} className="border-2 border-black py-2 text-center font-mono font-normal">
                               {row.marks[sub]}
@@ -700,10 +656,10 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                             <>
                               <td className="border-2 border-black py-2 text-center font-mono font-bold bg-slate-50">{row.totalObtained} / {totalMaxMarks}</td>
                               <td className="border-2 border-black py-2 text-center">
-                                <span className={`px-2 py-0.5 rounded text-[10px] ${
-                                  row.status === 'ناجح' ? 'text-emerald-700' :
-                                  row.status === 'معيد' ? 'text-orange-700' :
-                                  row.status === 'راسب' ? 'text-red-700' : 'text-slate-700'
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                  row.status === 'Pass' ? 'text-emerald-700' :
+                                  row.status === 'Compartment' ? 'text-orange-700' :
+                                  row.status === 'Fail' ? 'text-red-700' : 'text-slate-700'
                                 }`}>
                                   {row.status}
                                 </span>
@@ -715,12 +671,12 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                           <td className="border-2 border-black py-2 text-center no-print">
                             <div className="flex justify-center items-center gap-1.5">
                               {isReordering && (
-                                <div className="flex items-center gap-0.5 border-l pl-1 border-slate-300">
+                                <div className="flex items-center gap-0.5 border-r pr-1 border-slate-300">
                                   <button 
                                     onClick={() => moveRow(currentIdx, 'up')} 
                                     disabled={currentIdx === 0}
                                     className="p-1 text-slate-600 hover:text-black hover:bg-slate-200 rounded disabled:opacity-20 disabled:hover:bg-transparent"
-                                    title="اوپر منتقل کریں"
+                                    title="Move Up"
                                   >
                                     <ArrowUp size={13} />
                                   </button>
@@ -728,18 +684,18 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                                     onClick={() => moveRow(currentIdx, 'down')} 
                                     disabled={currentIdx === editableRecords.length - 1}
                                     className="p-1 text-slate-600 hover:text-black hover:bg-slate-200 rounded disabled:opacity-20 disabled:hover:bg-transparent"
-                                    title="نیچے منتقل کریں"
+                                    title="Move Down"
                                   >
                                     <ArrowDown size={13} />
                                   </button>
                                 </div>
                               )}
-                               <button onClick={() => setEditingRollNo(editingRollNo === row.rollNo ? null : row.rollNo)} className={editingRollNo === row.rollNo ? "text-emerald-500 hover:text-emerald-800" : "text-blue-500 hover:text-blue-800"} title="ترمیم">
-                                 {editingRollNo === row.rollNo ? <Save size={14} /> : <Pencil size={14} />}
-                               </button>
-                               <button onClick={() => setEditableRecords(editableRecords.filter(r => r.rollNo !== row.rollNo))} className="text-red-500 hover:text-red-800" title="حذف کریں">
-                                 <Trash2 size={14} />
-                               </button>
+                              <button onClick={() => setEditingRollNo(editingRollNo === row.rollNo ? null : row.rollNo)} className={editingRollNo === row.rollNo ? "text-emerald-500 hover:text-emerald-800" : "text-blue-500 hover:text-blue-800"} title="Edit">
+                                {editingRollNo === row.rollNo ? <Save size={14} /> : <Pencil size={14} />}
+                              </button>
+                              <button onClick={() => setEditableRecords(editableRecords.filter(r => r.rollNo !== row.rollNo))} className="text-red-500 hover:text-red-800" title="Delete">
+                                <Trash2 size={14} />
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -749,15 +705,15 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
                 </table>
 
                 {/* Bottom Signatures */}
-                <div className="flex justify-between items-end mt-12 px-6 font-bold text-xs font-urdu text-black">
+                <div className="flex justify-between items-end mt-12 px-6 font-bold text-xs font-sans text-black">
                   <div className="flex flex-col items-center">
                     <div className="w-40 border-b border-black"></div>
-                    <span className="pt-2">مدير المركز (Center Director)</span>
+                    <span className="pt-2">Center Director</span>
                   </div>
                   
                   <div className="flex flex-col items-center">
                     <div className="w-40 border-b border-black"></div>
-                    <span className="pt-2">ناظم امتحانات</span>
+                    <span className="pt-2">Controller of Exams</span>
                   </div>
                 </div>
               </div>

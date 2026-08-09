@@ -151,20 +151,23 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
   const [aiConfig, setAiConfig] = useState({
     subject: '',
     className: '',
-    difficulty: 'درمیانہ',
+    difficulty: 'Medium',
     topics: '',
     marks: 100,
+    language: 'english',
     questionTypes: ['MCQ', 'Short', 'Long']
   });
 
   const handleGenerateAiPaper = async () => {
     if (!aiConfig.subject || !aiConfig.className) {
-      setAiError('برائے مہربانی مضمون اور درجہ درج کریں۔');
+      setAiError('Please enter subject and grade/class.');
       return;
     }
     setAiLoading(true);
     setAiError(null);
     try {
+      const isEng = aiConfig.language === 'english' || (aiConfig.language === 'auto' && !/[\u0600-\u06FF]/.test(aiConfig.subject + aiConfig.className));
+
       const res = await fetch('/api/generate-paper', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -175,7 +178,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
           topics: aiConfig.topics,
           marks: aiConfig.marks,
           questionTypes: aiConfig.questionTypes,
-          language: 'urdu'
+          language: aiConfig.language
         })
       });
       const data = await res.json();
@@ -192,12 +195,12 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
               if (q.options && Array.isArray(q.options) && q.options.length > 0) {
                 qText += '\n' + q.options.join(' | ');
               }
-              const arabicLabel = getArabicQuestionLabel(qNum - 1);
+              const qLabel = isEng ? `Question ${qNum}` : getArabicQuestionLabel(qNum - 1);
               questionsList.push({
                 id: generateUniqueId('q'),
-                text: `${arabicLabel}: ${qText}`,
+                text: `${qLabel}: ${qText}`,
                 marks: Number(q.marks) || 10,
-                fontFamily: 'font-urdu'
+                fontFamily: isEng ? 'font-sans' : 'font-urdu'
               });
               qNum++;
             });
@@ -208,9 +211,9 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
       if (questionsList.length === 0) {
         questionsList.push({
           id: generateUniqueId('q'),
-          text: `السؤال الأول: ${data.title || aiConfig.subject} کے متعلق سوالات حل کریں۔`,
+          text: isEng ? `Question 1: Answer questions related to ${data.title || aiConfig.subject}.` : `السؤال الأول: ${data.title || aiConfig.subject} کے متعلق سوالات حل کریں۔`,
           marks: aiConfig.marks,
-          fontFamily: 'font-urdu'
+          fontFamily: isEng ? 'font-sans' : 'font-urdu'
         });
       }
 
@@ -229,12 +232,12 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
           id: generateUniqueId('paper'),
           book: aiConfig.subject,
           grade: aiConfig.className,
-          time: 'المحدد : ثلاث ساعات',
+          time: isEng ? 'Time Allowed: 3 Hours' : 'المحدد : ثلاث ساعات',
           totalMarks: aiConfig.marks,
-          note: 'تمام سوالات لازمی ہیں۔ خوشخطی کے اضافی نمبر ہوں گے۔',
-          noteFontFamily: 'font-urdu',
-          year: '1447ھ',
-          examName: 'سالانہ امتحان',
+          note: isEng ? 'Note: All questions are compulsory.' : 'تمام سوالات لازمی ہیں۔ خوشخطی کے اضافی نمبر ہوں گے۔',
+          noteFontFamily: isEng ? 'font-sans' : 'font-urdu',
+          year: isEng ? '2026' : '1447ھ',
+          examName: isEng ? 'Annual Examination' : 'سالانہ امتحان',
           questions: questionsList
         };
         const updated = [newPaper, ...papers];
@@ -1338,12 +1341,12 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                 </div>
               )}
 
-              <div className="space-y-4 text-right">
+              <div className="space-y-4 text-left" dir="ltr">
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">کتاب / مضمون کا نام (Subject/Book) *</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Subject / Book Name *</label>
                   <input 
                     type="text" 
-                    placeholder="مثلاً: ہدایۃ النحو، نور الایضاح، ریاضی، سا ئنس"
+                    placeholder="e.g. Mathematics, Science, English, Computer"
                     value={aiConfig.subject}
                     onChange={e => setAiConfig({ ...aiConfig, subject: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
@@ -1352,34 +1355,34 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">درجہ / کلاس (Grade) *</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Grade / Class *</label>
                     <input 
                       type="text" 
-                      placeholder="مثلاً: اولیٰ، ثانیہ، 10th Grade"
+                      placeholder="e.g. Grade 5, Grade 10"
                       value={aiConfig.className}
                       onChange={e => setAiConfig({ ...aiConfig, className: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-600 mb-1">مشکلی کا معیار (Difficulty)</label>
+                    <label className="block text-xs font-bold text-slate-600 mb-1">Difficulty Level</label>
                     <select 
                       value={aiConfig.difficulty}
                       onChange={e => setAiConfig({ ...aiConfig, difficulty: e.target.value })}
                       className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
                     >
-                      <option value="آسان">آسان (Easy)</option>
-                      <option value="درمیانہ">درمیانہ (Medium)</option>
-                      <option value="مشکل">مشکل (Hard)</option>
+                      <option value="Easy">Easy</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Hard">Hard</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">مخصوص ابواب / عنوانات (Specific Topics)</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Specific Topics Covered</label>
                   <textarea 
                     rows={3}
-                    placeholder="مثلاً: باب الصلاۃ، تعریفات، یا طہارت کے مسائل"
+                    placeholder="e.g. Chapter 1, Algebra, Trigonometry"
                     value={aiConfig.topics}
                     onChange={e => setAiConfig({ ...aiConfig, topics: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
@@ -1387,7 +1390,18 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-600 mb-1">کل نمبر (Total Marks): {aiConfig.marks}</label>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Language Selection</label>
+                  <select 
+                    value={aiConfig.language}
+                    onChange={e => setAiConfig({ ...aiConfig, language: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-3 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  >
+                    <option value="english">English</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1">Total Marks: {aiConfig.marks}</label>
                   <input 
                     type="range" 
                     min={20} 
@@ -1408,12 +1422,12 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                     {aiLoading ? (
                       <>
                         <Loader2 className="w-5 h-5 animate-spin" />
-                        <span>پرچہ تیار ہو رہا ہے...</span>
+                        <span>Generating Paper...</span>
                       </>
                     ) : (
                       <>
                         <Wand2 className="w-5 h-5" />
-                        <span>AI سے پرچہ تیار کریں</span>
+                        <span>Generate Exam Paper with AI</span>
                       </>
                     )}
                   </button>

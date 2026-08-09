@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Printer, ArrowRight } from 'lucide-react';
+import { Printer, ArrowLeft } from 'lucide-react';
 import { resolveApiUrl } from '../config';
 
 interface Student {
@@ -78,13 +78,11 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-8 flex flex-col items-center admission-form-root">
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
-        
         .admission-form-root {
-            --primary-color: #004d40;
-            --secondary-color: #c5a059;
+            --primary-color: #0f172a;
+            --secondary-color: #0284c7;
             --bg-color: #ffffff;
-            --text-color: #1a1a1a;
+            --text-color: #1e293b;
             --white: #ffffff;
             --border-style: 2px solid var(--primary-color);
         }
@@ -99,6 +97,7 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .form-border-outer {
@@ -124,12 +123,13 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 80px;
-            color: rgba(0, 77, 64, 0.03);
+            font-size: 60px;
+            font-weight: 800;
+            color: rgba(15, 23, 42, 0.04);
             white-space: nowrap;
             pointer-events: none;
             z-index: 0;
-            font-family: 'Noto Nastaliq Urdu', serif;
+            text-transform: uppercase;
         }
 
         .form-header {
@@ -145,16 +145,18 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
 
         .institution-header { text-align: center; flex: 1; }
         .institution-header h1 {
-            font-family: 'Noto Nastaliq Urdu', serif;
-            font-size: 2.2em;
+            font-size: 1.8em;
+            font-weight: 900;
             color: var(--primary-color);
             margin: 0;
-            line-height: 1.6;
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: -0.02em;
         }
         .institution-header p {
-            margin: 0;
+            margin: 4px 0 0 0;
             font-size: 11px;
-            font-weight: bold;
+            font-weight: 700;
             color: var(--secondary-color);
         }
 
@@ -175,76 +177,84 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
             font-size: 10px; text-align: center; color: #666;
             overflow: hidden;
             position: relative;
+            font-weight: 600;
         }
 
         .form-title-badge {
             background: var(--primary-color);
             color: white;
-            padding: 4px 30px;
+            padding: 4px 24px;
             border-radius: 4px;
-            font-weight: bold;
+            font-weight: 800;
             display: inline-block;
             margin-top: 8px;
-            font-size: 14px;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             border: 1px solid var(--secondary-color);
         }
 
         .section-header {
-            background: #f0f7f4;
-            border-right: 4px solid var(--primary-color);
+            background: #f1f5f9;
+            border-left: 4px solid var(--primary-color);
             color: var(--primary-color);
             padding: 6px 12px;
-            font-weight: bold;
+            font-weight: 800;
             margin: 15px 0 10px 0;
             display: flex;
             justify-content: space-between;
-            font-size: 13px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         .field-row {
             display: flex; gap: 10px; margin-bottom: 12px; align-items: center;
-            font-size: 13px;
+            font-size: 12px;
         }
         .label {
-            font-weight: bold; color: var(--primary-color); min-width: 100px;
+            font-weight: 700; color: var(--primary-color); min-width: 110px;
         }
         .line-input {
-            border-bottom: 1px solid #ccc;
+            border-bottom: 1px solid #cbd5e1;
             flex: 1; height: 20px;
             display: flex; align-items: flex-end; padding-bottom: 2px;
-            font-weight: bold; color: var(--text-color);
+            font-weight: 700; color: var(--text-color);
         }
 
         .boxes-group { display: flex; gap: 3px; direction: ltr; }
         .digit-box {
             width: 22px; height: 22px;
-            border: 1px solid #999;
+            border: 1px solid #94a3b8;
             background: var(--white);
             display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-family: monospace;
+            font-weight: 800; font-family: monospace;
             font-size: 12px;
         }
 
         .office-box {
             border: 1px solid var(--primary-color);
             padding: 10px;
-            border-radius: 4px;
+            border-radius: 6px;
             margin-top: 15px;
-            background: #fafafa;
+            background: #f8fafc;
         }
         .office-title {
             text-align: center; color: var(--primary-color);
-            font-weight: bold; margin-bottom: 8px;
-            font-size: 14px;
+            font-weight: 800; margin-bottom: 8px;
+            font-size: 12px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
             border-bottom: 1px solid var(--primary-color);
             display: inline-block;
             width: 100%;
+            padding-bottom: 4px;
         }
 
         .agreement {
-            font-size: 11px; line-height: 1.5;
-            border: 1px solid #eee;
-            padding: 8px; margin: 10px 0; color: #444;
+            font-size: 10px; line-height: 1.5;
+            border: 1px solid #e2e8f0;
+            padding: 8px; margin: 10px 0; color: #334155;
             background: #fff;
         }
 
@@ -253,8 +263,9 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
         }
         .sig-line {
             border-top: 1px solid var(--text-color); width: 150px;
-            text-align: center; padding-top: 3px; font-weight: bold;
-            font-size: 12px;
+            text-align: center; padding-top: 3px; font-weight: 700;
+            font-size: 11px;
+            text-transform: uppercase;
         }
 
         @page {
@@ -281,24 +292,24 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
       <div className="w-full max-w-4xl mx-auto mb-8 flex items-center justify-between no-print bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
         <button 
           onClick={onBack}
-          className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2 rounded-xl font-urdu font-bold text-sm transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-slate-800 text-white px-6 py-2 rounded-xl font-bold text-sm hover:bg-slate-900 transition-colors shadow-sm"
         >
-          <ArrowRight className="w-4 h-4" />
-          <span>واپس فہرست</span>
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to List</span>
         </button>
         
         <button 
           onClick={handlePrint}
-          className="bg-emerald-600 text-white px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-xl font-urdu font-bold text-sm"
+          className="bg-emerald-600 text-white px-6 py-2 rounded-xl flex items-center gap-2 hover:bg-emerald-700 transition-all shadow-xl font-bold text-sm"
         >
           <Printer className="w-4 h-4" />
-          <span>فارم پرنٹ کریں</span>
+          <span>Print Form</span>
         </button>
       </div>
 
       {/* Printable Form */}
-      <div className="main-container font-urdu" dir="rtl" id="admission-form">
-          <div className="watermark">{systemSettings.jamiaName || 'جامعہ عربیہ'}</div>
+      <div className="main-container font-sans" dir="ltr" id="admission-form">
+          <div className="watermark">{systemSettings.jamiaName || 'Academic Institute'}</div>
           
           <div className="form-border-outer">
             <div className="form-border-inner">
@@ -307,115 +318,112 @@ export default function PrintAdmissionForm({ student, onBack }: PrintAdmissionFo
                   <div className="logo-box">
                     {systemSettings.monogram ? (
                       <img src={getDynamicUrl(systemSettings.monogram)} alt="Logo" className="w-full h-full object-contain" />
-                    ) : <span className="text-[10px] text-slate-400">لوگو</span>}
+                    ) : <span className="text-[10px] text-slate-400 font-bold">LOGO</span>}
                   </div>
                   <div className="institution-header">
-                      <h1>{systemSettings.jamiaName || 'جامعہ عربیہ سراج العلوم'}</h1>
-                      <p>مدینہ کالونی، چنار روڈ ٹھاکرہ مانسہرہ (KPK)</p>
-                      <div className="form-title-badge">داخلہ فارم (Admission Form)</div>
+                      <h1>{systemSettings.jamiaName || 'Academic Institute & Educational System'}</h1>
+                      <p>Main Campus, Educational Zone Academic Center</p>
+                      <div className="form-title-badge">Student Admission Form</div>
                   </div>
                   <div className="student-photo-box">
                     {student.photo ? (
                       <img src={getDynamicUrl(student.photo)} alt="Student" className="w-full h-full object-cover absolute inset-0" />
-                    ) : <span className="p-2">تصویر یہاں چسپاں کریں</span>}
+                    ) : <span className="p-2">Affix Photo Here</span>}
                   </div>
               </header>
 
-              <div style={{display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', marginBottom: '10px', color: 'var(--primary-color)', fontSize: '12px'}}>
-                  <span>فارم نمبر: <span style={{color: 'var(--text-color)'}}>{student.regNo || student.id || '________'}</span></span>
-                  <span>تعلیمی سال: 2026ء - 2027ء</span>
+              <div style={{display: 'flex', justify: 'space-between', fontWeight: 'bold', marginBottom: '10px', color: 'var(--primary-color)', fontSize: '11px'}}>
+                  <span>Form No: <span style={{color: 'var(--text-color)'}}>{student.regNo || student.id || '________'}</span></span>
+                  <span>Academic Session: 2026 - 2027</span>
               </div>
 
               {/* Personal Section */}
               <div className="section-header">
-                  <span>ذاتی معلومات (Personal Information)</span>
-                  <span>حصہ اول</span>
+                  <span>Part I: Personal Details</span>
               </div>
 
               <div className="field-row">
-                  <span className="label">نام طالب علم:</span>
-                  <div className="line-input text-lg">{student.name}</div>
+                  <span className="label">Student Name:</span>
+                  <div className="line-input text-base">{student.name}</div>
               </div>
 
               <div className="field-row">
-                  <span className="label">ولدیت:</span>
-                  <div className="line-input text-lg">{student.fatherName}</div>
-                  <span className="label" style={{minWidth: '40px'}}>قوم:</span>
+                  <span className="label">Father's Name:</span>
+                  <div className="line-input text-base">{student.fatherName}</div>
+                  <span className="label" style={{minWidth: '50px'}}>Caste:</span>
                   <div className="line-input">{student.caste || '__________'}</div>
               </div>
 
               <div className="field-row">
-                  <span className="label">شناختی کارڈ نمبر:</span>
+                  <span className="label">CNIC / B-Form:</span>
                   <CnicBoxes value={student.cnic} />
               </div>
 
               <div className="field-row">
-                  <span className="label">تاریخ پیدائش:</span>
+                  <span className="label">Date of Birth:</span>
                   <div className="line-input" style={{flex: 0.4, fontFamily: 'monospace'}}>{student.dob || '__________'}</div>
-                  <span className="label" style={{minWidth: '60px'}}>رہائش:</span>
+                  <span className="label" style={{minWidth: '70px'}}>Residence:</span>
                   <div style={{display: 'flex', gap: '15px', fontWeight: 'bold'}}>
-                      <label><input type="checkbox" checked={!student.isResidential} readOnly /> مقامی</label>
-                      <label><input type="checkbox" checked={!!student.isResidential} readOnly /> ہاسٹل</label>
+                      <label className="flex items-center gap-1"><input type="checkbox" checked={!student.isResidential} readOnly /> Day Scholar</label>
+                      <label className="flex items-center gap-1"><input type="checkbox" checked={!!student.isResidential} readOnly /> Hostel / Boarder</label>
                   </div>
               </div>
 
               {/* Contact Section */}
               <div className="section-header">
-                  <span>رابطہ کی تفصیلات (Contact Details)</span>
-                  <span>حصہ دوم</span>
+                  <span>Part II: Contact Information</span>
               </div>
 
               <div className="field-row">
-                  <span className="label">مکمل پتہ:</span>
+                  <span className="label">Full Address:</span>
                   <div className="line-input">{student.currentAddress || student.permanentAddress || '__________'}</div>
               </div>
 
               <div className="field-row">
-                  <span className="label">تحصیل / ضلع:</span>
+                  <span className="label">Tehsil / District:</span>
                   <div className="line-input">{(student.tehsil || '') + (student.tehsil && student.currentDistrict ? ' / ' : '') + (student.currentDistrict || '__________')}</div>
-                  <span className="label" style={{minWidth: '90px'}}>موبائل نمبر:</span>
+                  <span className="label" style={{minWidth: '80px'}}>Mobile No:</span>
                   <div className="line-input font-mono">{student.phone || '__________'}</div>
               </div>
 
               {/* Academic Section */}
               <div className="section-header">
-                  <span>تعلیمی ریکارڈ (Academic Record)</span>
-                  <span>حصہ سوم</span>
+                  <span>Part III: Academic Record</span>
               </div>
 
               <div className="field-row">
-                  <span className="label">سابقہ ادارہ:</span>
+                  <span className="label">Previous School:</span>
                   <div className="line-input">{student.education || '__________'}</div>
               </div>
 
               <div className="field-row">
-                  <span className="label">سابقہ درجہ:</span>
+                  <span className="label">Previous Class:</span>
                   <div className="line-input">__________</div>
-                  <span className="label" style={{minWidth: '90px'}}>مطلوبہ درجہ:</span>
-                  <div className="line-input font-bold text-lg">{student.grade || '__________'}</div>
+                  <span className="label" style={{minWidth: '100px'}}>Applied Grade:</span>
+                  <div className="line-input font-bold text-base">{student.grade || '__________'}</div>
               </div>
 
               {/* Agreement */}
               <div className="agreement">
-                  <strong>اقرار نامہ:</strong> میں حلفاً اقرار کرتا ہوں کہ میں جامعہ کے تمام وضع کردہ قوانین کا پابند رہوں گا اور کسی بھی قسم کی غیر قانونی یا غیر اخلاقی سرگرمی میں ملوث نہیں ہوں گا۔ غلط معلومات فراہم کرنے کی صورت میں میرا داخلہ منسوخ کیا جا سکتا ہے۔
+                  <strong>Declaration:</strong> I hereby solemnly affirm that I will abide by all rules and regulations of the institution and will not engage in any illegal or improper activities. In case of false or misleading information, my admission may be cancelled.
               </div>
 
               <div className="sig-area">
-                  <div className="sig-line">دستخط طالب علم</div>
-                  <div className="sig-line">دستخط سرپرست</div>
+                  <div className="sig-line">Student Signature</div>
+                  <div className="sig-line">Guardian Signature</div>
               </div>
 
               {/* Office Section */}
               <div className="office-box">
-                  <div className="office-title">صرف دفتری استعمال کے لیے</div>
+                  <div className="office-title">For Office Use Only</div>
                   <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px'}}>
-                      <div className="field-row"><span className="label">داخلہ نمبر:</span><div className="line-input">{student.regNo || '__________'}</div></div>
-                      <div className="field-row"><span className="label">تاریخ داخلہ:</span><div className="line-input" style={{fontFamily: 'monospace'}}>{student.admissionDate || '__________'}</div></div>
-                      <div className="field-row"><span className="label">درجہ:</span><div className="line-input">{student.grade || '__________'}</div></div>
-                      <div className="field-row"><span className="label">ماہانہ فیس:</span><div className="line-input">__________</div></div>
+                      <div className="field-row"><span className="label">Admission No:</span><div className="line-input">{student.regNo || '__________'}</div></div>
+                      <div className="field-row"><span className="label">Admission Date:</span><div className="line-input" style={{fontFamily: 'monospace'}}>{student.admissionDate || '__________'}</div></div>
+                      <div className="field-row"><span className="label">Assigned Grade:</span><div className="line-input">{student.grade || '__________'}</div></div>
+                      <div className="field-row"><span className="label">Monthly Fee:</span><div className="line-input">__________</div></div>
                   </div>
-                  <div style={{textAlign: 'center', marginTop: '12px', fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '13px'}}>
-                      دستخط و مہر ناظم جامعہ: ________________________________
+                  <div style={{textAlign: 'center', marginTop: '12px', fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '11px'}}>
+                      Principal Signature & Stamp: ________________________________
                   </div>
               </div>
             </div>

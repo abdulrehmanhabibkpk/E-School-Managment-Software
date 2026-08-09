@@ -9,6 +9,7 @@ import AuthSystem from './components/AuthSystem';
 import Dashboard from './components/Dashboard';
 import PublicAdmissionForm from './components/PublicAdmissionForm';
 import SecurityGate from './components/SecurityGate';
+import AssanSchoolPortal from './components/assan_school_portal/AssanSchoolPortal';
 import { startRealTimeSync, stopRealTimeSync, pullGlobalData } from './syncService';
 import { logActivity } from './utils/logger';
 import { sanitizeLocalStorage } from './lib/dataSanitizer';
@@ -21,41 +22,17 @@ function ProtectedRoute({ children, isLoggedIn }: { children: React.ReactNode, i
 }
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => {
-    return localStorage.getItem('isLoggedIn') === 'true';
-  });
-  const [hasPassedGate, setHasPassedGate] = useState(() => {
-    return sessionStorage.getItem('passed_security_gate') === 'true';
-  });
-
-  const handleLogin = () => {
-    localStorage.setItem('isLoggedIn', 'true');
-    setIsLoggedIn(true);
-    logActivity('User Logged In', 'Security');
-    pullGlobalData();
-  };
-
-  const handlePassGate = () => {
-    sessionStorage.setItem('passed_security_gate', 'true');
-    setHasPassedGate(true);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('isLoggedIn');
-    sessionStorage.removeItem('passed_security_gate');
-    setHasPassedGate(false);
-    setIsLoggedIn(false);
+    // Logout disabled as requested
   };
 
   useEffect(() => {
-    if (isLoggedIn) {
-      pullGlobalData(); // Initial data fetch
-      startRealTimeSync();
-      return () => {
-        stopRealTimeSync();
-      };
-    }
-  }, [isLoggedIn]);
+    pullGlobalData();
+    startRealTimeSync();
+    return () => {
+      stopRealTimeSync();
+    };
+  }, []);
 
   useEffect(() => {
     // Clean up any duplicate IDs in local storage on startup
@@ -71,27 +48,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<AuthSystem onLogin={handleLogin} />} />
+        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
         <Route path="/admission-form" element={<PublicAdmissionForm />} />
+        <Route path="/portal" element={<AssanSchoolPortal />} />
+        <Route path="/landing" element={<AssanSchoolPortal />} />
+        <Route path="/website" element={<AssanSchoolPortal />} />
         <Route 
           path="/dashboard/*" 
-          element={
-            <ProtectedRoute isLoggedIn={isLoggedIn}>
-              {hasPassedGate ? (
-                <Dashboard onLogout={handleLogout} />
-              ) : (
-                <SecurityGate 
-                  onSuccess={handlePassGate} 
-                  userEmail={localStorage.getItem('currentUser') || 'Unknown'} 
-                />
-              )}
-            </ProtectedRoute>
-          } 
+          element={<Dashboard onLogout={handleLogout} />} 
         />
-        {/* Redirect base / or /dashboard without trailing slash to dashboard */}
-        <Route path="/" element={<Navigate to={isLoggedIn ? "/dashboard" : "/login"} replace />} />
+        {/* Landing Page Website */}
+        <Route path="/" element={<AssanSchoolPortal />} />
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/portal" replace />} />
       </Routes>
     </BrowserRouter>
   );

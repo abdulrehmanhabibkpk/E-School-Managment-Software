@@ -29,7 +29,7 @@ app.post("/api/generate-paper", async (req, res) => {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
-  const isUrdu = /[\u0600-\u06FF]/.test(subject + className + topics) || language === 'urdu';
+  const isUrdu = language === 'urdu' ? true : language === 'english' ? false : /[\u0600-\u06FF]/.test(subject + className + topics);
 
   try {
     if (process.env.GEMINI_API_KEY) {
@@ -42,16 +42,14 @@ app.post("/api/generate-paper", async (req, res) => {
         }
       });
 
-      const prompt = `You are an expert academic test generator for schools and religious seminaries.
-Generate a comprehensive examination paper for:
+  const prompt = `You are an expert academic test generator for schools and colleges.
+Generate a comprehensive examination paper strictly in ENGLISH for:
 Subject: ${subject}
 Class/Grade: ${className}
 Difficulty Level: ${difficulty}
 Topics Covered: ${topics || 'General Syllabus'}
 Total Marks: ${marks}
 Question Types: ${Array.isArray(questionTypes) ? questionTypes.join(", ") : questionTypes}
-
-${isUrdu ? 'IMPORTANT: The subject or class is in Urdu/Arabic. Generate ALL section titles, questions, and options in URDU (or Arabic if Islamic theology/Quran/Hadith).' : 'Language: Match the language of the subject (Urdu or English).'}
 
 Format the output strictly as a JSON object with this exact structure:
 {
@@ -91,41 +89,41 @@ Do NOT wrap output in markdown code blocks, return raw JSON string.`;
 
   // Fallback response if API key missing or call fails
   const mockPaper = {
-    title: isUrdu ? `${subject} - سالانہ امتحان (${className})` : `${subject} Examination (${className})`,
+    title: `${subject} Examination (${className})`,
     sections: [
       {
-        sectionTitle: isUrdu ? "حصہ اول: کثیر الانتخابی سوالات (MCQs)" : "Section A: Multiple Choice Questions",
+        sectionTitle: "Section A: Multiple Choice Questions",
         questions: [
           {
-            text: isUrdu ? `${subject} کے بنیادی اصولوں کے متعلق صحیح جواب کا انتخاب کریں۔` : `Select the correct fundamental concept for ${subject}.`,
+            text: `Select the correct fundamental concept for ${subject}.`,
             marks: 2,
-            options: isUrdu ? ["الف) پہلا اختیار", "ب) دوسرا اختیار", "ج) تیسرا اختیار", "د) چوتھا اختیار"] : ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"]
+            options: ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"]
           },
           {
-            text: isUrdu ? `درج ذیل میں سے کون سا عنصر ${topics || subject} کا بنیادی حصہ ہے؟` : `Which of the following is a primary component of ${topics || subject}?`,
+            text: `Which of the following is a primary component of ${topics || subject}?`,
             marks: 2,
-            options: isUrdu ? ["الف) جزو اول", "ب) جزو ثانی", "ج) جزو ثالث", "د) جزو رابع"] : ["A) Component 1", "B) Component 2", "C) Component 3", "D) Component 4"]
+            options: ["A) Component 1", "B) Component 2", "C) Component 3", "D) Component 4"]
           }
         ]
       },
       {
-        sectionTitle: isUrdu ? "حصہ دوم: مختصر سوالات" : "Section B: Short Answer Questions",
+        sectionTitle: "Section B: Short Answer Questions",
         questions: [
           {
-            text: isUrdu ? `${topics || subject} کی تعریف کریں اور اس کی دو اہم خصوصیات تحریر کریں۔` : `Define ${topics || subject} and describe its key characteristics.`,
+            text: `Define ${topics || subject} and describe its key characteristics.`,
             marks: 5
           },
           {
-            text: isUrdu ? `${subject} میں ${topics || 'اہم مسائل'} کی کیا اہمیت ہے؟ وضاحت کریں۔` : `Explain the importance of ${topics || 'key topics'} in ${subject}.`,
+            text: `Explain the importance of ${topics || 'key topics'} in ${subject}.`,
             marks: 5
           }
         ]
       },
       {
-        sectionTitle: isUrdu ? "حصہ سوم: تفصیلی / انشائیہ سوالات" : "Section C: Comprehensive Questions",
+        sectionTitle: "Section C: Comprehensive Questions",
         questions: [
           {
-            text: isUrdu ? `${topics || subject} پر جامع نوٹ تحریر کریں اور مثالوں سے وضاحت کریں۔` : `Write a detailed note on ${topics || subject} with relevant examples.`,
+            text: `Write a detailed note on ${topics || subject} with relevant examples.`,
             marks: Math.max(10, (Number(marks) || 100) - 14)
           }
         ]

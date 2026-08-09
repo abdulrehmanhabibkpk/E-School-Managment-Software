@@ -42,15 +42,15 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
       if (gradeNames.length > 0) {
         setClasses(gradeNames);
       } else {
-        setClasses(['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ']);
+        setClasses(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']);
       }
     } catch (e) {
-      setClasses(['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ']);
+      setClasses(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']);
     }
 
     // 3. Exam types
     const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
-    const defaultExams = savedExams.length > 0 ? savedExams : ['سالانہ', 'ششماہی', 'سہ ماہی'];
+    const defaultExams = savedExams.length > 0 ? savedExams : ['Annual Exam', 'Midterm Exam', 'Quarterly Exam'];
     const savedHeaders = JSON.parse(localStorage.getItem('examRecords') || '[]');
     const headerTitles = savedHeaders.map((h: any) => h.title || h.name).filter(Boolean);
     const combinedExams = Array.from(new Set([...defaultExams, ...headerTitles]));
@@ -75,7 +75,7 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
     // 1. Get subjects (books) for class
     const allBooks = JSON.parse(localStorage.getItem('books_list') || '[]');
     const classBooks = allBooks.filter((b: any) => b.grade === selectedClass).map((b: any) => b.name);
-    const finalSubjects = classBooks.length > 0 ? classBooks : ['القرآن الكريم', 'الحديث النبوي', 'الفقه', 'اللغة العربية', 'العقيدة'];
+    const finalSubjects = classBooks.length > 0 ? classBooks : ['English', 'Mathematics', 'Science', 'Computer', 'General Knowledge'];
     setSubjects(finalSubjects);
 
     // 2. Load class students
@@ -147,15 +147,15 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
       let quality = '---';
       if (hasMarks) {
         if (percentageNum < 33 || isFail) {
-          status = 'راسب'; // Fail
-          quality = 'راسب';
+          status = 'Fail';
+          quality = 'Fail';
         } else {
-          status = 'ناجح'; // Pass
-          if (percentageNum >= 85) quality = 'ممتاز (Excellent)';
-          else if (percentageNum >= 75) quality = 'جید جدا (Very Good)';
-          else if (percentageNum >= 60) quality = 'جید (Good)';
-          else if (percentageNum >= 45) quality = 'مقبول (Average)';
-          else quality = 'مقبول';
+          status = 'Pass';
+          if (percentageNum >= 85) quality = 'Excellent';
+          else if (percentageNum >= 75) quality = 'Very Good';
+          else if (percentageNum >= 60) quality = 'Good';
+          else if (percentageNum >= 45) quality = 'Average';
+          else quality = 'Satisfactory';
         }
       }
 
@@ -249,10 +249,10 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
         <div className="absolute inset-[8mm] border-[3px] border-amber-900/80 pointer-events-none z-0"></div>
         <div className="absolute inset-[9.5mm] border border-amber-900/50 pointer-events-none z-0"></div>
 
-        <div className="relative z-10 w-full h-full flex flex-col justify-between flex-1" dir="rtl">
+        <div className="relative z-10 w-full h-full flex flex-col justify-between flex-1" dir="ltr">
           {/* Top Stamp (if loaded) in background overlay or header corner */}
           {jamiaSeal && (
-            <div className="absolute top-[28mm] left-[4mm] w-24 h-24 opacity-80 pointer-events-none print:opacity-90">
+            <div className="absolute top-[28mm] right-[4mm] w-24 h-24 opacity-80 pointer-events-none print:opacity-90">
               <img src={jamiaSeal} alt="Stamp" className="w-full h-full object-contain" />
             </div>
           )}
@@ -263,17 +263,17 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
               {systemSettings.monogram ? (
                 <img src={systemSettings.monogram} alt="Logo" className="w-full h-full object-contain grayscale" />
               ) : (
-                <div className="text-[10px] font-bold text-center">مونوگرام</div>
+                <div className="text-[10px] font-bold text-center">Monogram</div>
               )}
             </div>
 
             <div className="flex-1 text-center px-4">
-              <h1 style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu', fontSize: '28px', lineHeight: '1.2' }} className="font-extrabold text-[#78350f]">
-                {systemSettings.jamiaName || 'جامعہ عربیہ سراج العلوم'}
+              <h1 className="text-xl font-extrabold text-[#78350f] font-sans">
+                {systemSettings.jamiaName || 'Academic Institute & Educational System'}
               </h1>
-              <p className="text-[10px] text-slate-600 font-bold tracking-wider mt-1">{systemSettings.jamiaBranch || 'منسلک وفاق المدارس العربیہ پاکستان'}</p>
-              <div className="text-sm font-bold bg-[#78350f] text-white inline-block px-6 py-0.5 rounded-full mt-2 font-urdu">
-                تفصیلی کشف الدرجات (Detailed Mark Sheet)
+              <p className="text-[10px] text-slate-600 font-bold tracking-wider mt-1">{systemSettings.jamiaBranch || 'Academic Board & Educational Network'}</p>
+              <div className="text-xs font-bold bg-[#78350f] text-white inline-block px-6 py-1 rounded-full mt-2 font-sans">
+                Detailed Mark Sheet
               </div>
             </div>
 
@@ -281,42 +281,42 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
             <div className="w-20 h-20 flex flex-col items-center justify-center text-center">
               {!jamiaSeal ? (
                 <div className="border border-dashed border-red-300 rounded p-1 text-[8px] text-red-500 font-bold bg-red-50/50 no-print">
-                  مہر غائب ہے
+                  No Seal
                 </div>
               ) : (
-                <div className="w-16 h-16 opacity-0"></div> // balanced spacing
+                <div className="w-16 h-16 opacity-0"></div>
               )}
             </div>
           </div>
 
           {/* Student Info Box */}
-          <div className="bg-amber-50/40 border border-amber-900/20 rounded-2xl p-4 mb-6 leading-loose text-xs font-bold font-urdu">
+          <div className="bg-amber-50/40 border border-amber-900/20 rounded-2xl p-4 mb-6 leading-loose text-xs font-bold font-sans">
             <div className="grid grid-cols-2 gap-y-2 gap-x-6">
               <div className="flex gap-2">
-                <span className="text-amber-950 shrink-0">نام طالب علم:</span>
+                <span className="text-amber-950 shrink-0">Student Name:</span>
                 <span className="flex-1 border-b border-dashed border-amber-900/30 text-[#78350f] px-2 font-black">{student.name}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-amber-950 shrink-0">رول نمبر:</span>
+                <span className="text-amber-950 shrink-0">Roll No:</span>
                 <span className="flex-1 border-b border-dashed border-amber-900/30 text-amber-950 font-mono px-2">{student.rollNo}</span>
               </div>
               
               <div className="flex gap-2">
-                <span className="text-amber-950 shrink-0">ولدیت:</span>
+                <span className="text-amber-950 shrink-0">Father Name:</span>
                 <span className="flex-1 border-b border-dashed border-amber-900/30 text-slate-800 px-2 font-normal">{student.fatherName}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-amber-950 shrink-0">رجسٹریشن نمبر:</span>
+                <span className="text-amber-950 shrink-0">Registration No:</span>
                 <span className="flex-1 border-b border-dashed border-amber-900/30 text-amber-950 font-mono px-2">{student.registrationNo}</span>
               </div>
 
               <div className="flex gap-2 col-span-2">
                 <div className="flex gap-2 flex-1">
-                  <span className="text-amber-950 shrink-0">درجہ (کلاس):</span>
+                  <span className="text-amber-950 shrink-0">Class / Grade:</span>
                   <span className="flex-1 border-b border-dashed border-amber-900/30 text-slate-800 px-2">{selectedClass}</span>
                 </div>
-                <div className="flex gap-2 flex-1 mr-4">
-                  <span className="text-amber-950 shrink-0">برائے امتحان:</span>
+                <div className="flex gap-2 flex-1 ml-4">
+                  <span className="text-amber-950 shrink-0">Examination:</span>
                   <span className="flex-1 border-b border-dashed border-amber-900/30 text-[#78350f] px-2">{selectedExamType}</span>
                 </div>
               </div>
@@ -324,12 +324,12 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
           </div>
 
           {/* Marks Details Table */}
-          <table className="w-full text-center border-collapse border-2 border-amber-900/85 text-xs font-bold font-urdu mb-6 flex-1">
+          <table className="w-full text-center border-collapse border-2 border-amber-900/85 text-xs font-bold font-sans mb-6 flex-1">
             <thead>
               <tr className="bg-amber-100/60 text-amber-950 border-b-2 border-amber-900/85 h-10">
-                <th className="border-2 border-amber-900/85 py-2 px-3 text-right">مضمون / کتب (Subjects)</th>
-                <th className="border-2 border-amber-900/85 py-2 w-28 text-center font-bold">کل نمبرات (Max)</th>
-                <th className="border-2 border-amber-900/85 py-2 w-32 text-center font-bold">حاصل کردہ نمبر (Obtained)</th>
+                <th className="border-2 border-amber-900/85 py-2 px-3 text-left">Subjects</th>
+                <th className="border-2 border-amber-900/85 py-2 w-28 text-center font-bold">Max Marks</th>
+                <th className="border-2 border-amber-900/85 py-2 w-32 text-center font-bold">Obtained Marks</th>
               </tr>
             </thead>
             <tbody>
@@ -337,7 +337,7 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
                 const isFail = parseFloat(student.marks[sub]) < 33;
                 return (
                   <tr key={sub} className="h-9 hover:bg-amber-50/20 border-b border-amber-900/20">
-                    <td className="border-r-2 border-amber-900/85 py-1 px-3 text-right text-slate-800 font-bold">{sub}</td>
+                    <td className="border-r-2 border-amber-900/85 py-1 px-3 text-left text-slate-800 font-bold">{sub}</td>
                     <td className="border-r-2 border-amber-900/85 py-1 font-mono text-slate-600">100</td>
                     <td className={`border-r-2 border-amber-900/85 py-1 font-mono font-bold text-sm ${isFail ? 'text-red-600 bg-red-50/20' : 'text-slate-900'}`}>
                       {student.marks[sub] || '---'}
@@ -348,7 +348,7 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
             </tbody>
             <tfoot>
               <tr className="bg-amber-50 border-t-2 border-amber-900/85 text-amber-950 h-10">
-                <td className="border-r-2 border-amber-900/85 py-2 px-3 text-right font-black text-amber-950 text-sm">مجموعی میزان (Grand Total)</td>
+                <td className="border-r-2 border-amber-900/85 py-2 px-3 text-left font-black text-amber-950 text-sm">Grand Total</td>
                 <td className="border-r-2 border-amber-900/85 py-2 font-mono font-black text-slate-700 text-sm">{student.maxPossible}</td>
                 <td className="border-r-2 border-amber-900/85 py-2 font-mono font-black text-amber-950 text-sm bg-amber-100/40">
                   {student.totalObtained}
@@ -360,58 +360,58 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
           {/* Results Summary & Signatures Footer */}
           <div className="mt-auto">
             {/* Row with Grade & percentage and stats */}
-            <div className="flex justify-between items-center bg-[#78350f]/5 border border-amber-900/30 rounded-xl p-3 mb-8 text-xs font-urdu font-black">
+            <div className="flex justify-between items-center bg-[#78350f]/5 border border-amber-900/30 rounded-xl p-3 mb-8 text-xs font-sans font-black">
               <div className="flex gap-4">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-600">تقدیر (Grade/Quality):</span>
+                  <span className="text-slate-600">Grade / Quality:</span>
                   <span className="text-[#78350f] text-sm underline underline-offset-4 decoration-double decoration-[#78350f]">{student.quality}</span>
                 </div>
-                <div className="flex items-center gap-1.5 mr-6">
-                  <span className="text-slate-600">مجموعی فیصد (Percentage):</span>
+                <div className="flex items-center gap-1.5 ml-6">
+                  <span className="text-slate-600">Percentage:</span>
                   <span className="text-amber-950 font-mono text-sm underline underline-offset-4 decoration-double decoration-amber-950">{student.percentage}</span>
                 </div>
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-slate-600">حتمی کیفیت:</span>
-                  <span className={`px-3 py-0.5 rounded-full text-[10px] ${student.status === 'ناجح' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
-                    {student.status === 'ناجح' ? 'منظور شدہ پاس' : 'راسب / فیل'}
+                  <span className="text-slate-600">Final Result:</span>
+                  <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold ${student.status === 'Pass' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                    {student.status === 'Pass' ? 'Pass' : 'Fail'}
                   </span>
                 </div>
               </div>
             </div>
 
             {/* Bottom Signatures with optional uploaded Image components */}
-            <div className="grid grid-cols-2 gap-8 pt-8 font-bold text-xs font-urdu text-slate-800 relative">
-              {/* Mohtamim signature container */}
+            <div className="grid grid-cols-2 gap-8 pt-8 font-bold text-xs font-sans text-slate-800 relative">
+              {/* Controller signature container */}
               <div className="flex flex-col items-center relative">
                 <div className="w-48 h-12 flex items-center justify-center relative">
                   {mohtamimSig ? (
-                    <img src={mohtamimSig} alt="Mohtamim Signature" className="max-h-12 w-auto object-contain absolute bottom-0" />
+                    <img src={mohtamimSig} alt="Director Signature" className="max-h-12 w-auto object-contain absolute bottom-0" />
                   ) : (
-                    <span className="text-[9px] text-red-400 font-normal select-none no-print">(دستخط مہتمم اپلوڈ کریں)</span>
+                    <span className="text-[9px] text-red-400 font-normal select-none no-print">(Upload Director Sig)</span>
                   )}
                 </div>
                 <div className="w-48 border-b-2 border-amber-900/50 mt-1"></div>
-                <span className="pt-2 text-amber-950">دستخط و مہر مہتمم (Mohtamim)</span>
+                <span className="pt-2 text-amber-950">Signature & Stamp of Director</span>
               </div>
 
-              {/* Nazim signature container */}
+              {/* Exam Controller signature container */}
               <div className="flex flex-col items-center relative">
                 <div className="w-48 h-12 flex items-center justify-center relative">
                   {nazimSig ? (
-                    <img src={nazimSig} alt="Nazim Signature" className="max-h-12 w-auto object-contain absolute bottom-0" />
+                    <img src={nazimSig} alt="Controller Signature" className="max-h-12 w-auto object-contain absolute bottom-0" />
                   ) : (
-                    <span className="text-[9px] text-red-400 font-normal select-none no-print">(دستخط ناظم اپلوڈ کریں)</span>
+                    <span className="text-[9px] text-red-400 font-normal select-none no-print">(Upload Controller Sig)</span>
                   )}
                 </div>
                 <div className="w-48 border-b-2 border-amber-900/50 mt-1"></div>
-                <span className="pt-2 text-amber-950">دستخط ناظم امتحانات (Nazim)</span>
+                <span className="pt-2 text-amber-950">Controller of Examinations</span>
               </div>
             </div>
             
             <p className="text-[8px] text-center text-slate-400 select-none mt-6 print:block hidden font-mono">
-              E-Jamia Auto Generated Mark Sheet • RMS v2.0
+              Auto Generated Detailed Mark Sheet • RMS v2.0
             </p>
           </div>
         </div>
@@ -422,65 +422,65 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
   const renderDataSelectionPanel = () => {
     return (
       <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-200 mb-8 no-print">
-        <h3 className="text-lg font-bold text-[#78350f] mb-4 font-urdu flex items-center gap-2 justify-start">
+        <h3 className="text-lg font-bold text-[#78350f] mb-4 font-sans flex items-center gap-2 justify-start">
           <span className="p-2 bg-amber-50 text-[#78350f] rounded-lg">
             <Users className="w-5 h-5" />
           </span>
-          کشف الدرجات نکالیں (Mark Sheet Panel)
+          Mark Sheet Generation Panel
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Class selection dropdown */}
-          <div className="flex flex-col gap-1.5 text-right w-full">
-            <label className="text-xs font-bold text-slate-600 font-urdu">درجہ (کلاس) منتخب کریں:</label>
+          <div className="flex flex-col gap-1.5 text-left w-full">
+            <label className="text-xs font-bold text-slate-600 font-sans">Select Class / Grade:</label>
             <select
               value={selectedClass}
               onChange={(e) => setSelectedClass(e.target.value)}
-              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-right font-urdu font-bold"
+              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-left font-sans font-bold"
             >
-              <option value="">-- درجہ منتخب کریں --</option>
+              <option value="">-- Select Class --</option>
               {classes.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
           {/* Exam Type selection dropdown */}
-          <div className="flex flex-col gap-1.5 text-right w-full">
-            <label className="text-xs font-bold text-slate-600 font-urdu">امتحان کی قسم منتخب کریں :</label>
+          <div className="flex flex-col gap-1.5 text-left w-full">
+            <label className="text-xs font-bold text-slate-600 font-sans">Select Exam Type:</label>
             <select
               value={selectedExamType}
               onChange={(e) => setSelectedExamType(e.target.value)}
-              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-right font-urdu font-bold"
+              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-left font-sans font-bold"
             >
-              <option value="">-- امتحان منتخب کریں --</option>
+              <option value="">-- Select Exam --</option>
               {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
 
           {/* Selection Mode Selector: All or single */}
-          <div className="flex flex-col gap-1.5 text-right w-full">
-            <label className="text-xs font-bold text-slate-600 font-urdu">ریڈیو / کشف ترتیب موڈ:</label>
+          <div className="flex flex-col gap-1.5 text-left w-full">
+            <label className="text-xs font-bold text-slate-600 font-sans">Generation Mode:</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setGenerationMode('single')}
-                className={`py-3 rounded-xl text-xs font-bold transition-all border font-urdu ${
+                className={`py-3 rounded-xl text-xs font-bold transition-all border font-sans ${
                   generationMode === 'single'
                     ? 'bg-amber-850/10 border-amber-700 text-[#78350f]'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                انفرادی (ایک ایک سٹوڈنٹ)
+                Individual Student
               </button>
               <button
                 type="button"
                 onClick={() => setGenerationMode('all')}
-                className={`py-3 rounded-xl text-xs font-bold transition-all border font-urdu ${
+                className={`py-3 rounded-xl text-xs font-bold transition-all border font-sans ${
                   generationMode === 'all'
                     ? 'bg-amber-850/10 border-amber-700 text-[#78350f]'
                     : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                یکجا (درجہ کے تمام طلبہ کا)
+                All Class Students
               </button>
             </div>
           </div>
@@ -488,17 +488,17 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
 
         {/* Dynamic single student dropdown based on class */}
         {generationMode === 'single' && selectedClass && students.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-1.5 text-right w-full max-w-sm">
-            <label className="text-xs font-bold text-slate-600 font-urdu">طالب علم منتخب کریں:</label>
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col gap-1.5 text-left w-full max-w-sm">
+            <label className="text-xs font-bold text-slate-600 font-sans">Select Student:</label>
             <select
               value={selectedStudentRollNo}
               onChange={(e) => setSelectedStudentRollNo(e.target.value)}
-              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-right font-urdu"
+              className="px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-amber-700 focus:bg-white text-left font-sans"
             >
-              <option value="">-- طالب علم منتخب کریں --</option>
+              <option value="">-- Select Student --</option>
               {marksheetRecords.map(s => (
                 <option key={s.rollNo} value={s.rollNo}>
-                  {s.name} (رول نمبر: {s.rollNo})
+                  {s.name} (Roll No: {s.rollNo})
                 </option>
               ))}
             </select>
@@ -512,14 +512,14 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
   const renderSignatureUploaderPanel = () => {
     return (
       <div className="bg-white rounded-3xl p-6 shadow-md border border-slate-200 mb-8 no-print">
-        <h3 className="text-lg font-bold text-slate-800 mb-4 font-urdu flex items-center gap-2 justify-start">
+        <h3 className="text-lg font-bold text-slate-800 mb-4 font-sans flex items-center gap-2 justify-start">
           <span className="p-2 bg-blue-50 text-blue-600 rounded-lg">
             <Shield className="w-5 h-5" />
           </span>
-          مہر اور دستخط کنٹرول سینٹر
+          Seal & Signature Control Center
         </h3>
-        <p className="text-xs text-slate-500 font-urdu mb-6 text-right">
-          یہاں سے جامعہ کی مہر، ناظم اور مہتمم کے اصلی دستخط کمپیوٹر سے اپلوڈ کریں۔ یہ تصاویر خودکار طور پر ہر کشف الدرجات پر اپنے مقام پر آ جائیں گی۔
+        <p className="text-xs text-slate-500 font-sans mb-6 text-left">
+          Upload official institute stamp, director signature, and examination controller signature. These images will automatically appear on all mark sheets.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -529,8 +529,8 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
               <span className="p-3 rounded-full bg-amber-50 text-amber-600">
                 <ImageIcon className="w-6 h-6" />
               </span>
-              <span className="font-urdu font-bold text-sm text-slate-800">جامعہ کی مہر (Stamp)</span>
-              <p className="text-[10px] text-slate-400 font-urdu">PNG یا JPG تلاش کر کے مہر اپلوڈ کریں۔</p>
+              <span className="font-sans font-bold text-sm text-slate-800">Institute Stamp / Seal</span>
+              <p className="text-[10px] text-slate-400 font-sans">Upload PNG or JPG official seal image.</p>
             </div>
 
             <div className="mt-4 w-full flex flex-col gap-2 items-center">
@@ -545,9 +545,9 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
                   </button>
                 </div>
               ) : (
-                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-urdu font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
+                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-sans font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
                   <Upload className="w-4 h-4" />
-                  کمپیوٹر سے منتخب کریں
+                  Browse File
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'seal')} />
                 </label>
               )}
@@ -560,8 +560,8 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
               <span className="p-3 rounded-full bg-indigo-50 text-indigo-600">
                 <PenTool className="w-6 h-6" />
               </span>
-              <span className="font-urdu font-bold text-sm text-slate-800">دستخط ناظم امتحانات</span>
-              <p className="text-[10px] text-slate-400 font-urdu">ناظم امتحانات کے دستخط کی تصویر اپلوڈ کریں۔</p>
+              <span className="font-sans font-bold text-sm text-slate-800">Controller Signature</span>
+              <p className="text-[10px] text-slate-400 font-sans">Upload exam controller signature image.</p>
             </div>
 
             <div className="mt-4 w-full flex flex-col gap-2 items-center">
@@ -576,9 +576,9 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
                   </button>
                 </div>
               ) : (
-                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-urdu font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
+                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-sans font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
                   <Upload className="w-4 h-4" />
-                  کمپیوٹر سے منتخب کریں
+                  Browse File
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'nazim')} />
                 </label>
               )}
@@ -591,8 +591,8 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
               <span className="p-3 rounded-full bg-emerald-50 text-emerald-600">
                 <PenTool className="w-6 h-6" />
               </span>
-              <span className="font-urdu font-bold text-sm text-slate-800">دستخط مہتمم (Mohtamim)</span>
-              <p className="text-[10px] text-slate-400 font-urdu">مہتمم صاحب کے دستخط یا مہرِ دستخط اپلوڈ کریں۔</p>
+              <span className="font-sans font-bold text-sm text-slate-800">Director Signature</span>
+              <p className="text-[10px] text-slate-400 font-sans">Upload director / principal signature image.</p>
             </div>
 
             <div className="mt-4 w-full flex flex-col gap-2 items-center">
@@ -607,9 +607,9 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
                   </button>
                 </div>
               ) : (
-                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-urdu font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
+                <label className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-sans font-bold px-4 py-2.5 rounded-xl cursor-pointer text-xs transition-colors shadow-md">
                   <Upload className="w-4 h-4" />
-                  کمپیوٹر سے منتخب کریں
+                  Browse File
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'mohtamim')} />
                 </label>
               )}
@@ -625,32 +625,32 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
     
     if (!selectedClass || !selectedExamType) {
       return (
-        <div className="bg-white rounded-3xl p-12 text-center text-slate-400 shadow-sm border border-slate-200">
+        <div className="bg-white rounded-3xl p-12 text-center text-slate-400 shadow-sm border border-slate-200 font-sans">
           <div className="text-5xl mb-4">📜</div>
-          <h4 className="font-urdu font-bold text-slate-800 text-base mb-1">کلاس اور امتحان منتخب کریں</h4>
-          <p className="text-xs text-slate-500 font-urdu">کشف الدرجات دیکھنے اور حاصل کرنے کے لیے اوپر دیے گئے بٹنوں سے درجہ اور امتحانات کا انتخاب کریں۔</p>
+          <h4 className="font-bold text-slate-800 text-base mb-1">Select Class & Exam Type</h4>
+          <p className="text-xs text-slate-500">Choose a class and exam type above to generate detailed mark sheets.</p>
         </div>
       );
     }
     
     if (renderList.length === 0) {
       return (
-        <div className="bg-white rounded-3xl p-12 text-center text-slate-500 shadow-sm border border-slate-200">
-          <h4 className="font-urdu font-bold text-slate-800 text-base mb-1">کوئی نتیجہ ریکارڈ نہیں ملا</h4>
-          <p className="text-xs text-slate-500 font-urdu">منتخب درجہ اور امتحان کے لیے رزلٹ درج نہیں کیا گیا یا اس درجہ کے کوئی طلبہ موجود نہیں ہیں۔</p>
+        <div className="bg-white rounded-3xl p-12 text-center text-slate-500 shadow-sm border border-slate-200 font-sans">
+          <h4 className="font-bold text-slate-800 text-base mb-1">No Result Records Found</h4>
+          <p className="text-xs text-slate-500">No exam results recorded for the selected class and exam type.</p>
         </div>
       );
     }
 
     return (
-      <div className="flex flex-col gap-8 print:gap-0">
+      <div className="flex flex-col gap-8 print:gap-0 font-sans">
         <div className="flex justify-end gap-3 no-print mb-4">
           <button
             onClick={handlePrint}
-            className="bg-amber-700 hover:bg-amber-800 text-white px-8 py-3 rounded-2xl font-bold font-urdu flex items-center gap-2 shadow-lg shadow-amber-700/20 text-sm active:scale-95 transition-all"
+            className="bg-amber-700 hover:bg-amber-800 text-white px-8 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-amber-700/20 text-sm active:scale-95 transition-all"
           >
             <Printer className="w-5 h-5" />
-            <span>کشف الدرجات پرنٹ کریں ({renderList.length})</span>
+            <span>Print Mark Sheets ({renderList.length})</span>
           </button>
         </div>
 
@@ -663,20 +663,20 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-urdu p-6 print:p-0 print:bg-white" dir="rtl">
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans p-6 print:p-0 print:bg-white" dir="ltr">
       {/* Back Header - Hidden on Print */}
       <div className="max-w-5xl mx-auto flex items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-slate-200 mb-6 no-print">
         <div className="flex items-center gap-3">
           <button 
             onClick={onBack}
-            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center"
+            className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 p-2.5 rounded-xl transition-all shadow-sm flex items-center justify-center gap-1 text-sm font-bold"
           >
-            <ArrowLeft className="w-5 h-5 ml-1" />
-            <span>واپس رپورٹس</span>
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Reports</span>
           </button>
           <div>
-            <h2 className="text-xl font-bold text-amber-950 font-urdu">کشف الدرجات بنانے اور پرنٹ کرنے کا نظام</h2>
-            <p className="text-[10px] text-slate-500">جامعہ کی مہر اور دستخط جات کے ساتھ تفصیلی رزلٹ کارڈ کشف الدرجات نکالیں</p>
+            <h2 className="text-xl font-bold text-amber-950 font-sans">Mark Sheet Generator System</h2>
+            <p className="text-[10px] text-slate-500">Generate and print official detailed student result mark sheets</p>
           </div>
         </div>
       </div>
@@ -692,7 +692,7 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
         {renderSelectedCards()}
       </div>
 
-      {/* Styled Inline Styles to guarantee beautiful Jameel Noori/Nastaleeq alignment and PDF pages split */}
+      {/* Styled Inline Styles */}
       <style>{`
         @media print {
           body {
@@ -706,7 +706,6 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
           .no-print {
             display: none !important;
           }
-          /* Specific print dimensions to prevent card trailing borders falling over pages */
           .break-after-page {
             page-break-after: always !important;
             break-after: page !important;
@@ -717,13 +716,12 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
             height: 100% !important;
           }
         }
-        /* Hide scrollbars elegantly */
         .no-scrollbar::-webkit-scrollbar {
           display: none;
         }
         .no-scrollbar {
-          -ms-overflow-style: none;  /* IE and Edge */
-          scrollbar-width: none;  /* Firefox */
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </div>
