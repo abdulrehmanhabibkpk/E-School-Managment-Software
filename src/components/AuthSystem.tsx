@@ -10,8 +10,8 @@ interface AuthProps {
 
 export default function AuthSystem({ onLogin }: AuthProps) {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin');
+  const [password, setPassword] = useState('demo1234');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showResultPortal, setShowResultPortal] = useState(false);
@@ -49,9 +49,9 @@ export default function AuthSystem({ onLogin }: AuthProps) {
     try {
       const normalizedEmail = email.trim().toLowerCase();
 
-      // Mock Admin Login
-      if (normalizedEmail === 'admin@school.com' && password === 'admin123') {
-        localStorage.setItem('currentUser', normalizedEmail);
+      // Check admin / demo1234 credentials or admin@school.com
+      if ((normalizedEmail === 'admin' || normalizedEmail === 'admin@school.com') && (password === 'demo1234' || password === 'admin123')) {
+        localStorage.setItem('currentUser', 'admin@school.com');
         localStorage.setItem('currentUserName', 'School Admin');
         localStorage.setItem('currentUserRole', 'Admin');
         localStorage.setItem('isLoggedIn', 'true');
@@ -179,6 +179,20 @@ export default function AuthSystem({ onLogin }: AuthProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl text-center text-xs text-blue-900 font-bold space-y-1">
+              <div className="text-blue-800 font-extrabold">Demo Login Credentials</div>
+              <div className="font-mono text-blue-950 font-black text-xs">
+                Username: <span className="bg-white px-2 py-0.5 rounded border border-blue-300">admin</span> | Password: <span className="bg-white px-2 py-0.5 rounded border border-blue-300">demo1234</span>
+              </div>
+              <button 
+                type="button"
+                onClick={() => { setEmail('admin'); setPassword('demo1234'); }}
+                className="text-[11px] text-blue-700 hover:text-blue-900 underline font-extrabold mt-1 block mx-auto"
+              >
+                Click to Auto-Fill Credentials
+              </button>
+            </div>
+
             <div className="space-y-2">
               <label className="block text-sm font-bold text-slate-700">Username or Email</label>
               <div className="relative">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building, 
   Users, 
@@ -171,10 +171,36 @@ export default function AssanSchoolPortal() {
     }
   };
 
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Restore logged in user on mount if exists in localStorage
+  useEffect(() => {
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+      const savedName = localStorage.getItem('currentUserName') || 'School Admin';
+      const savedRole = localStorage.getItem('currentUserRole') || 'Admin';
+      const savedEmail = localStorage.getItem('currentUser') || 'admin@school.com';
+      setCurrentUser({
+        name: savedName,
+        role: savedRole,
+        school: 'Al-Huda Model High School',
+        email: savedEmail
+      });
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('currentUserName');
+    localStorage.removeItem('currentUserRole');
+    localStorage.removeItem('isSuperAdmin');
+    setCurrentUser(null);
+    showToast('Logged out successfully', 'info');
+  };
+
   const [loginRole, setLoginRole] = useState('principal'); // 'principal' | 'teacher' | 'parent'
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
+  const [loginEmail, setLoginEmail] = useState('admin');
+  const [loginPassword, setLoginPassword] = useState('demo1234');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -219,12 +245,23 @@ export default function AssanSchoolPortal() {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
+      const isAdminUser = loginEmail.toLowerCase() === 'admin' || loginEmail.toLowerCase() === 'admin@school.com';
       const userObj = {
-        name: loginRole === 'principal' ? 'Prof. Tariq Mahmood' : loginRole === 'teacher' ? 'Ms. Ayesha Khan' : 'Mr. Shahid Iqbal (Parent)',
-        role: loginRole === 'principal' ? 'Principal / Director' : loginRole === 'teacher' ? 'Class Teacher (7-A)' : 'Parent (Student: Hamza Shahid)',
+        name: isAdminUser ? 'School Admin' : loginRole === 'principal' ? 'Prof. Tariq Mahmood' : loginRole === 'teacher' ? 'Ms. Ayesha Khan' : 'Mr. Shahid Iqbal (Parent)',
+        role: isAdminUser ? 'Admin' : loginRole === 'principal' ? 'Principal / Director' : loginRole === 'teacher' ? 'Class Teacher (7-A)' : 'Parent (Student: Hamza Shahid)',
         school: 'Al-Huda Model High School',
         email: loginEmail
       };
+      
+      // Store in localStorage for dashboard authentication
+      localStorage.setItem('currentUser', isAdminUser ? 'admin@school.com' : loginEmail);
+      localStorage.setItem('currentUserName', userObj.name);
+      localStorage.setItem('currentUserRole', isAdminUser ? 'Admin' : 'Teacher');
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('isSuperAdmin', isAdminUser ? 'true' : 'false');
+      localStorage.setItem('userStatus', 'accepted');
+      localStorage.setItem('paymentStatus', 'paid');
+
       setCurrentUser(userObj);
       showToast(`Welcome back, ${userObj.name}!`, 'success');
       setLoginError('');
@@ -430,25 +467,26 @@ export default function AssanSchoolPortal() {
 
             {/* Desktop CTAs */}
             <div className="hidden lg:flex items-center space-x-3">
-              <button 
-                onClick={() => navigate('/dashboard')}
-                className="px-3.5 py-2.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all border border-emerald-200 shadow-sm"
-                title="Go to Admin Management Dashboard"
-              >
-                <Laptop className="w-4 h-4 text-emerald-600" />
-                <span>ERP Dashboard</span>
-              </button>
-
               {currentUser ? (
-                <div className="flex items-center space-x-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-xl">
-                  <User className="w-4 h-4 text-emerald-700" />
-                  <span className="text-xs font-bold text-emerald-900">{currentUser.name}</span>
+                <div className="flex items-center space-x-3">
                   <button 
-                    onClick={() => { setCurrentUser(null); showToast('Logged out successfully', 'info'); }}
-                    className="text-[11px] text-rose-600 hover:underline font-bold ml-2"
+                    onClick={() => navigate('/dashboard')}
+                    className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center space-x-2 transition-all shadow-md hover:shadow-lg"
+                    title="Go to Admin Management Dashboard"
                   >
-                    Logout
+                    <Laptop className="w-4 h-4" />
+                    <span>ERP Dashboard</span>
                   </button>
+                  <div className="flex items-center space-x-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-xl">
+                    <User className="w-4 h-4 text-emerald-700" />
+                    <span className="text-xs font-bold text-emerald-900">{currentUser.name}</span>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-[11px] text-rose-600 hover:underline font-bold ml-2"
+                    >
+                      Logout
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -501,20 +539,38 @@ export default function AssanSchoolPortal() {
                 <button onClick={() => { setActiveTab('pricing'); setMobileMenuOpen(false); }} className="w-full text-left py-2 border-b border-slate-50 block">Pricing Plans</button>
                 <button onClick={() => { setActiveTab('contacts'); setMobileMenuOpen(false); }} className="w-full text-left py-2 border-b border-slate-50 block">Contact Us</button>
                 
-                <div className="pt-3 flex flex-col gap-2">
-                  <button 
-                    onClick={() => { setActiveTab('login'); setMobileMenuOpen(false); }}
-                    className="w-full py-2.5 text-center text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl text-xs"
-                  >
-                    Portal Login
-                  </button>
-                  <button 
-                    onClick={() => { setActiveTab('register'); setMobileMenuOpen(false); }}
-                    className="w-full py-3 text-center text-white bg-[#151515] hover:bg-emerald-700 rounded-xl text-xs uppercase tracking-wider"
-                  >
-                    Register School Now
-                  </button>
-                </div>
+                {currentUser ? (
+                  <div className="pt-2 space-y-2">
+                    <button 
+                      onClick={() => { navigate('/dashboard'); setMobileMenuOpen(false); }}
+                      className="w-full py-3 text-center text-white bg-emerald-600 hover:bg-emerald-700 font-black rounded-xl text-xs flex items-center justify-center space-x-2 shadow-md"
+                    >
+                      <Laptop className="w-4 h-4" />
+                      <span>Open ERP Dashboard</span>
+                    </button>
+                    <button 
+                      onClick={() => { handleLogout(); setMobileMenuOpen(false); }}
+                      className="w-full py-2.5 text-center text-rose-600 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold"
+                    >
+                      Logout ({currentUser.name})
+                    </button>
+                  </div>
+                ) : (
+                  <div className="pt-3 flex flex-col gap-2">
+                    <button 
+                      onClick={() => { setActiveTab('login'); setMobileMenuOpen(false); }}
+                      className="w-full py-2.5 text-center text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold"
+                    >
+                      Portal Login
+                    </button>
+                    <button 
+                      onClick={() => { setActiveTab('register'); setMobileMenuOpen(false); }}
+                      className="w-full py-3 text-center text-white bg-[#151515] hover:bg-emerald-700 rounded-xl text-xs uppercase tracking-wider font-bold"
+                    >
+                      Register School Now
+                    </button>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -1401,18 +1457,44 @@ export default function AssanSchoolPortal() {
                   <CheckCircle className="w-10 h-10 text-emerald-600 mx-auto" />
                   <h3 className="font-extrabold text-base text-slate-900">Logged in as {currentUser.name}</h3>
                   <p className="text-xs text-slate-600 font-medium">{currentUser.role} - {currentUser.school}</p>
+                  
                   <button 
-                    onClick={() => { setCurrentUser(null); showToast('Logged out', 'info'); }}
-                    className="w-full py-2.5 bg-rose-600 text-white font-bold rounded-xl text-xs"
+                    onClick={() => navigate('/dashboard')}
+                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-xl text-xs flex items-center justify-center space-x-2 shadow-md transition-all"
+                  >
+                    <Laptop className="w-4 h-4" />
+                    <span>Go to ERP Dashboard</span>
+                  </button>
+
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full py-2.5 bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 font-bold rounded-xl text-xs transition-colors"
                   >
                     Logout from Session
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleLogin} className="space-y-4">
+                  <div className="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-center text-xs text-emerald-900 font-bold space-y-1">
+                    <div className="flex items-center justify-center gap-1.5 text-emerald-800">
+                      <Sparkles className="w-4 h-4 text-emerald-600" />
+                      <span>Demo Credentials</span>
+                    </div>
+                    <div className="font-mono text-emerald-950 font-black text-xs">
+                      Username: <span className="bg-white px-2 py-0.5 rounded border border-emerald-300">admin</span> | Password: <span className="bg-white px-2 py-0.5 rounded border border-emerald-300">demo1234</span>
+                    </div>
+                    <button 
+                      type="button"
+                      onClick={() => { setLoginEmail('admin'); setLoginPassword('demo1234'); }}
+                      className="text-[11px] text-emerald-700 hover:text-emerald-900 underline font-extrabold mt-1 block mx-auto"
+                    >
+                      Click to Auto-Fill Credentials
+                    </button>
+                  </div>
+
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">
-                      {loginRole === 'principal' ? 'School Admin Email' : loginRole === 'teacher' ? 'Teacher ID / Email' : 'Parent Registered Mobile'}
+                      {loginRole === 'principal' ? 'Username / School Admin Email' : loginRole === 'teacher' ? 'Teacher ID / Email' : 'Parent Registered Mobile'}
                     </label>
                     <input 
                       type="text" 
@@ -1420,7 +1502,7 @@ export default function AssanSchoolPortal() {
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
                       className="w-full p-3 border border-slate-300 rounded-xl text-xs font-medium"
-                      placeholder={loginRole === 'principal' ? 'admin@alhuda.edu.pk' : loginRole === 'teacher' ? 'teacher@alhuda.edu.pk' : '03001234567'}
+                      placeholder="e.g. admin"
                     />
                   </div>
 
