@@ -36,15 +36,16 @@ export const createUserWithEmailAndPassword = async (_auth: any, email: string, 
   };
 };
 
-export const sendEmailVerification = async () => {};
-export const updateProfile = async () => {};
+export const sendEmailVerification = async (..._args: any[]) => {};
+export const updateProfile = async (..._args: any[]) => {};
 
 export const doc = (...args: any[]) => ({ id: args[args.length - 1] });
-export const setDoc = async () => {};
-export const deleteDoc = async () => {};
-export const collection = () => ({});
-export const getDocs = async () => ({ empty: true, docs: [] });
-export const query = () => ({});
-export const where = () => ({});
-export const addDoc = async () => ({ id: 'doc_' + Date.now() });
+export const setDoc = async (..._args: any[]) => {};
+export const deleteDoc = async (..._args: any[]) => {};
+export const collection = (..._args: any[]) => ({});
+export const getDocs = async (..._args: any[]) => ({ empty: true, docs: [] });
+export const query = (..._args: any[]) => ({});
+export const where = (..._args: any[]) => ({});
+export const addDoc = async (..._args: any[]) => ({ id: 'doc_' + Date.now() });
 export const serverTimestamp = () => new Date().toISOString();
+

@@ -1301,9 +1301,8 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   };
 
   const isSuperAdminAccount = 
-    currentUserEmail.toLowerCase().includes('adminabdulrehmanhabibkpk') || 
-    localStorage.getItem('isSuperAdmin') === 'true' ||
-    userRole === 'Super Admin';
+    currentUserEmail.toLowerCase() === 'abdulrehmanhabib.com@gmail.com' &&
+    (userRole === 'Super Admin' || localStorage.getItem('isSuperAdmin') === 'true');
 
   if (isSuperAdminAccount && location.pathname !== '/dashboard/school-view') {
     return (

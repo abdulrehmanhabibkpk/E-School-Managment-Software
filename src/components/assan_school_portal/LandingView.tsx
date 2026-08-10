@@ -42,7 +42,8 @@ import {
   FileText,
   Bell,
   Briefcase,
-  UserCheck
+  UserCheck,
+  Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -66,10 +67,96 @@ export const LandingView: React.FC<{
     backedFirms
   } = useApp();
 
-  // Navigation states: 'home' | 'about' | 'solutions' | 'pricing' | 'contacts' | 'register' | 'login'
-  const [activeTab, setActiveTab] = useState<'home' | 'about' | 'solutions' | 'pricing' | 'contacts' | 'register' | 'login'>('home');
+  // Navigation states: 'home' | 'about' | 'solutions' | 'pricing' | 'contacts' | 'register' | 'login' | 'online-result'
+  const [activeTab, setActiveTab] = useState<'home' | 'about' | 'solutions' | 'pricing' | 'contacts' | 'register' | 'login' | 'online-result'>('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [solutionsDropdownOpen, setSolutionsDropdownOpen] = useState(false);
+
+  // Online Result Search States
+  const [resultSearchClass, setResultSearchClass] = useState('Class 10 (Matric)');
+  const [resultSearchExam, setResultSearchExam] = useState('Annual Examination 2026');
+  const [resultRollNoInput, setResultRollNoInput] = useState('101');
+  const [isSearchingResult, setIsSearchingResult] = useState(false);
+  const [hasSearchedResult, setHasSearchedResult] = useState(false);
+  const [currentResultData, setCurrentResultData] = useState<any>(null);
+
+  const handleSearchResult = (rollToSearch?: string, classToSearch?: string, examToSearch?: string) => {
+    const targetRoll = (rollToSearch !== undefined ? rollToSearch : resultRollNoInput).trim() || '101';
+    const targetClass = classToSearch || resultSearchClass;
+    const targetExam = examToSearch || resultSearchExam;
+
+    setIsSearchingResult(true);
+    setHasSearchedResult(false);
+
+    setTimeout(() => {
+      setIsSearchingResult(false);
+      setHasSearchedResult(true);
+
+      const rollNum = parseInt(targetRoll) || 101;
+      let sName = "Muhammad Ahsan Raza";
+      let fName = "Tariq Mahmood";
+      let pos = "1st Position";
+      let totalObt = 738;
+      let gradeStr = "A-1 Grade (Outstanding)";
+      let statusStr = "PASSED (PROMOTED TO NEXT CLASS)";
+
+      if (rollNum % 5 === 0) {
+        sName = "Fatima Zahra";
+        fName = "Syed Ahmad Ali";
+        pos = "2nd Position";
+        totalObt = 715;
+        gradeStr = "A-1 Grade (Excellent)";
+      } else if (rollNum % 5 === 1) {
+        sName = "Hamza Ali Khan";
+        fName = "Muhammad Aslam Khan";
+        pos = "3rd Position";
+        totalObt = 692;
+        gradeStr = "A Grade (Very Good)";
+      } else if (rollNum % 5 === 2) {
+        sName = "Ayesha Bibi";
+        fName = "Zahid Iqbal";
+        pos = "5th Position";
+        totalObt = 654;
+        gradeStr = "A Grade (Good)";
+      } else if (rollNum % 5 === 3) {
+        sName = "Bilal Ahmed";
+        fName = "Sajjad Ahmed";
+        pos = "8th Position";
+        totalObt = 618;
+        gradeStr = "B Grade (Satisfactory)";
+      }
+
+      setCurrentResultData({
+        studentName: sName,
+        fatherName: fName,
+        rollNo: targetRoll,
+        grNo: `GR-${2023 + (rollNum % 3)}-${1000 + rollNum}`,
+        schoolName: "Al-Huda Model High School & College, KPK / Abbottabad",
+        board: "Board of Intermediate & Secondary Education (BISE) Abbottabad",
+        class: targetClass,
+        examSession: targetExam,
+        dob: "14 March 2010",
+        totalMax: 800,
+        totalObtained: totalObt,
+        percentage: ((totalObt / 800) * 100).toFixed(1) + "%",
+        overallGrade: gradeStr,
+        position: pos,
+        resultStatus: statusStr,
+        attendance: "98% (192 / 196 Days)",
+        remarks: "Outstanding academic record with excellent discipline and class attendance.",
+        subjects: [
+          { name: "English Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.126)), grade: "A+", status: "PASS" },
+          { name: "Urdu Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.122)), grade: "A+", status: "PASS" },
+          { name: "Mathematics", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.134)), grade: "A+", status: "PASS" },
+          { name: "Physics / General Science", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.128)), grade: "A+", status: "PASS" },
+          { name: "Chemistry / Social Studies", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.124)), grade: "A+", status: "PASS" },
+          { name: "Computer Science", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.132)), grade: "A+", status: "PASS" },
+          { name: "Islamiyat Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.118)), grade: "A+", status: "PASS" },
+          { name: "Pakistan Studies", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.116)), grade: "A+", status: "PASS" },
+        ]
+      });
+    }, 500);
+  };
 
   // Login states
   const [loginUsername, setLoginUsername] = useState('');
@@ -367,18 +454,25 @@ export const LandingView: React.FC<{
         }
       }
 
-      // Check if user is Super Admin
-      const isSuperAdminInput =
+      const isSuperAdminEmail = inputVal.toLowerCase() === 'abdulrehmanhabib.com@gmail.com';
+      const isTryingSuperAdmin = isSuperAdminEmail || 
         inputVal.toLowerCase() === 'adminabdulrehmanhabibkpk' ||
-        inputVal.toLowerCase() === 'superadmin@assanaccounts.com' ||
-        inputVal.toLowerCase() === 'abdulrehman654as@gmail.com' ||
-        inputVal.toLowerCase() === 'abdulrehmanhabib.com@gmail.com' ||
+        inputVal.toLowerCase().includes('superadmin') ||
         matchedSystemUser?.role === 'Super Admin';
+
+      if (isTryingSuperAdmin) {
+        if (!isSuperAdminEmail) {
+          throw new Error('Super Admin access is restricted to abdulrehmanhabib.com@gmail.com only.');
+        }
+        if (normalizedPass !== '6242842') {
+          throw new Error('Incorrect password for Super Admin account.');
+        }
+      }
 
       let emailToUse = inputVal;
       if (!inputVal.includes('@') && matchedSystemUser?.email) {
         emailToUse = matchedSystemUser.email;
-      } else if (!inputVal.includes('@') && isSuperAdminInput) {
+      } else if (isSuperAdminEmail) {
         emailToUse = 'abdulrehmanhabib.com@gmail.com';
       }
 
@@ -389,14 +483,12 @@ export const LandingView: React.FC<{
         const userCredential = await signInWithEmailAndPassword(auth, emailToUse, normalizedPass);
         const user = userCredential.user;
 
-        if (matchedSystemUser) {
-          loggedInUser = { ...matchedSystemUser, id: user.uid, emailVerified: user.emailVerified };
-        } else if (isSuperAdminInput) {
+        if (isSuperAdminEmail) {
           loggedInUser = {
             id: user.uid,
             username: 'adminabdulrehmanhabibkpk',
             name: 'Abdul Rehman Habib (Super Admin)',
-            email: user.email || emailToUse,
+            email: 'abdulrehmanhabib.com@gmail.com',
             role: 'Super Admin',
             status: 'Active',
             activity: 'Just Now',
@@ -404,6 +496,8 @@ export const LandingView: React.FC<{
             companyName: 'Assan Accounts Central',
             emailVerified: user.emailVerified,
           };
+        } else if (matchedSystemUser) {
+          loggedInUser = { ...matchedSystemUser, id: user.uid, emailVerified: user.emailVerified };
         } else {
           loggedInUser = {
             id: user.uid,
@@ -419,41 +513,7 @@ export const LandingView: React.FC<{
       } catch (fbErr: any) {
         console.warn('Firebase Auth direct login skipped/failed, evaluating systemUsers:', fbErr);
 
-        // Fallback: Verify password against systemUsers
-        if (matchedSystemUser) {
-          if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
-            // Attempt to auto-provision user in Firebase Auth so they can have a real session and read/write from Firestore!
-            try {
-              console.log('Attempting to auto-provision user in Firebase Auth:', emailToUse);
-              const userCredential = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
-              const fbUser = userCredential.user;
-              
-              loggedInUser = {
-                ...matchedSystemUser,
-                id: fbUser.uid,
-                emailVerified: fbUser.emailVerified
-              };
-
-              // Update the user document in Firestore 'users' collection to use the new uid as the document ID
-              await setDoc(doc(db, 'users', fbUser.uid), {
-                ...matchedSystemUser,
-                id: fbUser.uid
-              });
-
-              // Delete the old user document that has the non-auth/random ID
-              if (matchedSystemUser.id !== fbUser.uid) {
-                await deleteDoc(doc(db, 'users', matchedSystemUser.id));
-              }
-              
-              console.log('Auto-provisioning successful for user:', emailToUse);
-            } catch (createErr: any) {
-              console.error('Failed to auto-provision user, logging in with offline state:', createErr);
-              loggedInUser = matchedSystemUser;
-            }
-          } else {
-            throw new Error('Incorrect password for this user account.');
-          }
-        } else if (isSuperAdminInput && (normalizedPass === '123456' || normalizedPass === '123' || normalizedPass === 'admin123' || normalizedPass === '6242842AS&')) {
+        if (isSuperAdminEmail && normalizedPass === '6242842') {
           loggedInUser = {
             id: 'superadmin-root',
             username: 'adminabdulrehmanhabibkpk',
@@ -465,18 +525,43 @@ export const LandingView: React.FC<{
             companyId: 'super_admin_system',
             companyName: 'Assan Accounts Central',
           };
-        } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123' || normalizedPass === 'demo1234' || normalizedPass === '000222') {
-          const isSuper = inputVal.toLowerCase().includes('super') || inputVal.toLowerCase().includes('abdulrehman');
+        } else if (matchedSystemUser) {
+          if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
+            try {
+              const userCredential = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
+              const fbUser = userCredential.user;
+              
+              loggedInUser = {
+                ...matchedSystemUser,
+                id: fbUser.uid,
+                emailVerified: fbUser.emailVerified
+              };
+
+              await setDoc(doc(db, 'users', fbUser.uid), {
+                ...matchedSystemUser,
+                id: fbUser.uid
+              });
+
+              if (matchedSystemUser.id !== fbUser.uid) {
+                await deleteDoc(doc(db, 'users', matchedSystemUser.id));
+              }
+            } catch (createErr: any) {
+              loggedInUser = matchedSystemUser;
+            }
+          } else {
+            throw new Error('Incorrect password for this user account.');
+          }
+        } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
           loggedInUser = {
             id: 'demo-user-' + Date.now(),
             username: inputVal,
-            name: isSuper ? 'Abdul Rehman Habib (Super Admin)' : 'School Administrator',
+            name: 'School Administrator',
             email: inputVal.includes('@') ? inputVal : `${inputVal}@school.com`,
-            role: isSuper ? 'Super Admin' : 'Admin',
+            role: 'Admin',
             status: 'Active',
             activity: 'Just Now',
-            companyId: isSuper ? 'super_admin_system' : 'comp_demo',
-            companyName: isSuper ? 'Assan Accounts Central' : 'Al-Huda Model High School'
+            companyId: 'comp_demo',
+            companyName: 'Al-Huda Model High School'
           };
         } else {
           throw fbErr;
@@ -614,7 +699,7 @@ export const LandingView: React.FC<{
             </div>
 
             {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center space-x-8 font-bold text-sm text-gray-700">
+            <div className="hidden lg:flex items-center space-x-7 font-bold text-sm text-gray-700">
               <button 
                 onClick={() => { setActiveTab('home'); }}
                 className={`transition-colors hover:text-[#1b8755] ${activeTab === 'home' ? 'text-[#1b8755]' : ''}`}
@@ -628,14 +713,14 @@ export const LandingView: React.FC<{
                 About
               </button>
               
-              {/* Dropdown Menu */}
+              {/* Dropdown Menu - School Modules */}
               <div className="relative">
                 <button 
                   onClick={() => setSolutionsDropdownOpen(!solutionsDropdownOpen)}
                   onMouseEnter={() => setSolutionsDropdownOpen(true)}
-                  className="flex items-center space-x-1 transition-colors hover:text-[#1b8755] text-gray-700"
+                  className="flex items-center space-x-1 transition-colors hover:text-[#1b8755] text-gray-700 py-2"
                 >
-                  <span>Assan Solutions</span>
+                  <span>School Modules</span>
                   <ChevronDown className="w-4 h-4" />
                 </button>
                 <AnimatePresence>
@@ -645,47 +730,87 @@ export const LandingView: React.FC<{
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
                       onMouseLeave={() => setSolutionsDropdownOpen(false)}
-                      className="absolute left-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 font-semibold text-xs text-gray-600"
+                      className="absolute left-0 mt-1 w-72 bg-white border border-gray-100 rounded-xl shadow-xl py-2 z-50 font-semibold text-xs text-gray-600"
                     >
                       <button 
-                        onClick={() => { setActiveTab('solutions'); setSolutionsDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2"
+                        onClick={() => { setActiveTab('home'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2.5"
                       >
-                        <span className="text-sm">💼</span>
-                        <span>Assan General Accounts</span>
+                        <span className="text-base">🎓</span>
+                        <div>
+                          <span className="block font-bold text-slate-800">Student SIS & Admissions</span>
+                          <span className="block text-[10px] text-gray-400 font-normal">GR Registers, Enrollment, Profiles</span>
+                        </div>
                       </button>
                       <button 
-                        onClick={() => { setActiveTab('solutions'); setSolutionsDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2"
+                        onClick={() => { setActiveTab('home'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2.5"
                       >
-                        <span className="text-sm">✈️</span>
-                        <span>Assan Travel Accounts</span>
+                        <span className="text-base">💳</span>
+                        <div>
+                          <span className="block font-bold text-slate-800">Auto Fee Vouchers & WhatsApp</span>
+                          <span className="block text-[10px] text-gray-400 font-normal">Due Reminders, Instant Printouts</span>
+                        </div>
                       </button>
                       <button 
-                        onClick={() => { setActiveTab('solutions'); setSolutionsDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2"
+                        onClick={() => { setActiveTab('home'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2.5"
                       >
-                        <span className="text-sm">🧶</span>
-                        <span>Assan Weaving Accounts</span>
+                        <span className="text-base">📄</span>
+                        <div>
+                          <span className="block font-bold text-slate-800">Exams & Report Cards</span>
+                          <span className="block text-[10px] text-gray-400 font-normal">Subject Marks, DMCs, Class Ranks</span>
+                        </div>
                       </button>
                       <button 
-                        onClick={() => { setActiveTab('solutions'); setSolutionsDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2"
+                        onClick={() => { setActiveTab('home'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2.5"
                       >
-                        <span className="text-sm">📝</span>
-                        <span>Assan Invoice System</span>
+                        <span className="text-base">👤</span>
+                        <div>
+                          <span className="block font-bold text-slate-800">Biometric Attendance & Leave</span>
+                          <span className="block text-[10px] text-gray-400 font-normal">SMS Alerts, Absence Logs</span>
+                        </div>
                       </button>
                       <button 
-                        onClick={() => { setActiveTab('solutions'); setSolutionsDropdownOpen(false); }}
-                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2"
+                        onClick={() => { setActiveTab('home'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 hover:text-[#1b8755] flex items-center space-x-2.5"
                       >
-                        <span className="text-sm">🕌</span>
-                        <span>Assan Umrah Calculator</span>
+                        <span className="text-base">💼</span>
+                        <div>
+                          <span className="block font-bold text-slate-800">Staff Payroll & Accounts</span>
+                          <span className="block text-[10px] text-gray-400 font-normal">Salaries, Cash Book, Expense Ledgers</span>
+                        </div>
+                      </button>
+                      <div className="border-t border-gray-100 my-1"></div>
+                      <button 
+                        onClick={() => { setActiveTab('online-result'); setSolutionsDropdownOpen(false); }}
+                        className="w-full text-left px-4 py-2.5 bg-emerald-50/60 hover:bg-emerald-100/70 text-[#1b8755] flex items-center space-x-2.5"
+                      >
+                        <span className="text-base">📊</span>
+                        <div>
+                          <span className="block font-black text-emerald-900 flex items-center gap-1.5">
+                            Online Result Portal
+                            <span className="bg-emerald-600 text-white text-[8px] uppercase font-black px-1.5 py-0.5 rounded-xs">Live</span>
+                          </span>
+                          <span className="block text-[10px] text-emerald-700 font-medium">Search Marks by Class & Roll No</span>
+                        </div>
                       </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Online Result Tab */}
+              <button 
+                onClick={() => { setActiveTab('online-result'); }}
+                className={`transition-colors hover:text-[#1b8755] flex items-center space-x-1.5 relative ${activeTab === 'online-result' ? 'text-[#1b8755] font-extrabold' : ''}`}
+              >
+                <span>Online Result</span>
+                <span className="bg-[#a1d044] text-slate-950 font-black text-[9px] px-1.5 py-0.5 rounded-full shadow-xs">
+                  NEW
+                </span>
+              </button>
 
               <button 
                 onClick={() => { setActiveTab('pricing'); }}
@@ -752,16 +877,23 @@ export const LandingView: React.FC<{
                 >
                   About
                 </button>
-                <div className="py-2">
-                  <span className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1.5">Solutions</span>
-                  <div className="pl-4 space-y-2 text-xs font-semibold text-gray-600">
-                    <button onClick={() => { setActiveTab('solutions'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">💼 Assan General Accounts</button>
-                    <button onClick={() => { setActiveTab('solutions'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">✈️ Assan Travel Accounts</button>
-                    <button onClick={() => { setActiveTab('solutions'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">🧶 Assan Weaving Accounts</button>
-                    <button onClick={() => { setActiveTab('solutions'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">📝 Assan Invoice System</button>
-                    <button onClick={() => { setActiveTab('solutions'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">🕌 Assan Umrah Calculator</button>
+                <div className="py-2 border-b border-gray-50">
+                  <span className="block text-[10px] text-gray-400 uppercase tracking-widest mb-1.5 font-bold">School Modules</span>
+                  <div className="pl-3 space-y-2 text-xs font-semibold text-gray-600">
+                    <button onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">🎓 Student SIS & Admissions</button>
+                    <button onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">💳 Auto Fee Vouchers & WhatsApp</button>
+                    <button onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">📄 Exams & Report Cards</button>
+                    <button onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">👤 Biometric Attendance & Leave</button>
+                    <button onClick={() => { setActiveTab('home'); setMobileMenuOpen(false); }} className="w-full text-left py-1 hover:text-[#1b8755] block">💼 Staff Payroll & Accounts</button>
                   </div>
                 </div>
+                <button 
+                  onClick={() => { setActiveTab('online-result'); setMobileMenuOpen(false); }}
+                  className="w-full text-left py-2 text-emerald-700 font-extrabold border-b border-gray-50 flex items-center justify-between"
+                >
+                  <span className="flex items-center gap-2">📊 Online Result Portal</span>
+                  <span className="bg-[#a1d044] text-slate-950 text-[9px] font-black px-2 py-0.5 rounded-full">NEW</span>
+                </button>
                 <button 
                   onClick={() => { setActiveTab('pricing'); setMobileMenuOpen(false); }}
                   className="w-full text-left py-2 hover:text-emerald-600 border-b border-gray-50 block"
@@ -2255,110 +2387,470 @@ export const LandingView: React.FC<{
           </div>
         )}
 
-        {/* ==================== SUB-VIEW: SOLUTIONS ==================== */}
-        {activeTab === 'solutions' && (
-          <div className="max-w-5xl mx-auto px-4 py-12 space-y-12">
+        {/* ==================== SUB-VIEW: ONLINE RESULT PORTAL ==================== */}
+        {activeTab === 'online-result' && (
+          <div className="max-w-5xl mx-auto px-4 py-12 space-y-10">
+            {/* Header */}
             <div className="text-center space-y-3">
-              <span className="text-xs uppercase font-extrabold tracking-widest text-[#1b8755]">Custom Portals</span>
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[#739b1a] bg-[#a1d044]/15 px-3.5 py-1.5 rounded-full border border-[#a1d044]/30 inline-block">
+                Assan School System &bull; Online Examinations Portal
+              </span>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 uppercase">
-                Specialized Assan Accountin-Software
+                Online Student Result Search
               </h1>
-              <p className="text-sm text-gray-500 font-bold max-w-xl mx-auto">
-                Every business model has discrete workflow constraints. We bundle 5 industry-specific pre-configured dashboards.
+              <p className="text-sm text-gray-600 font-bold max-w-xl mx-auto">
+                Baraye Meherbani apni Class select karain, Examination Session chunun aur apna Roll Number / GR Number darj kar ke Result / Marksheet check karain.
               </p>
               <div className="w-16 h-1 bg-[#1b8755] mx-auto rounded-full mt-2"></div>
             </div>
 
-            {/* List of 5 Portals with Pricing Tier mentions */}
+            {/* Search Form Box */}
+            <div className="bg-white border-2 border-[#a1d044]/40 rounded-2xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#a1d044]/10 rounded-full blur-2xl pointer-events-none"></div>
+
+              <div className="space-y-6 relative z-10">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  {/* Class Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
+                      1. Select Class / Grade
+                    </label>
+                    <select
+                      value={resultSearchClass}
+                      onChange={(e) => setResultSearchClass(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
+                    >
+                      <option value="Playgroup / Nursery">Playgroup / Nursery</option>
+                      <option value="Prep / KG">Prep / KG</option>
+                      <option value="Class 1">Class 1</option>
+                      <option value="Class 2">Class 2</option>
+                      <option value="Class 3">Class 3</option>
+                      <option value="Class 4">Class 4</option>
+                      <option value="Class 5">Class 5</option>
+                      <option value="Class 6">Class 6</option>
+                      <option value="Class 7">Class 7</option>
+                      <option value="Class 8">Class 8</option>
+                      <option value="Class 9 (Matric)">Class 9 (Matric Part 1)</option>
+                      <option value="Class 10 (Matric)">Class 10 (Matric Part 2)</option>
+                      <option value="F.Sc Pre-Medical">F.Sc Pre-Medical (1st / 2nd Year)</option>
+                      <option value="F.Sc Pre-Engineering">F.Sc Pre-Engineering</option>
+                      <option value="ICS / Computer Science">ICS / Computer Science</option>
+                    </select>
+                  </div>
+
+                  {/* Exam Session Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
+                      2. Examination Term / Session
+                    </label>
+                    <select
+                      value={resultSearchExam}
+                      onChange={(e) => setResultSearchExam(e.target.value)}
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
+                    >
+                      <option value="Annual Examination 2026">Annual Examination 2026</option>
+                      <option value="First Term Exam 2026">First Term Examination 2026</option>
+                      <option value="Mid Term Exam 2026">Mid Term Examination 2026</option>
+                      <option value="Final Send-Up Test 2026">Final Send-Up Test 2026</option>
+                    </select>
+                  </div>
+
+                  {/* Roll Number Input */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
+                      3. Enter Roll Number / GR No
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="e.g. 101, 102, 103..."
+                        value={resultRollNoInput}
+                        onChange={(e) => setResultRollNoInput(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSearchResult(); }}
+                        className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs uppercase tracking-wider"
+                      />
+                      {resultRollNoInput && (
+                        <button
+                          onClick={() => setResultRollNoInput('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Submit button & Quick Demos */}
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
+                  {/* Quick Demo Roll Tags */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="font-extrabold text-slate-500 uppercase text-[10px]">Try Demo Students:</span>
+                    <button
+                      onClick={() => {
+                        setResultRollNoInput('101');
+                        setResultSearchClass('Class 10 (Matric)');
+                        handleSearchResult('101', 'Class 10 (Matric)');
+                      }}
+                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-lg border border-emerald-200 transition-colors text-[11px]"
+                    >
+                      Roll # 101 (A+ Grade)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResultRollNoInput('102');
+                        setResultSearchClass('Class 9 (Matric)');
+                        handleSearchResult('102', 'Class 9 (Matric)');
+                      }}
+                      className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold rounded-lg border border-sky-200 transition-colors text-[11px]"
+                    >
+                      Roll # 102 (Fatima Zahra)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setResultRollNoInput('105');
+                        setResultSearchClass('Class 5');
+                        handleSearchResult('105', 'Class 5');
+                      }}
+                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200 transition-colors text-[11px]"
+                    >
+                      Roll # 105 (Class 5)
+                    </button>
+                  </div>
+
+                  {/* Search Button */}
+                  <button
+                    onClick={() => handleSearchResult()}
+                    disabled={isSearchingResult}
+                    className="w-full sm:w-auto px-8 py-3.5 bg-[#1b8755] hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50"
+                  >
+                    {isSearchingResult ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Searching Result...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Search className="w-4 h-4" />
+                        <span>Search Result Now</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Result Marksheet Display */}
+            {hasSearchedResult && currentResultData && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white border-4 border-slate-900 rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 relative overflow-hidden printable-marksheet"
+              >
+                {/* Decorative Watermark logo */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+                  <div className="text-9xl font-black tracking-widest text-slate-900 uppercase">
+                    ASSAN
+                  </div>
+                </div>
+
+                {/* Marksheet Header */}
+                <div className="border-b-2 border-slate-900 pb-6 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-16 h-16 bg-[#a1d044] rounded-2xl flex items-center justify-center text-slate-950 font-black text-2xl shadow-md border-2 border-slate-900 shrink-0">
+                      🎓
+                    </div>
+                    <div>
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 uppercase tracking-tight">
+                        {currentResultData.schoolName}
+                      </h2>
+                      <p className="text-xs text-slate-600 font-bold">
+                        {currentResultData.board} &bull; Govt Reg # 4829-KPK
+                      </p>
+                      <span className="inline-block mt-1 bg-slate-900 text-white text-[10px] font-black uppercase px-2.5 py-0.5 rounded-sm">
+                        Detailed Marks Certificate (DMC) / Official Marksheet
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-center sm:text-right border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-200">
+                    <span className="block text-[10px] text-slate-400 font-mono font-bold uppercase">Certificate ID</span>
+                    <span className="block font-mono font-black text-slate-900 text-sm">ASP-2026-{currentResultData.rollNo}</span>
+                    <span className="inline-flex items-center gap-1 text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1">
+                      ✓ System Verified
+                    </span>
+                  </div>
+                </div>
+
+                {/* Student Details Grid */}
+                <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Student Name</span>
+                    <span className="text-sm font-black text-slate-900">{currentResultData.studentName}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Father Name</span>
+                    <span className="text-sm font-black text-slate-800">{currentResultData.fatherName}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Roll Number</span>
+                    <span className="text-sm font-mono font-black text-[#1b8755]">{currentResultData.rollNo}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">GR Register No</span>
+                    <span className="text-sm font-mono font-extrabold text-slate-700">{currentResultData.grNo}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Class & Section</span>
+                    <span className="text-xs font-extrabold text-slate-900">{currentResultData.class} (Sec A)</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Exam Session</span>
+                    <span className="text-xs font-extrabold text-slate-900">{currentResultData.examSession}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Attendance Record</span>
+                    <span className="text-xs font-extrabold text-emerald-700">{currentResultData.attendance}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Class Rank Position</span>
+                    <span className="text-xs font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block">{currentResultData.position}</span>
+                  </div>
+                </div>
+
+                {/* Subject Wise Marks Table */}
+                <div className="overflow-x-auto border-2 border-slate-900 rounded-2xl">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-slate-900 text-white font-black uppercase text-[10px] tracking-wider">
+                        <th className="p-3 border-r border-slate-700">#</th>
+                        <th className="p-3 border-r border-slate-700">Subject Name</th>
+                        <th className="p-3 border-r border-slate-700 text-center">Total Marks</th>
+                        <th className="p-3 border-r border-slate-700 text-center">Pass Marks</th>
+                        <th className="p-3 border-r border-slate-700 text-center">Marks Obtained</th>
+                        <th className="p-3 border-r border-slate-700 text-center">Grade</th>
+                        <th className="p-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 font-semibold text-slate-800">
+                      {currentResultData.subjects.map((sub: any, idx: number) => (
+                        <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/80'}>
+                          <td className="p-3 font-mono text-slate-400 border-r border-slate-200">{idx + 1}</td>
+                          <td className="p-3 font-bold text-slate-900 border-r border-slate-200">{sub.name}</td>
+                          <td className="p-3 text-center font-mono border-r border-slate-200">{sub.max}</td>
+                          <td className="p-3 text-center font-mono border-r border-slate-200">{sub.pass}</td>
+                          <td className="p-3 text-center font-mono font-black text-slate-950 text-sm border-r border-slate-200">{sub.obt}</td>
+                          <td className="p-3 text-center font-black text-emerald-700 border-r border-slate-200">{sub.grade}</td>
+                          <td className="p-3 text-center">
+                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 font-black text-[10px] rounded-full">
+                              {sub.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-900 text-white font-black text-sm">
+                        <td colSpan={2} className="p-3 uppercase tracking-wider text-right">Grand Total:</td>
+                        <td className="p-3 text-center font-mono">{currentResultData.totalMax}</td>
+                        <td className="p-3 text-center font-mono">&mdash;</td>
+                        <td className="p-3 text-center font-mono text-emerald-400 text-base">{currentResultData.totalObtained}</td>
+                        <td className="p-3 text-center text-emerald-300">{currentResultData.percentage}</td>
+                        <td className="p-3 text-center text-emerald-400 uppercase text-xs">{currentResultData.overallGrade}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Performance Banner & Remarks */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                  <div className="md:col-span-8 p-4 bg-emerald-50 border-2 border-emerald-200 rounded-2xl space-y-1">
+                    <span className="block text-[10px] font-black uppercase tracking-wider text-emerald-800">
+                      Final Examination Result Status
+                    </span>
+                    <h3 className="text-base font-black text-emerald-950 uppercase flex items-center gap-2">
+                      <span>🎉</span> {currentResultData.resultStatus}
+                    </h3>
+                    <p className="text-xs font-semibold text-emerald-900">
+                      Remarks: &ldquo;{currentResultData.remarks}&rdquo;
+                    </p>
+                  </div>
+
+                  <div className="md:col-span-4 p-4 bg-slate-900 text-white rounded-2xl text-center space-y-1 shadow-md">
+                    <span className="block text-[10px] text-slate-400 uppercase font-black">Overall Grade / Marks</span>
+                    <span className="block text-2xl font-black text-[#a1d044]">{currentResultData.percentage}</span>
+                    <span className="block text-xs font-bold text-slate-200">{currentResultData.overallGrade}</span>
+                  </div>
+                </div>
+
+                {/* Signatures & Stamp */}
+                <div className="pt-6 border-t-2 border-slate-200 grid grid-cols-2 sm:grid-cols-3 gap-6 text-center text-xs font-bold text-slate-700">
+                  <div className="space-y-8">
+                    <div className="h-10 flex items-end justify-center font-serif italic text-slate-400">
+                      Class Incharge
+                    </div>
+                    <div className="border-t border-slate-400 pt-1 text-[11px] uppercase font-black text-slate-900">
+                      Class Teacher Signature
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="h-10 flex items-end justify-center font-mono font-bold text-emerald-700 text-[10px]">
+                      [OFFICIAL STAMP SEAL]
+                    </div>
+                    <div className="border-t border-slate-400 pt-1 text-[11px] uppercase font-black text-slate-900">
+                      Controller Examinations
+                    </div>
+                  </div>
+
+                  <div className="space-y-8 col-span-2 sm:col-span-1">
+                    <div className="h-10 flex items-end justify-center font-serif italic font-bold text-slate-800 text-sm">
+                      Principal Office
+                    </div>
+                    <div className="border-t border-slate-400 pt-1 text-[11px] uppercase font-black text-slate-900">
+                      Principal Signature & Stamp
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-4 flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 no-print">
+                  <button
+                    onClick={() => window.print()}
+                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center space-x-2"
+                  >
+                    <span>🖨️ Print Marksheet / DMC</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const shareText = `Assan School Portal - Online Result:\nStudent: ${currentResultData.studentName}\nRoll No: ${currentResultData.rollNo}\nClass: ${currentResultData.class}\nObtained Marks: ${currentResultData.totalObtained}/${currentResultData.totalMax} (${currentResultData.percentage})\nGrade: ${currentResultData.overallGrade}\nStatus: ${currentResultData.resultStatus}`;
+                      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText)}`, '_blank');
+                    }}
+                    className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center space-x-2"
+                  >
+                    <span>📲 Share via WhatsApp</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setHasSearchedResult(false);
+                      setResultRollNoInput('');
+                    }}
+                    className="px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all"
+                  >
+                    🔍 Search Another Result
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </div>
+        )}
+
+        {/* ==================== SUB-VIEW: SOLUTIONS ==================== */}
+        {activeTab === 'solutions' && (
+          <div className="max-w-5xl mx-auto px-4 py-12 space-y-12">
+            <div className="text-center space-y-3">
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[#1b8755]">School Portal Modules</span>
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 uppercase">
+                Specialized Assan School Portal Modules
+              </h1>
+              <p className="text-sm text-gray-500 font-bold max-w-xl mx-auto">
+                Complete modules for school admissions, fee vouchers, examinations, online results, biometric attendance, and staff payroll.
+              </p>
+              <div className="w-16 h-1 bg-[#1b8755] mx-auto rounded-full mt-2"></div>
+            </div>
+
+            {/* List of 5 School Portal Modules */}
             <div className="space-y-8">
               
-              {/* Solution 1 */}
+              {/* Module 1 */}
               <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div className="md:col-span-8 space-y-3">
                   <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-md text-[10px] font-black uppercase border border-emerald-100">Portal #1</span>
-                    <h3 className="text-base font-extrabold text-slate-900">Assan General Accounts</h3>
+                    <span className="px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded-md text-[10px] font-black uppercase border border-emerald-100">Module #1</span>
+                    <h3 className="text-base font-extrabold text-slate-900">Student SIS & Admissions Portal</h3>
                   </div>
                   <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                    The general ledger, cash book, bank accounts, and partner drawing accounts suited for retail, service firms, or property offices. Offers clean, consolidated balance prints.
-                  </p>
-                </div>
-                <div className="md:col-span-4 text-center md:text-right">
-                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
-                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 4,000 / mo</span>
-                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Portal & Register &rarr;</button>
-                </div>
-              </div>
-
-              {/* Solution 2 */}
-              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                <div className="md:col-span-8 space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 bg-sky-50 text-sky-800 rounded-md text-[10px] font-black uppercase border border-sky-100">Portal #2</span>
-                    <h3 className="text-base font-extrabold text-slate-900">Assan Travel Accounts</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                    Highly optimized for travel agencies with pre-built heads for Ticket Bookings, Hotel Reservations, Visa Fees, Transport Operators, and sub-agency commissions.
-                  </p>
-                </div>
-                <div className="md:col-span-4 text-center md:text-right">
-                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
-                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 5,000 / mo</span>
-                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Portal & Register &rarr;</button>
-                </div>
-              </div>
-
-              {/* Solution 3 */}
-              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                <div className="md:col-span-8 space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded-md text-[10px] font-black uppercase border border-amber-100">Portal #3</span>
-                    <h3 className="text-base font-extrabold text-slate-900">Assan Weaving Accounts</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                    Tailored for the textile looms sector in Faisalabad. Easily record raw cotton purchases, loom production, yarn inventory balances, and wholesale broker payments.
-                  </p>
-                </div>
-                <div className="md:col-span-4 text-center md:text-right">
-                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
-                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 7,500 / mo</span>
-                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Portal & Register &rarr;</button>
-                </div>
-              </div>
-
-              {/* Solution 4 */}
-              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-                <div className="md:col-span-8 space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 bg-purple-50 text-purple-800 rounded-md text-[10px] font-black uppercase border border-purple-100">Portal #4</span>
-                    <h3 className="text-base font-extrabold text-slate-900">Assan Invoice System</h3>
-                  </div>
-                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                    A lightweight invoice billing and simple receivables logger. Best for freelance teams, consulting offices, and wholesale product shops requiring clean PDF invoices.
+                    Manage complete student registration, GR registers, enrollment forms, guardian contact details, and student document archives with instant search.
                   </p>
                 </div>
                 <div className="md:col-span-4 text-center md:text-right">
                   <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
                   <span className="block font-mono font-black text-slate-900 text-lg">PKR 3,000 / mo</span>
-                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Portal & Register &rarr;</button>
+                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Plan & Register &rarr;</button>
                 </div>
               </div>
 
-              {/* Solution 5 */}
+              {/* Module 2 */}
               <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 <div className="md:col-span-8 space-y-3">
                   <div className="flex items-center space-x-2">
-                    <span className="px-2.5 py-1 bg-rose-50 text-rose-800 rounded-md text-[10px] font-black uppercase border border-rose-100">Portal #5</span>
-                    <h3 className="text-base font-extrabold text-slate-900">Assan Umrah Calculator</h3>
+                    <span className="px-2.5 py-1 bg-sky-50 text-sky-800 rounded-md text-[10px] font-black uppercase border border-sky-100">Module #2</span>
+                    <h3 className="text-base font-extrabold text-slate-900">Auto Fee Vouchers & WhatsApp Reminders</h3>
                   </div>
                   <p className="text-xs text-gray-500 leading-relaxed font-semibold">
-                    An advanced calculator module to estimate Umrah packages, hotel rates in Makkah & Madinah, flight ticket parameters, and transport details per passenger on the fly!
+                    Auto-generate monthly fee vouchers, sibling discounts, late fee fines, print multi-part slip templates, and send 1-click WhatsApp fee reminders to parents.
                   </p>
                 </div>
                 <div className="md:col-span-4 text-center md:text-right">
                   <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
-                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 4,500 / mo</span>
-                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Portal & Register &rarr;</button>
+                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 4,000 / mo</span>
+                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Plan & Register &rarr;</button>
+                </div>
+              </div>
+
+              {/* Module 3 */}
+              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="md:col-span-8 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded-md text-[10px] font-black uppercase border border-amber-100">Module #3</span>
+                    <h3 className="text-base font-extrabold text-slate-900">Exams, Report Cards & Online Result Portal</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
+                    Subject marks entry, position calculators, DMC marksheets, class result gazettes, and public online student result portal by roll number or GR number.
+                  </p>
+                </div>
+                <div className="md:col-span-4 text-center md:text-right">
+                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
+                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 5,000 / mo</span>
+                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Plan & Register &rarr;</button>
+                </div>
+              </div>
+
+              {/* Module 4 */}
+              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="md:col-span-8 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 bg-purple-50 text-purple-800 rounded-md text-[10px] font-black uppercase border border-purple-100">Module #4</span>
+                    <h3 className="text-base font-extrabold text-slate-900">Biometric Attendance & Absence SMS</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
+                    Connect biometric thumb scanners, track daily student & staff presence, and trigger auto WhatsApp/SMS absence alerts to parents.
+                  </p>
+                </div>
+                <div className="md:col-span-4 text-center md:text-right">
+                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
+                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 6,500 / mo</span>
+                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Plan & Register &rarr;</button>
+                </div>
+              </div>
+
+              {/* Module 5 */}
+              <div className="p-6 bg-white border border-gray-100 rounded-2xl shadow-md grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                <div className="md:col-span-8 space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2.5 py-1 bg-rose-50 text-rose-800 rounded-md text-[10px] font-black uppercase border border-rose-100">Module #5</span>
+                    <h3 className="text-base font-extrabold text-slate-900">Staff Payroll & Multi-Campus School Suite</h3>
+                  </div>
+                  <p className="text-xs text-gray-500 leading-relaxed font-semibold">
+                    Manage teacher salaries, allowances, provident funds, cash book ledgers, expense tracking, and multi-branch campus management.
+                  </p>
+                </div>
+                <div className="md:col-span-4 text-center md:text-right">
+                  <span className="block text-[10px] text-gray-400 uppercase font-extrabold">Monthly Subscription</span>
+                  <span className="block font-mono font-black text-slate-900 text-lg">PKR 8,500 / mo</span>
+                  <button onClick={() => setActiveTab('register')} className="mt-2 text-xs font-bold text-emerald-600 hover:underline">Select Plan & Register &rarr;</button>
                 </div>
               </div>
 
@@ -2375,7 +2867,7 @@ export const LandingView: React.FC<{
                 Clean Subscription Pricing
               </h1>
               <p className="text-sm text-gray-500 font-bold max-w-xl mx-auto">
-                No setup fees, no integration surcharges. Choose a tier that supports your operations with free multi-user login support.
+                No setup fees, no hidden integration charges. Choose a school plan that fits your campus with free multi-user teacher and admin logins.
               </p>
               <div className="w-16 h-1 bg-[#1b8755] mx-auto rounded-full mt-2"></div>
             </div>
@@ -2387,8 +2879,8 @@ export const LandingView: React.FC<{
               <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-black text-slate-900">Standard Invoice</h4>
-                    <p className="text-[10px] text-gray-400 mt-0.5">For freelance accountants</p>
+                    <h4 className="text-sm font-black text-slate-900">School Starter Plan</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">For Primary & Middle Schools</p>
                   </div>
                   <div className="font-mono">
                     <span className="text-2xl font-black text-slate-900">PKR 3,000</span>
@@ -2397,23 +2889,25 @@ export const LandingView: React.FC<{
                   <ul className="space-y-2 text-gray-500 font-semibold text-[11px] border-t border-gray-100 pt-4">
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Single Operator Login</span>
+                      <span>Single Campus Management</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Cash Book Receivables</span>
+                      <span>Student SIS & Admissions</span>
                     </li>
-                    <li className="flex items-center space-x-2 text-gray-300">
-                      <span>&bull; No Multi-User Support</span>
+                    <li className="flex items-center space-x-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>Basic Fee Voucher Generation</span>
                     </li>
-                    <li className="flex items-center space-x-2 text-gray-300">
-                      <span>&bull; No Auto PDF Prints</span>
+                    <li className="flex items-center space-x-2">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>School Cash Book & Ledgers</span>
                     </li>
                   </ul>
                 </div>
                 <button 
                   onClick={() => setActiveTab('register')}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-center font-bold rounded-lg transition-colors"
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-center font-bold rounded-lg transition-colors cursor-pointer"
                 >
                   Choose Starter
                 </button>
@@ -2426,8 +2920,8 @@ export const LandingView: React.FC<{
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-black text-white">Travel Agency Pro</h4>
-                    <p className="text-[10px] text-emerald-300 mt-0.5">Our most activated license</p>
+                    <h4 className="text-sm font-black text-white">Pro School Portal</h4>
+                    <p className="text-[10px] text-emerald-300 mt-0.5">Our most popular school plan</p>
                   </div>
                   <div className="font-mono">
                     <span className="text-2xl font-black text-[#a1d044]">PKR 5,000</span>
@@ -2436,27 +2930,27 @@ export const LandingView: React.FC<{
                   <ul className="space-y-2 text-slate-300 font-semibold text-[11px] border-t border-slate-800 pt-4">
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-[#a1d044] shrink-0" />
-                      <span>Multi-Operator Logins (Unlimited)</span>
+                      <span>Unlimited Student Enrollment</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-[#a1d044] shrink-0" />
-                      <span>Head-Wise Account Ledgers</span>
+                      <span>Auto Fee Vouchers & WhatsApp Alerts</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-[#a1d044] shrink-0" />
-                      <span>Umrah & Travel specific sub-heads</span>
+                      <span>Exams, DMC & Online Result Portal</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-[#a1d044] shrink-0" />
-                      <span>Automatic PDF Ledger Prints</span>
+                      <span>Multi-Teacher & Admin Accounts</span>
                     </li>
                   </ul>
                 </div>
                 <button 
                   onClick={() => setActiveTab('register')}
-                  className="w-full py-2.5 bg-[#1b8755] hover:bg-[#1b8755]/90 text-white text-center font-bold rounded-lg transition-colors shadow-md"
+                  className="w-full py-2.5 bg-[#1b8755] hover:bg-[#1b8755]/90 text-white text-center font-bold rounded-lg transition-colors shadow-md cursor-pointer"
                 >
-                  Choose Agency Pro
+                  Choose School Pro
                 </button>
               </div>
 
@@ -2464,8 +2958,8 @@ export const LandingView: React.FC<{
               <div className="p-6 bg-white border border-gray-200 rounded-2xl shadow-sm flex flex-col justify-between space-y-6">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-black text-slate-900">Weaving Enterprise</h4>
-                    <p className="text-[10px] text-gray-400 mt-0.5">For manufacturing power looms</p>
+                    <h4 className="text-sm font-black text-slate-900">Enterprise Campus Chain</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">For multi-branch schools & colleges</p>
                   </div>
                   <div className="font-mono">
                     <span className="text-2xl font-black text-slate-900">PKR 7,500</span>
@@ -2474,25 +2968,25 @@ export const LandingView: React.FC<{
                   <ul className="space-y-2 text-gray-500 font-semibold text-[11px] border-t border-gray-100 pt-4">
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Loom specific production ledgers</span>
+                      <span>Multi-Branch Centralized Control</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Stock inventory weight trackers</span>
+                      <span>Biometric Attendance Integration</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Custom dedicated server option</span>
+                      <span>Staff Payroll & Expense Ledgers</span>
                     </li>
                     <li className="flex items-center space-x-2">
                       <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Personal developer contact access</span>
+                      <span>Dedicated Server & Developer Access</span>
                     </li>
                   </ul>
                 </div>
                 <button 
                   onClick={() => setActiveTab('register')}
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-center font-bold rounded-lg transition-colors"
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-center font-bold rounded-lg transition-colors cursor-pointer"
                 >
                   Choose Enterprise
                 </button>
@@ -2508,10 +3002,10 @@ export const LandingView: React.FC<{
             <div className="text-center space-y-3">
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#1b8755]">Faisalabad Desk</span>
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 uppercase">
-                Contact Assan Accounting Software
+                Contact Assan School Portal
               </h1>
               <p className="text-sm text-gray-500 font-bold max-w-xl mx-auto">
-                Have specific queries about migrating your accounting books? Reach out to our expert coordinators in Pakistan.
+                Have specific queries about setting up your school management portal or migrating student data? Reach out to our expert coordinators in Pakistan.
               </p>
               <div className="w-16 h-1 bg-[#1b8755] mx-auto rounded-full mt-2"></div>
             </div>
@@ -2524,7 +3018,7 @@ export const LandingView: React.FC<{
                 {contactSubmitted ? (
                   <div className="bg-emerald-50 border border-emerald-100 text-emerald-800 p-4 rounded-xl space-y-2 text-xs font-semibold">
                     <p className="font-extrabold text-sm">✓ Message Dispatched Successfully!</p>
-                    <p>We have assigned your query to our Haripur Customer Success Coordinator. Expect a call at your registered phone within 1 hour!</p>
+                    <p>We have assigned your query to our School Portal Coordinator. Expect a call or WhatsApp message within 1 hour!</p>
                     <button 
                       onClick={() => { setContactSubmitted(false); setContactName(''); setContactEmail(''); setContactMessage(''); }}
                       className="text-emerald-700 hover:underline font-bold"
@@ -2542,8 +3036,8 @@ export const LandingView: React.FC<{
                           required
                           value={contactName}
                           onChange={(e) => setContactName(e.target.value)}
-                          placeholder="abdulrehman habib kpk "
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-indigo-500 bg-white text-slate-800"
+                          placeholder="abdulrehman habib kpk"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-emerald-500 bg-white text-slate-800"
                         />
                       </div>
                       <div>
@@ -2553,8 +3047,8 @@ export const LandingView: React.FC<{
                           required
                           value={contactEmail}
                           onChange={(e) => setContactEmail(e.target.value)}
-                          placeholder="adeel@travels.com"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-indigo-500 bg-white text-slate-800"
+                          placeholder="principal@school.edu.pk"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-emerald-500 bg-white text-slate-800"
                         />
                       </div>
                     </div>
@@ -2564,8 +3058,8 @@ export const LandingView: React.FC<{
                         type="text" 
                         value={contactSubject}
                         onChange={(e) => setContactSubject(e.target.value)}
-                        placeholder="Inquiry about general ledger PDF formatting"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-indigo-500 bg-white text-slate-800"
+                        placeholder="Inquiry about school portal fee voucher & result module"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-emerald-500 bg-white text-slate-800"
                       />
                     </div>
                     <div>
@@ -2575,13 +3069,13 @@ export const LandingView: React.FC<{
                         required
                         value={contactMessage}
                         onChange={(e) => setContactMessage(e.target.value)}
-                        placeholder="Describe your accounting firm requirements..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-indigo-500 bg-white text-slate-800"
+                        placeholder="Describe your school requirements (students count, branches, etc.)..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-emerald-500 bg-white text-slate-800"
                       ></textarea>
                     </div>
                     <button 
                       type="submit"
-                      className="w-full py-3 bg-[#151515] hover:bg-[#1b8755] text-white font-black rounded-lg uppercase tracking-wider transition-colors shadow-sm"
+                      className="w-full py-3 bg-[#151515] hover:bg-[#1b8755] text-white font-black rounded-lg uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
                     >
                       Send Message
                     </button>
@@ -2611,7 +3105,7 @@ export const LandingView: React.FC<{
                   </div>
                   <div className="flex items-start space-x-3">
                     <Mail className="w-5 h-5 text-[#a1d044] shrink-0 mt-0.5" />
-                    <p>support@assanaccounts.com</p>
+                    <p>support@assanschoolportal.com</p>
                   </div>
                 </div>
 
@@ -2661,7 +3155,7 @@ export const LandingView: React.FC<{
             >
               
               <div className="text-center space-y-2">
-                <span className="text-xs uppercase font-extrabold tracking-widest text-[#1b8755]">Create Your Assan Accounting Software</span>
+                <span className="text-xs uppercase font-extrabold tracking-widest text-[#1b8755]">Create Your Assan School Portal Account</span>
                 <h1 className="text-3xl font-black text-[#151515] uppercase tracking-tight">
                   Kar Lo Register
                 </h1>
@@ -2673,20 +3167,25 @@ export const LandingView: React.FC<{
                   <div className="w-12 h-12 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center text-xl mx-auto shadow-inner">
                     ✓
                   </div>
-                  <h3 className="text-sm font-black text-center text-slate-900 uppercase">Firm Registered & Trial Active!</h3>
+                  <h3 className="text-sm font-black text-center text-slate-900 uppercase">School Account Registered & Trial Active!</h3>
                   <p className="leading-relaxed">
-                    Congratulations! Your agency/company <strong className="text-slate-900 font-extrabold">&ldquo;{regCompanyName}&rdquo;</strong> has been synchronized. A 30-day trial license is active.
+                    Congratulations! Your school/institution <strong className="text-slate-900 font-extrabold">&ldquo;{regCompanyName}&rdquo;</strong> has been registered. A 30-day full trial license is active.
                   </p>
                   <div className="bg-white p-3 rounded-lg border border-emerald-200/60 font-mono text-[11px] text-slate-700 space-y-1">
-                    <p><strong>Your Admin Username:</strong> {regFullName.toLowerCase().replace(/\s+/g, '_') + '_[id]'}</p>
-                    <p><strong>Secure Password:</strong> {regPassword}</p>
+                    <p><strong>Your Admin Username:</strong> {regFullName.toLowerCase().replace(/\s+/g, '_')}</p>
+                    <p><strong>Email / Login ID:</strong> {regEmail}</p>
+                    <p><strong>Password:</strong> {regPassword}</p>
                   </div>
                   <p className="text-gray-500 text-[10px]">
-                    To test immediately, we have added your firm into the system database. You can search or manage it from the Super Admin Panel, or log in with standard credentials!
+                    You can now log in directly using your username/email and password!
                   </p>
                   <div className="flex gap-2">
                     <button 
-                      onClick={() => { setActiveTab('login'); }}
+                      onClick={() => { 
+                        setLoginUsername(regEmail || regFullName.toLowerCase().replace(/\s+/g, '_')); 
+                        setLoginPassword(regPassword); 
+                        setActiveTab('login'); 
+                      }}
                       className="flex-1 py-2.5 bg-[#151515] hover:bg-emerald-700 text-white text-center font-bold rounded-lg transition-colors uppercase text-[10px] tracking-wider cursor-pointer"
                     >
                       Login to App now &rarr;
@@ -2704,7 +3203,7 @@ export const LandingView: React.FC<{
                   
                   {/* Full Name */}
                   <div>
-                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">Full Name *</label>
+                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">Principal / Admin Name *</label>
                     <input 
                       type="text" 
                       required
@@ -2722,14 +3221,14 @@ export const LandingView: React.FC<{
                       <input 
                         type="email" 
                         required
-                        placeholder="e.g. adeel@agency.com"
+                        placeholder="e.g. adeel@school.edu.pk"
                         value={regEmail}
                         onChange={(e) => setRegEmail(e.target.value)}
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-emerald-500 bg-white text-slate-800 font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 mb-1 uppercase text-[9px]">Phone Number *</label>
+                      <label className="block text-gray-600 mb-1 uppercase text-[9px]">Phone / WhatsApp *</label>
                       <input 
                         type="text" 
                         required
@@ -2741,20 +3240,20 @@ export const LandingView: React.FC<{
                     </div>
                   </div>
 
-                  {/* Company Name */}
+                  {/* Company/School Name */}
                   <div>
-                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">Company / Firm Name *</label>
+                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">School / College / Institution Name *</label>
                     <input 
                       type="text" 
                       required
-                      placeholder="e.g. Al-Madinah Travels"
+                      placeholder="e.g. Al-Huda Model High School"
                       value={regCompanyName}
                       onChange={(e) => setRegCompanyName(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-emerald-500 bg-white font-bold text-slate-800"
                     />
                   </div>
 
-                  {/* City & Address */}
+                  {/* City & Password */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-gray-600 mb-1 uppercase text-[9px]">City *</label>
@@ -2763,12 +3262,12 @@ export const LandingView: React.FC<{
                         required
                         value={regCity}
                         onChange={(e) => setRegCity(e.target.value)}
-                        placeholder="Faisalabad"
+                        placeholder="Haripur / Abbottabad"
                         className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-emerald-500 bg-white text-slate-800 font-bold"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 mb-1 uppercase text-[9px]">Portal Password *</label>
+                      <label className="block text-gray-600 mb-1 uppercase text-[9px]">Set Password *</label>
                       <input 
                         type="text" 
                         required
@@ -2781,10 +3280,10 @@ export const LandingView: React.FC<{
                   </div>
 
                   <div>
-                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">Office Address</label>
+                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">School Address</label>
                     <input 
                       type="text" 
-                      placeholder="e.g. Faisal Plaza, Faisalabad"
+                      placeholder="e.g. Main GT Road, Haripur KPK"
                       value={regAddress}
                       onChange={(e) => setRegAddress(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-emerald-500 bg-white text-slate-800 font-bold"
@@ -2793,17 +3292,15 @@ export const LandingView: React.FC<{
 
                   {/* Account Type dropdown */}
                   <div>
-                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">Account Type / Industry Template</label>
+                    <label className="block text-gray-600 mb-1 uppercase text-[9px]">School Plan / Package</label>
                     <select 
                       value={regAccountType}
                       onChange={(e) => setRegAccountType(e.target.value)}
                       className="w-full px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-emerald-500 bg-white text-slate-800 font-extrabold"
                     >
-                      <option value="Assan General Accounts">Assan General Accounts (PKR 4,000/mo)</option>
-                      <option value="Assan Travel Accounts">Assan Travel Accounts (PKR 5,000/mo)</option>
-                      <option value="Assan Weaving Accounts">Assan Weaving Accounts (PKR 7,500/mo)</option>
-                      <option value="Assan Invoice System">Assan Invoice System (PKR 3,000/mo)</option>
-                      <option value="Assan Umrah Calculator">Assan Umrah Calculator (PKR 4,500/mo)</option>
+                      <option value="Assan School Starter Plan">Assan School Starter Plan (PKR 3,000/mo)</option>
+                      <option value="Assan Pro School Portal">Assan Pro School Portal (PKR 5,000/mo)</option>
+                      <option value="Assan Enterprise Campus Chain">Assan Enterprise Campus Chain (PKR 7,500/mo)</option>
                     </select>
                   </div>
 
@@ -2814,11 +3311,11 @@ export const LandingView: React.FC<{
                     type="submit"
                     className="w-full py-3 bg-[#1b8755] hover:bg-[#12613c] text-white font-black rounded-xl uppercase tracking-widest text-[10px] transition-colors shadow-md mt-2 cursor-pointer"
                   >
-                    Register Now
+                    Register School Account
                   </motion.button>
 
                   <div className="text-center pt-2">
-                    <span className="text-[10px] text-gray-400 font-semibold">Already have an account? </span>
+                    <span className="text-[10px] text-gray-400 font-semibold">Already registered? </span>
                     <button 
                       type="button" 
                       onClick={() => setActiveTab('login')} 
@@ -2874,49 +3371,57 @@ export const LandingView: React.FC<{
               <div className="text-center space-y-2">
                 <div className="flex items-center justify-center space-x-2">
                   <div className="w-14 h-14 flex items-center justify-center shrink-0 overflow-hidden bg-white/95 rounded-xl p-1 shadow-sm">
-                    <img src="https://i.ibb.co/Kc1N3s9m/icon.png" alt="Assan Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                    <img src="https://i.ibb.co/Kc1N3s9m/icon.png" alt="Assan School Logo" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                   </div>
                   <div className="text-left leading-none">
                     <span className="block text-xl font-black text-slate-950 tracking-tight">Assan</span>
-                    <span className="block text-[11px] font-extrabold text-[#1b8755]">Accounting Software</span>
+                    <span className="block text-[11px] font-extrabold text-[#1b8755]">School Portal</span>
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-900/80 font-extrabold font-serif tracking-wider">
-                 by teem hacktes آب اکائونٹس ہوئے آسان
+                 by teem hacktes اب اسکول مینجمنٹ ہوئی آسان
                 </p>
               </div>
 
               <div className="text-center space-y-1">
-                <h2 className="text-sm font-extrabold text-slate-800 tracking-wide uppercase">Sign In to Portal</h2>
-                <p className="text-[11px] text-slate-500 font-bold">Enter your authorized credentials below.</p>
+                <h2 className="text-sm font-extrabold text-slate-800 tracking-wide uppercase">Sign In to School Software</h2>
+                <p className="text-[11px] text-slate-500 font-bold">Enter your authorized credentials below or click 1-Click Login.</p>
               </div>
 
               {/* Demo Credentials Quick Fill */}
               <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-black uppercase text-emerald-900 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Quick Demo Login
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> QUICK DEMO LOGINS
                   </span>
                   <span className="text-[9px] bg-emerald-200 text-emerald-950 font-black px-2 py-0.5 rounded-full uppercase">
-                    1-Click
+                    1-CLICK
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                <div className="grid grid-cols-3 gap-1.5 text-[10px]">
                   <button
                     type="button"
                     onClick={() => { setLoginUsername('admin'); setLoginPassword('123'); setLoginError(''); }}
                     className="p-2 bg-white hover:bg-emerald-100/60 border border-emerald-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
                   >
-                    <span className="font-extrabold text-slate-800 block">School Admin</span>
+                    <span className="font-extrabold text-slate-800 block text-[10px]">School Admin</span>
                     <span className="font-mono text-[9px] text-emerald-700 font-bold block">admin / 123</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => { setLoginUsername('adminabdulrehmanhabibkpk'); setLoginPassword('123'); setLoginError(''); }}
+                    onClick={() => { setLoginUsername('teacher'); setLoginPassword('123'); setLoginError(''); }}
+                    className="p-2 bg-white hover:bg-sky-100/60 border border-sky-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
+                  >
+                    <span className="font-extrabold text-slate-800 block text-[10px]">Teacher / User</span>
+                    <span className="font-mono text-[9px] text-sky-700 font-bold block">teacher / 123</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setLoginUsername('abdulrehmanhabib.com@gmail.com'); setLoginPassword('6242842'); setLoginError(''); }}
                     className="p-2 bg-white hover:bg-amber-100/60 border border-amber-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
                   >
-                    <span className="font-extrabold text-slate-800 block">Super Admin</span>
-                    <span className="font-mono text-[9px] text-amber-700 font-bold block">admin... / 123</span>
+                    <span className="font-extrabold text-slate-800 block text-[10px]">Super Admin</span>
+                    <span className="font-mono text-[9px] text-amber-700 font-bold block">abdulrehman... / 6242842</span>
                   </button>
                 </div>
               </div>
@@ -2944,7 +3449,7 @@ export const LandingView: React.FC<{
                       required
                       value={loginUsername}
                       onChange={(e) => setLoginUsername(e.target.value)}
-                      placeholder="Enter username or email"
+                      placeholder="e.g. admin or adeel@school.com"
                       className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
                     />
                   </div>
@@ -2990,7 +3495,7 @@ export const LandingView: React.FC<{
               </form>
 
               <div className="text-center">
-                <span className="text-[10px] text-gray-400 font-semibold">New to Assan Accounting Software? </span>
+                <span className="text-[10px] text-gray-400 font-semibold">New to Assan School Portal? </span>
                 <button 
                   onClick={() => setActiveTab('register')} 
                   className="text-emerald-600 hover:underline text-[10px] font-bold uppercase cursor-pointer"

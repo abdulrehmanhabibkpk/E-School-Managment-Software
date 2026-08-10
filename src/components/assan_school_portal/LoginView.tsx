@@ -183,18 +183,25 @@ export const LoginView: React.FC<LoginViewProps> = ({
         }
       }
 
-      const isSuperAdminInput =
+      const isSuperAdminEmail = inputVal.toLowerCase() === 'abdulrehmanhabib.com@gmail.com';
+      const isTryingSuperAdmin = isSuperAdminEmail || 
         inputVal.toLowerCase() === 'adminabdulrehmanhabibkpk' ||
-        inputVal.toLowerCase() === 'superadmin@assanaccounts.com' ||
-        inputVal.toLowerCase() === 'abdulrehman654as@gmail.com' ||
-        inputVal.toLowerCase() === 'abdulrehmanhabib.com@gmail.com' ||
-        inputVal.toLowerCase() === 'arsalaninternationaltravel9@gmail.com' ||
+        inputVal.toLowerCase().includes('superadmin') ||
         matchedSystemUser?.role === 'Super Admin';
+
+      if (isTryingSuperAdmin) {
+        if (!isSuperAdminEmail) {
+          throw new Error('Super Admin access is restricted to abdulrehmanhabib.com@gmail.com only.');
+        }
+        if (normalizedPass !== '6242842') {
+          throw new Error('Incorrect password for Super Admin account.');
+        }
+      }
 
       let emailToUse = inputVal;
       if (!inputVal.includes('@') && matchedSystemUser?.email) {
         emailToUse = matchedSystemUser.email;
-      } else if (!inputVal.includes('@') && isSuperAdminInput) {
+      } else if (isSuperAdminEmail) {
         emailToUse = 'abdulrehmanhabib.com@gmail.com';
       }
 
@@ -205,14 +212,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
         const userCredential = await signInWithEmailAndPassword(auth, emailToUse, normalizedPass);
         firebaseUserObj = userCredential.user;
 
-        if (matchedSystemUser) {
-          loggedInUser = { ...matchedSystemUser, id: firebaseUserObj.uid, emailVerified: firebaseUserObj.emailVerified };
-        } else if (isSuperAdminInput) {
+        if (isSuperAdminEmail) {
           loggedInUser = {
             id: firebaseUserObj.uid,
             username: 'adminabdulrehmanhabibkpk',
             name: 'Abdul Rehman Habib (Super Admin)',
-            email: firebaseUserObj.email || emailToUse,
+            email: 'abdulrehmanhabib.com@gmail.com',
             role: 'Super Admin',
             status: 'Active',
             activity: 'Just Now',
@@ -220,6 +225,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
             companyName: 'Assan Accounts Central',
             emailVerified: firebaseUserObj.emailVerified,
           };
+        } else if (matchedSystemUser) {
+          loggedInUser = { ...matchedSystemUser, id: firebaseUserObj.uid, emailVerified: firebaseUserObj.emailVerified };
         } else {
           loggedInUser = {
             id: firebaseUserObj.uid,
@@ -235,13 +242,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       } catch (fbErr: any) {
         console.warn('Firebase Auth login fallback:', fbErr);
 
-        if (matchedSystemUser) {
-          if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123' || normalizedPass === '000222' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
-            loggedInUser = matchedSystemUser;
-          } else {
-            throw new Error('Incorrect password for this user account.');
-          }
-        } else if (isSuperAdminInput && (normalizedPass === '123456' || normalizedPass === '123' || normalizedPass === 'admin123' || normalizedPass === '000222' || normalizedPass === '6242842AS&')) {
+        if (isSuperAdminEmail && normalizedPass === '6242842') {
           loggedInUser = {
             id: 'superadmin-root',
             username: 'adminabdulrehmanhabibkpk',
@@ -253,19 +254,23 @@ export const LoginView: React.FC<LoginViewProps> = ({
             companyId: 'super_admin_system',
             companyName: 'Assan Accounts Central',
           };
-        } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123' || normalizedPass === 'demo1234' || normalizedPass === '000222') {
-          // Automatic demo login fallback
-          const isSuper = inputVal.toLowerCase().includes('super') || inputVal.toLowerCase().includes('abdulrehman');
+        } else if (matchedSystemUser) {
+          if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
+            loggedInUser = matchedSystemUser;
+          } else {
+            throw new Error('Incorrect password for this user account.');
+          }
+        } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
           loggedInUser = {
             id: 'demo-user-' + Date.now(),
             username: inputVal,
-            name: isSuper ? 'Abdul Rehman Habib (Super Admin)' : 'School Administrator',
+            name: 'School Administrator',
             email: inputVal.includes('@') ? inputVal : `${inputVal}@school.com`,
-            role: isSuper ? 'Super Admin' : 'Admin',
+            role: 'Admin',
             status: 'Active',
             activity: 'Just Now',
-            companyId: isSuper ? 'super_admin_system' : 'comp_demo',
-            companyName: isSuper ? 'Assan Accounts Central' : 'Al-Huda Model High School'
+            companyId: 'comp_demo',
+            companyName: 'Al-Huda Model High School'
           };
         } else {
           throw fbErr;
@@ -466,11 +471,11 @@ export const LoginView: React.FC<LoginViewProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setUsername('adminabdulrehmanhabibkpk'); setPassword('123'); setError(''); }}
+                  onClick={() => { setUsername('abdulrehmanhabib.com@gmail.com'); setPassword('6242842'); setError(''); }}
                   className="p-2 bg-white hover:bg-amber-100/60 border border-amber-200 rounded-xl text-left transition shadow-xs cursor-pointer group"
                 >
                   <span className="font-extrabold text-slate-800 block group-hover:text-amber-700">Super Admin</span>
-                  <span className="font-mono text-[10px] text-amber-700 font-bold block">admin... / 123</span>
+                  <span className="font-mono text-[10px] text-amber-700 font-bold block">abdulrehman... / 6242842</span>
                 </button>
               </div>
             </div>
