@@ -99,4 +99,6 @@ export interface SystemUser {
   companyName?: string;
   password?: string;
   emailVerified?: boolean;
+  schoolId?: string;
+  madrassaName?: string;
 }

@@ -299,6 +299,13 @@ export const LoginView: React.FC<LoginViewProps> = ({
         localStorage.removeItem('isSuperAdmin');
       }
 
+      if (loggedInUser.schoolId) {
+        localStorage.setItem('active_school_id', loggedInUser.schoolId);
+      }
+      if (loggedInUser.madrassaName) {
+        localStorage.setItem('currentSchoolName', loggedInUser.madrassaName);
+      }
+
       setCurrentUser(loggedInUser);
       if (showToast) showToast(`Welcome back, ${loggedInUser.name}!`, 'success');
       if (onLoginSuccess) onLoginSuccess(firebaseUserObj || loggedInUser);

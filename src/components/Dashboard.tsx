@@ -94,6 +94,7 @@ import AdminDashboard from "./AdminPanel/AdminDashboard";
 import Notepad from "./Notepad";
 import SuperAdminPanel from "./SuperAdminPanel";
 import DailyLessons from "./DailyLessons";
+import DiaryManagement from "./DiaryManagement";
 import GuardiansDirectory from "./GuardiansDirectory";
 import LeaveRequests from "./LeaveRequests";
 import BulkOperations from "./BulkOperations";
@@ -810,6 +811,13 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       subLabel: "Teaching Log",
     },
     {
+      id: "diary",
+      path: "/dashboard/diary",
+      icon: Video,
+      label: "Diary",
+      subLabel: "Student Log",
+    },
+    {
       id: "manual",
       path: "/dashboard/manual-attendance",
       icon: Hand,
@@ -822,13 +830,6 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       icon: QrCode,
       label: "QR Attendance",
       subLabel: "Verification",
-    },
-    {
-      id: "admin_panel",
-      path: "/dashboard/admin-panel",
-      icon: ShieldCheck,
-      label: "Admin Panel",
-      subLabel: "Management",
     },
     {
       id: "exam_attendance_sheet",
@@ -1054,20 +1055,20 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       color: "bg-blue-700",
     },
     {
-      id: "admin_panel",
-      path: "/dashboard/admin-panel",
-      icon: ShieldCheck,
-      title: "Admin Control",
-      subtitle: "Master Access",
-      color: "bg-indigo-700",
-    },
-    {
       id: "lessons_daily",
       path: "/dashboard/lessons",
       icon: BookOpen,
       title: "Daily Lessons & Homework",
       subtitle: "WhatsApp Diary",
       color: "bg-emerald-600",
+    },
+    {
+      id: "diary_management",
+      path: "/dashboard/diary",
+      icon: Video,
+      title: "Diary Management",
+      subtitle: "Student Log",
+      color: "bg-blue-600",
     },
     {
       id: "scholarship",
@@ -1391,10 +1392,20 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     currentUserEmail.toLowerCase() === 'abdulrehmanhabib.com@gmail.com' &&
     (userRole === 'Super Admin' || localStorage.getItem('isSuperAdmin') === 'true');
 
-  if (isSuperAdminAccount && location.pathname !== '/dashboard/school-view') {
+  if (isSuperAdminAccount && !localStorage.getItem('active_school_id')) {
     return (
-      <div className="w-full h-screen bg-slate-900 overflow-hidden">
-        <SuperAdminPanel onClose={() => navigate('/dashboard/school-view')} />
+      <div className="w-full h-screen overflow-hidden">
+        <SuperAdminPanel onBack={() => {
+          localStorage.removeItem("currentUser");
+          localStorage.removeItem("currentUserRole");
+          localStorage.removeItem("isLoggedIn");
+          localStorage.removeItem("isSuperAdmin");
+          localStorage.removeItem("userStatus");
+          localStorage.removeItem("active_school_id");
+          localStorage.removeItem("currentSchoolName");
+          onLogout();
+          navigate("/login");
+        }} />
       </div>
     );
   }
@@ -1978,11 +1989,12 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                 return false;
               }
 
+              if (item.id === "admin_panel") return false;
+
               // 1. Master Check (Master Admins see everything)
               if (isAdmin) return true;
 
-              // 2. Admin Panel check
-              if (item.id === "admin_panel") return false;
+              // 2. Admin Panel check (moved up)
 
               // 3. User Specific Modules from Firestore
               if (currentUserProfile?.permissions?.modules) {
@@ -2051,6 +2063,31 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden print:overflow-visible print:h-auto">
+        {/* Super Admin Preview Mode Banner */}
+        {isSuperAdminAccount && localStorage.getItem('active_school_id') && (
+          <div className="bg-gradient-to-r from-indigo-700 via-indigo-800 to-indigo-900 text-white px-6 py-3 flex items-center justify-between shadow-md relative z-50 animate-fade-in font-sans font-semibold text-xs border-b border-indigo-950">
+            <div className="flex items-center gap-3">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              </span>
+              <span>
+                آپ اس وقت سپر ایڈمن موڈ میں ہیں اور <strong>"{localStorage.getItem('currentSchoolName') || 'مطلوبہ اسکول'}"</strong> کا ریکارڈ دیکھ رہے ہیں۔
+              </span>
+            </div>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('active_school_id');
+                localStorage.removeItem('currentSchoolName');
+                window.dispatchEvent(new Event('storage_updated'));
+              }}
+              className="bg-white hover:bg-slate-100 text-indigo-900 font-extrabold px-3.5 py-1.5 rounded-lg text-[10px] transition duration-150 flex items-center gap-1 shadow-sm shrink-0 uppercase tracking-wider"
+            >
+              ایڈمن پینل پر واپس جائیں ←
+            </button>
+          </div>
+        )}
+
         {/* Offline & Sync Status Banner */}
         {(!isOnline || syncStatus !== 'idle' || pendingSyncCount > 0) && (
           <div 
@@ -2243,6 +2280,10 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route
             path="/lessons"
             element={<DailyLessons onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/diary"
+            element={<DiaryManagement onBack={() => navigate("/dashboard")} />}
           />
           <Route
             path="/grade"

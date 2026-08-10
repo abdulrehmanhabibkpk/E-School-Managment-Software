@@ -525,46 +525,100 @@ export const LandingView: React.FC<{
             companyId: 'super_admin_system',
             companyName: 'Assan Accounts Central',
           };
-        } else if (matchedSystemUser) {
-          if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
-            try {
-              const userCredential = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
-              const fbUser = userCredential.user;
-              
-              loggedInUser = {
-                ...matchedSystemUser,
-                id: fbUser.uid,
-                emailVerified: fbUser.emailVerified
-              };
-
-              await setDoc(doc(db, 'users', fbUser.uid), {
-                ...matchedSystemUser,
-                id: fbUser.uid
-              });
-
-              if (matchedSystemUser.id !== fbUser.uid) {
-                await deleteDoc(doc(db, 'users', matchedSystemUser.id));
-              }
-            } catch (createErr: any) {
-              loggedInUser = matchedSystemUser;
-            }
-          } else {
-            throw new Error('Incorrect password for this user account.');
-          }
-        } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
-          loggedInUser = {
-            id: 'demo-user-' + Date.now(),
-            username: inputVal,
-            name: 'School Administrator',
-            email: inputVal.includes('@') ? inputVal : `${inputVal}@school.com`,
-            role: 'Admin',
-            status: 'Active',
-            activity: 'Just Now',
-            companyId: 'comp_demo',
-            companyName: 'Al-Huda Model High School'
-          };
         } else {
-          throw fbErr;
+          // Look up school accounts in licensed_madrasas
+          let matchedSchool: any = null;
+          try {
+            const savedSchoolsStr = localStorage.getItem('licensed_madrasas');
+            if (savedSchoolsStr) {
+              const savedSchools = JSON.parse(savedSchoolsStr);
+              matchedSchool = savedSchools.find(
+                (s: any) =>
+                  s.username?.toLowerCase() === inputVal.toLowerCase() ||
+                  s.email?.toLowerCase() === inputVal.toLowerCase()
+              );
+            }
+          } catch (e) {}
+
+          // Look up user accounts in localStorage users list
+          let matchedUserFromList: any = null;
+          try {
+            const savedUsersStr = localStorage.getItem('users');
+            if (savedUsersStr) {
+              const savedUsers = JSON.parse(savedUsersStr);
+              matchedUserFromList = savedUsers.find(
+                (usr: any) =>
+                  usr.username?.toLowerCase() === inputVal.toLowerCase() ||
+                  usr.email?.toLowerCase() === inputVal.toLowerCase()
+              );
+            }
+          } catch (e) {}
+
+          if (matchedSchool && matchedSchool.password === normalizedPass) {
+            loggedInUser = {
+              id: matchedSchool.id,
+              username: matchedSchool.username || matchedSchool.email?.split('@')[0],
+              name: matchedSchool.principalName || matchedSchool.madrassaName,
+              email: matchedSchool.email || `${matchedSchool.username}@school.com`,
+              role: 'Admin',
+              status: matchedSchool.status === 'inactive' ? 'Suspended' : 'Active',
+              companyId: matchedSchool.id,
+              companyName: matchedSchool.madrassaName,
+              schoolId: matchedSchool.id,
+            };
+          } else if (matchedUserFromList && matchedUserFromList.password === normalizedPass) {
+            loggedInUser = {
+              id: matchedUserFromList.id,
+              username: matchedUserFromList.username || matchedUserFromList.email?.split('@')[0],
+              name: matchedUserFromList.name || matchedUserFromList.username,
+              email: matchedUserFromList.email,
+              role: matchedUserFromList.role || 'Admin',
+              status: matchedUserFromList.status || 'Active',
+              companyId: matchedUserFromList.schoolId || matchedUserFromList.companyId,
+              companyName: matchedUserFromList.madrassaName || matchedUserFromList.companyName,
+              schoolId: matchedUserFromList.schoolId,
+            };
+          } else if (matchedSystemUser) {
+            if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
+              try {
+                const userCredential = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
+                const fbUser = userCredential.user;
+                
+                loggedInUser = {
+                  ...matchedSystemUser,
+                  id: fbUser.uid,
+                  emailVerified: fbUser.emailVerified
+                };
+
+                await setDoc(doc(db, 'users', fbUser.uid), {
+                  ...matchedSystemUser,
+                  id: fbUser.uid
+                });
+
+                if (matchedSystemUser.id !== fbUser.uid) {
+                  await deleteDoc(doc(db, 'users', matchedSystemUser.id));
+                }
+              } catch (createErr: any) {
+                loggedInUser = matchedSystemUser;
+              }
+            } else {
+              throw new Error('Incorrect password for this user account.');
+            }
+          } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
+            loggedInUser = {
+              id: 'demo-user-' + Date.now(),
+              username: inputVal,
+              name: 'School Administrator',
+              email: inputVal.includes('@') ? inputVal : `${inputVal}@school.com`,
+              role: 'Admin',
+              status: 'Active',
+              activity: 'Just Now',
+              companyId: 'comp_demo',
+              companyName: 'Al-Huda Model High School'
+            };
+          } else {
+            throw fbErr;
+          }
         }
       }
 
@@ -577,6 +631,28 @@ export const LandingView: React.FC<{
         showToast('Account Suspended', 'error');
         setIsLoading(false);
         return;
+      }
+
+      // Store credentials in localStorage upon successful login
+      localStorage.setItem('currentUser', loggedInUser.email || loggedInUser.username);
+      localStorage.setItem('currentUserName', loggedInUser.name);
+      localStorage.setItem('currentUserRole', loggedInUser.role || 'Admin');
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('userStatus', loggedInUser.status?.toLowerCase() === 'pending' ? 'pending' : 'accepted');
+      localStorage.setItem('paymentStatus', 'paid');
+      
+      if (loggedInUser.role === 'Super Admin' || loggedInUser.username === 'adminabdulrehmanhabibkpk' || loggedInUser.email === 'abdulrehmanhabib.com@gmail.com') {
+        localStorage.setItem('isSuperAdmin', 'true');
+        localStorage.removeItem('active_school_id'); // Admin goes to SuperAdminPanel first
+      } else {
+        localStorage.removeItem('isSuperAdmin');
+        if (loggedInUser.schoolId) {
+          localStorage.setItem('active_school_id', loggedInUser.schoolId);
+          localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'میرا اسکول');
+        } else if (loggedInUser.companyId && loggedInUser.companyId !== 'super_admin_system') {
+          localStorage.setItem('active_school_id', loggedInUser.companyId);
+          localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'میرا اسکول');
+        }
       }
 
       setCurrentUser(loggedInUser);
@@ -626,6 +702,31 @@ export const LandingView: React.FC<{
         accountType: regAccountType,
         password: regPassword, // Added password here
       });
+
+      // Save to localStorage users so it appears in SuperAdminPanel "Requests"
+      try {
+        const localUsersStr = localStorage.getItem('users') || '[]';
+        const allUsers = JSON.parse(localUsersStr);
+        // Check if user already exists
+        const exists = allUsers.some((u: any) => u.email?.toLowerCase() === regEmail.trim().toLowerCase());
+        if (!exists) {
+          allUsers.push({
+            id: 'req-' + Date.now(),
+            username: regEmail.trim().split('@')[0],
+            name: regFullName,
+            email: regEmail.trim().toLowerCase(),
+            password: regPassword || 'school123',
+            whatsapp: regPhone,
+            madrassaName: regCompanyName,
+            status: 'Pending',
+            role: 'Admin'
+          });
+          localStorage.setItem('users', JSON.stringify(allUsers));
+          window.dispatchEvent(new Event('storage_updated'));
+        }
+      } catch (e) {
+        console.error("Error saving pending request to localStorage:", e);
+      }
 
       setRegistrationSuccess(true);
       showToast('Registration Request Sent! Admin will review and approve it.', 'success');

@@ -57,7 +57,8 @@ const SYNC_KEYS = [
   'teacherAttendance',
   'attendanceRecords',
   'zk_attendance_data',
-  'urdu_notes'
+  'urdu_notes',
+  'diary_entries'
 ];
 
 /**

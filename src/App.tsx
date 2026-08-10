@@ -25,6 +25,14 @@ function ProtectedRoute({ children, isLoggedIn }: { children: React.ReactNode, i
 
 function LandingRoute() {
   const navigate = useNavigate();
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [isLoggedIn, navigate]);
+
   return (
     <LandingView 
       onOpenLogin={() => navigate('/')}
