@@ -88,28 +88,28 @@ const renderMixedText = (text: string, defaultFont: string = 'font-urdu') => {
 
 const getArabicQuestionLabel = (index: number): string => {
   const labels = [
-    'السؤال الأول',
-    'السؤال الثاني',
-    'السؤال الثالث',
-    'السؤال الرابع',
-    'السؤال الخامس',
-    'السؤال السادس',
-    'السؤال السابع',
-    'السؤال الثامن',
-    'السؤال التاسع',
-    'السؤال العاشر',
-    'السؤال الحادي عشر',
-    'السؤال الثاني عشر',
-    'السؤال الثالث عشر',
-    'السؤال الرابع عشر',
-    'السؤال الخامس عشر',
-    'السؤال السادس عشر',
-    'السؤال السابع عشر',
-    'السؤال الثامن عشر',
-    'السؤال التاسع عشر',
-    'السؤال العشرون'
+    'Question One',
+    'Question Two',
+    'Question Three',
+    'Question Four',
+    'Question Five',
+    'Question Six',
+    'Question Seven',
+    'Question Eight',
+    'Question Nine',
+    'Question Ten',
+    'Question Eleven',
+    'Question Twelve',
+    'Question Thirteen',
+    'Question Fourteen',
+    'Question Fifteen',
+    'Question Sixteen',
+    'Question Seventeen',
+    'Question Eighteen',
+    'Question Nineteen',
+    'Question Twenty'
   ];
-  return labels[index] || `السؤال رقم ${index + 1}`;
+  return labels[index] || `Question ${index + 1}`;
 };
 
 export default function PaperMaker({ onBack }: PaperMakerProps) {
@@ -124,26 +124,27 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
     spacing: 32,
     titleSize: 36,
     fontWeight: 'font-medium',
-    fontFamily: 'font-urdu',
+    fontFamily: 'font-sans',
     customLogo: '' as string,
     printType: 'paper' as 'paper' | 'booklet'
   });
 
   const [systemSettings] = useState(() => {
     const saved = localStorage.getItem('system_settings');
+    const defaultName = 'Siraj-ul-Uloom Arabic University Mansehra';
     const parsed = saved ? JSON.parse(saved) : {
-      jamiaName: 'الجامعۃ العربیہ سراج العلوم مانسهره',
+      jamiaName: defaultName,
       monogram: ''
     };
-    if (parsed.jamiaName !== 'الجامعۃ العربیہ سراج العلوم مانسهره') {
-        parsed.jamiaName = 'الجامعۃ العربیہ سراج العلوم مانسهره';
+    if (!parsed.jamiaName || parsed.jamiaName.match(/[\u0600-\u06FF]/)) {
+        parsed.jamiaName = defaultName;
         localStorage.setItem('system_settings', JSON.stringify(parsed));
     }
     return parsed;
   });
 
   const [availableGrades, setAvailableGrades] = useState<string[]>([]);
-  const [examTypes, setExamTypes] = useState<string[]>(['جائزہ', 'سہ ماہی', 'ششماہی', 'سالانہ امتحان', 'ضمنی امتحان']);
+  const [examTypes, setExamTypes] = useState<string[]>(['Monthly Test', 'Midterm Exam', 'Final Exam', 'Annual Exam', 'Supplementary Exam']);
 
   const [showAiModal, setShowAiModal] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -272,16 +273,16 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
         if (Array.isArray(savedGrades) && savedGrades.length > 0) {
           setAvailableGrades(savedGrades.map((g: any) => g?.name).filter(Boolean));
         } else {
-          setAvailableGrades(['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'سادسہ', 'سابعہ', 'دورہ حدیث']);
+          setAvailableGrades(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8']);
         }
       }
     } catch (e) {
-      setAvailableGrades(['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'سادسہ', 'سابعہ', 'دورہ حدیث']);
+      setAvailableGrades(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8']);
     }
 
     const savedExams = JSON.parse(localStorage.getItem('exams') || '[]');
     if (savedExams.length > 0) {
-      setExamTypes(Array.from(new Set([...savedExams, 'جائزہ', 'سہ ماہی', 'ششماہی', 'سالانہ امتحان'])));
+      setExamTypes(Array.from(new Set([...savedExams, 'Monthly Test', 'Midterm Exam', 'Final Exam', 'Annual Exam'])));
     }
   }, []);
 
@@ -295,14 +296,14 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
       id: generateUniqueId('paper'),
       book: '',
       grade: '',
-      time: 'المحدد : ثلاث ساعات',
+      time: 'Time Allowed: 3 Hours',
       totalMarks: 100,
-      note: 'تمام سوالات لازمی ہیں۔ خوشخطی کے اضافی نمبر ہوں گے۔',
-      noteFontFamily: 'font-urdu',
-      year: '1447ھ',
-      examName: 'سالانہ امتحان',
+      note: 'Note: All questions are compulsory. Extra marks will be awarded for neat handwriting.',
+      noteFontFamily: 'font-sans',
+      year: '2026',
+      examName: 'Annual Exam',
       questions: [
-        { id: '1', text: 'السؤال الأول:', marks: 33 }
+        { id: '1', text: 'Question One:', marks: 100 }
       ]
     };
     setCurrentPaper(newPaper);
@@ -352,7 +353,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('کیا آپ اس پرچہ کو حذف کرنا چاہتے ہیں؟')) {
+    if (confirm('Are you sure you want to delete this paper?')) {
       const updated = papers.filter(p => p.id !== id);
       saveToStorage(updated);
     }
@@ -364,8 +365,8 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
     const newQuestion: Question = {
       id: generateUniqueId('q'),
       text: `${getArabicQuestionLabel(nextIndex)}:`,
-      marks: 33,
-      fontFamily: 'font-urdu'
+      marks: 20,
+      fontFamily: 'font-sans'
     };
     setCurrentPaper({
       ...currentPaper,
@@ -394,11 +395,11 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
     const updatedQuestions = currentPaper.questions.map(q => {
       if (q.id === questionId) {
         const parts = q.parts || [];
-        const partLabels = ['الف', 'ب', 'ج', 'د', 'ہ', 'و', 'ز', 'ح', 'ط', 'ی'];
+        const partLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
         const newLabel = partLabels[parts.length % partLabels.length];
         return {
           ...q,
-          parts: [...parts, { id: generateUniqueId('part'), text: `(${newLabel}): `, marks: 0, fontFamily: 'font-urdu' }]
+          parts: [...parts, { id: generateUniqueId('part'), text: `(${newLabel}): `, marks: 0, fontFamily: 'font-sans' }]
         };
       }
       return q;
@@ -438,27 +439,27 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
         <div className="w-full max-w-7xl mb-8 no-print grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2 col-span-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">پرنٹ کی قسم (Print Type)</span>
+                <span className="text-xs font-bold text-slate-400">Print Type</span>
              </div>
              <div className="flex gap-2">
                 <button 
                   onClick={() => setLayoutSettings(prev => ({ ...prev, printType: 'paper' }))}
                   className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${layoutSettings.printType === 'paper' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                 >
-                  سوالیہ پرچہ
+                  Question Paper
                 </button>
                 <button 
                   onClick={() => setLayoutSettings(prev => ({ ...prev, printType: 'booklet' }))}
                   className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${layoutSettings.printType === 'booklet' ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                 >
-                  جوابی کاپی (Booklet)
+                  Answer Booklet
                 </button>
              </div>
           </div>
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">اوپر/نیچے کا فاصلہ</span>
+                <span className="text-xs font-bold text-slate-400">Top/Bottom Margin</span>
              </div>
              <input 
                 type="range" min="10" max="60" step="2"
@@ -467,7 +468,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                 className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
              />
              <div className="flex justify-between text-[10px] text-slate-400 font-bold">
-                <span>سائیڈ کا حاشیہ</span>
+                <span>Side Margin</span>
                 <input 
                     type="range" min="0" max="50" step="2"
                     value={layoutSettings.spacing || 32}
@@ -479,25 +480,25 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">فونٹ (Font)</span>
+                <span className="text-xs font-bold text-slate-400">Font Family</span>
              </div>
              <select 
                value={layoutSettings.fontFamily}
                onChange={(e) => setLayoutSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
                className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs font-bold outline-none cursor-pointer"
              >
+                <option value="font-sans">Sans-serif (Standard)</option>
+                <option value="font-serif">Serif (Formal)</option>
+                <option value="font-mono">Monospace (Code)</option>
                 <option value="font-faiz">Faiz Lahori Nastaleeq</option>
                 <option value="font-urdu">Lahori Nastaleeq</option>
                 <option value="font-classic">Arabic</option>
-                <option value="font-naskh">خطِ نسخ (Naskh)</option>
-                <option value="font-ruqah">خطِ رقعہ (Ruq'ah)</option>
-                <option value="font-diwani">خطِ طغریٰ یا دیوانی (Thuluth / Diwani)</option>
              </select>
           </div>
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">لکھائی</span>
+                <span className="text-xs font-bold text-slate-400">Font Size</span>
              </div>
              <input 
                 type="range" min="12" max="48" step="1"
@@ -509,7 +510,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">فاصلہ</span>
+                <span className="text-xs font-bold text-slate-400">Spacing</span>
              </div>
              <input 
                 type="range" min="10" max="100" step="2"
@@ -521,36 +522,36 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col gap-2">
              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-400">لوگو</span>
+                <span className="text-xs font-bold text-slate-400">Logo</span>
              </div>
              <label className="w-full bg-slate-50 border border-slate-200 border-dashed rounded-lg p-1.5 flex items-center justify-center cursor-pointer hover:bg-slate-100 transition-all">
-                <span className="text-[10px] font-bold text-slate-500">نیا لوگو</span>
+                <span className="text-[10px] font-bold text-slate-500">New Logo</span>
                 <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                   if (e.target.files && e.target.files[0]) {
-                     const reader = new FileReader();
-                     reader.onload = (ev) => setLayoutSettings(prev => ({ ...prev, customLogo: ev.target?.result as string }));
-                     reader.readAsDataURL(e.target.files[0]);
+                      const reader = new FileReader();
+                      reader.onload = (ev) => setLayoutSettings(prev => ({ ...prev, customLogo: ev.target?.result as string }));
+                      reader.readAsDataURL(e.target.files[0]);
                   }
                 }} />
              </label>
              {layoutSettings.customLogo && (
-               <button onClick={() => setLayoutSettings(prev => ({ ...prev, customLogo: '' }))} className="text-[10px] text-red-500 font-bold text-center">ہٹائیں</button>
+               <button onClick={() => setLayoutSettings(prev => ({ ...prev, customLogo: '' }))} className="text-[10px] text-red-500 font-bold text-center">Remove</button>
              )}
           </div>
 
           <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex gap-2 items-center justify-center">
             <button 
               onClick={() => setView('editor')}
-              className="flex-1 bg-slate-800 text-white px-2 py-3 rounded-lg font-urdu font-bold text-[10px] text-center"
+              className="flex-1 bg-slate-800 text-white px-2 py-3 rounded-lg font-sans font-bold text-[10px] text-center"
             >
-              واپس
+              Back
             </button>
             <button 
               onClick={() => window.print()}
-              className="flex-1 bg-emerald-600 text-white px-2 py-3 rounded-lg font-urdu font-bold text-[10px] flex items-center justify-center gap-1"
+              className="flex-1 bg-emerald-600 text-white px-2 py-3 rounded-lg font-sans font-bold text-[10px] flex items-center justify-center gap-1"
             >
               <Printer className="w-3 h-3" />
-              پرنٹ
+              Print
             </button>
           </div>
         </div>
@@ -566,7 +567,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
             {/* <div className="absolute inset-[10mm] border-[3px] border-black pointer-events-none z-0"></div>
             <div className="absolute inset-[11.5mm] border border-black pointer-events-none z-0"></div> */}
 
-            <div className="relative z-10 w-full h-full px-6 pt-0" dir="rtl">
+            <div className="relative z-10 w-full h-full px-6 pt-0" dir="ltr">
                {/* Header Section */}
                <div className="flex justify-between items-start mb-0">
                   {/* Empty Right for Symmetry */}
@@ -577,9 +578,6 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                      <h1 style={{ fontSize: `${layoutSettings.titleSize}px`, lineHeight: '1.2' }} className={`font-black text-black mb-1 drop-shadow-sm ${layoutSettings.fontFamily}`}>
                         {systemSettings.jamiaName}
                      </h1>
-                     {/* <div className="flex items-center gap-4 border-b-2 border-black pb-1 px-8">
-                        <span className={`text-xl font-bold tracking-wide ${layoutSettings.fontFamily}`}>{currentPaper.examName}</span>
-                     </div> */}
                   </div>
 
                   {/* Top Left Logo */}
@@ -593,7 +591,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                      ) : (
                         <div className="w-20 h-20 border-[3px] border-black rounded-full flex items-center justify-center p-1">
                            <div className="w-full h-full border border-black rounded-full flex flex-col items-center justify-center text-[8px] font-bold text-center">
-                              لوگو<br/>یہاں<br/>لگائیں
+                              Place<br/>Logo<br/>Here
                            </div>
                         </div>
                      )}
@@ -601,32 +599,32 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                </div>
 
                {/* Info Bar */}
-               <div className={`border-y-[2px] border-black py-2.5 my-0 flex justify-between items-center px-4 font-black text-lg bg-white font-classic`}>
-                  <div className="flex gap-2"><span>مجموع الدرجات:</span> <span>{currentPaper.totalMarks}</span></div>
-                  <div className="flex gap-2"><span>المادة:</span> <span>{currentPaper.book || 'عربی ادب'}</span></div>
-                  <div className="flex gap-2"><span>الدرجة:</span> <span>{currentPaper.grade || '---'}</span></div>
-                  <div className="flex gap-2"><span>الاختبار:</span> <span>{currentPaper.examName || '---'}</span></div>
-                  <div className="flex gap-2"><span>الوقت:</span> <span>{currentPaper.time}</span></div>
+               <div className={`border-y-[2px] border-black py-2.5 my-0 flex justify-between items-center px-4 font-black text-lg bg-white font-sans`}>
+                  <div className="flex gap-2"><span>Total Marks:</span> <span>{currentPaper.totalMarks}</span></div>
+                  <div className="flex gap-2"><span>Subject:</span> <span>{currentPaper.book || 'English'}</span></div>
+                  <div className="flex gap-2"><span>Grade/Class:</span> <span>{currentPaper.grade || '---'}</span></div>
+                  <div className="flex gap-2"><span>Exam:</span> <span>{currentPaper.examName || '---'}</span></div>
+                  <div className="flex gap-2"><span>Time Allowed:</span> <span>{currentPaper.time}</span></div>
                </div>
 
                {/* Optional Note */}
                {currentPaper.note && (
-                  <div className={`text-center font-bold text-sm mb-6 border border-black p-2 mx-8 rounded-sm ${currentPaper.noteFontFamily || 'font-urdu'}`}>
+                  <div className={`text-center font-bold text-sm mb-6 border border-black p-2 mx-8 rounded-sm ${currentPaper.noteFontFamily || 'font-sans'}`}>
                      {currentPaper.note}
                   </div>
                )}
 
                {/* Questions Body */}
-               <div style={{ gap: `${layoutSettings.spacing}px` }} className="flex flex-col mt-6 font-urdu">
+               <div style={{ gap: `${layoutSettings.spacing}px` }} className="flex flex-col mt-6 font-sans">
                   {currentPaper.questions.map((q, idx) => {
                      // Check if question contains 'یا' to format it uniquely
-                     const isOr = q.text.trim() === 'یا' || q.text.trim() === 'أو';
+                     const isOr = q.text.trim() === 'یا' || q.text.trim() === 'أو' || q.text.trim().toUpperCase() === 'OR';
                      
                      if (isOr) {
                         return (
                            <div key={q.id} className="flex items-center justify-center gap-4 my-4">
                               <div className="flex-1 h-[2px] border-b-2 border-dashed border-black opacity-40"></div>
-                              <span className="font-black text-2xl px-4 border border-black rounded-full pb-1 pt-2 bg-white">یا</span>
+                              <span className="font-black text-2xl px-4 border border-black rounded-full pb-1 pt-2 bg-white">OR</span>
                               <div className="flex-1 h-[2px] border-b-2 border-dashed border-black opacity-40"></div>
                            </div>
                         );
@@ -640,7 +638,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                 style={{ fontSize: `${layoutSettings.fontSize}px`, lineHeight: '1.8' }}
                                 className={`text-black whitespace-pre-wrap flex-1`}
                               >
-                                 {renderMixedText(q.text, q.fontFamily || 'font-urdu')}
+                                 {renderMixedText(q.text, q.fontFamily || 'font-sans')}
                               </span>
                               {/* Marks aligned to left */}
                               {q.marks > 0 && (
@@ -648,14 +646,14 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                               )}
                            </div>
                            {q.parts && q.parts.length > 0 && (
-                              <div className="flex flex-col gap-2 mt-2 mr-8">
+                              <div className="flex flex-col gap-2 mt-2 ml-8">
                                  {q.parts.map(part => (
                                     <div key={part.id} className="relative text-justify flex gap-2">
                                        <span 
                                          style={{ fontSize: `${layoutSettings.fontSize * 0.9}px`, lineHeight: '1.8' }}
                                          className={`text-black whitespace-pre-wrap flex-1`}
                                        >
-                                          {renderMixedText(part.text, part.fontFamily || q.fontFamily || 'font-urdu')}
+                                          {renderMixedText(part.text, part.fontFamily || q.fontFamily || 'font-sans')}
                                        </span>
                                        {part.marks > 0 && (
                                           <span className="font-bold pt-1 text-xs">[{part.marks}]</span>
@@ -703,40 +701,40 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                    </div>
 
                    {/* Title */}
-                   <h1 className="text-xl font-bold mb-1 text-center" style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu' }}>
+                   <h1 className="text-xl font-bold mb-1 text-center font-sans">
                       {systemSettings.jamiaName}
                    </h1>
-                   <h2 className="text-sm font-semibold mb-4 text-center" style={{ fontFamily: 'Jameel Noori Nastaleeq, Noto Nastaliq Urdu' }}>
-                      سالانہ امتحان
+                   <h2 className="text-sm font-semibold mb-4 text-center font-sans">
+                      {currentPaper.examName}
                    </h2>
-                   <div className="text-sm font-bold tracking-widest border-b-2 border-black pb-2 px-12 mb-12">
-                      جوابی کاپی (امتحانی دفتر)
+                   <div className="text-sm font-bold tracking-widest border-b-2 border-black pb-2 px-12 mb-12 font-sans">
+                      Answer Booklet (Examination Office)
                    </div>
 
                    {/* Exam Details Box */}
                    <div className="w-full max-w-lg border-2 border-black mb-12">
-                      <div className="grid grid-cols-2 text-xl font-bold font-urdu">
-                         <div className="border-b border-l border-black p-3 text-center">امتحان: {currentPaper.examName}</div>
-                         <div className="border-b border-black p-3 text-center">سال: {currentPaper.year}</div>
+                      <div className="grid grid-cols-2 text-xl font-bold font-sans">
+                         <div className="border-b border-r border-black p-3 text-center">Exam: {currentPaper.examName}</div>
+                         <div className="border-b border-black p-3 text-center">Year: {currentPaper.year}</div>
                       </div>
-                      <div className="border-b border-black p-3 text-right font-bold text-xl flex justify-between">
-                         <span>مضمون: {currentPaper.book || '____________________'}</span>
+                      <div className="border-b border-black p-3 text-left font-bold text-xl flex justify-between font-sans">
+                         <span>Subject: {currentPaper.book || '____________________'}</span>
                       </div>
-                      <div className="border-b border-black p-3 text-right font-bold text-xl flex justify-between">
-                         <span>درجہ: {currentPaper.grade || '____________________'}</span>
+                      <div className="border-b border-black p-3 text-left font-bold text-xl flex justify-between font-sans">
+                         <span>Grade/Class: {currentPaper.grade || '____________________'}</span>
                       </div>
-                      <div className="p-3 text-right font-bold text-xl flex gap-2 items-center">
-                         <span>وقت:</span> <span>{currentPaper.time}</span>
-                         <span className="mr-auto ml-12">کل نمبر: {currentPaper.totalMarks}</span>
+                      <div className="p-3 text-left font-bold text-xl flex gap-2 items-center font-sans">
+                         <span>Time Allowed:</span> <span>{currentPaper.time}</span>
+                         <span className="ml-auto mr-12">Total Marks: {currentPaper.totalMarks}</span>
                       </div>
                    </div>
 
                    {/* Student Info Table */}
                    <div className="w-full max-w-xl mb-12">
-                      <table className="w-full border-collapse border-2 border-black font-urdu text-xl">
+                      <table className="w-full border-collapse border-2 border-black font-sans text-xl">
                          <tbody>
                             <tr>
-                               <td className="border-2 border-black p-4 w-32 font-bold bg-black/5 text-center">رولنمبر</td>
+                               <td className="border-2 border-black p-4 w-32 font-bold bg-black/5 text-center">Roll No.</td>
                                <td className="border-2 border-black p-4 text-center font-bold tracking-widest text-2xl">
                                   {/* Empty boxes for roll number */}
                                   <div className="flex gap-2 justify-center">
@@ -749,15 +747,15 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                </td>
                             </tr>
                             <tr>
-                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">نام طالب علم</td>
+                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">Student Name</td>
                                <td className="border-2 border-black p-4"></td>
                             </tr>
                             <tr>
-                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">ولدیت</td>
+                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">Father's Name</td>
                                <td className="border-2 border-black p-4"></td>
                             </tr>
                             <tr>
-                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">دستخط نگران</td>
+                               <td className="border-2 border-black p-4 font-bold bg-black/5 text-center">Invigilator Sign</td>
                                <td className="border-2 border-black p-4"></td>
                             </tr>
                          </tbody>
@@ -765,17 +763,17 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                    </div>
 
                    <div className="mt-auto w-full text-center">
-                      <div className="border-t-[3px] border-black border-dashed pt-6 mb-4 font-black text-xl font-urdu">
-                         (یہ حصہ ممتحن پُر کرے گا)
+                      <div className="border-t-[3px] border-black border-dashed pt-6 mb-4 font-black text-xl font-sans">
+                         (For Examiner Use Only)
                       </div>
                       <table className="mx-auto border-collapse border-[3px] border-black w-80 text-center">
                          <tbody>
                             <tr>
-                               <td className="border-[3px] border-black p-3 font-black text-xl bg-black/5">حاصل کردہ نمبر</td>
+                               <td className="border-[3px] border-black p-3 font-black text-xl bg-black/5 font-sans">Marks Obtained</td>
                                <td className="border-[3px] border-black p-3 w-40"></td>
                             </tr>
                             <tr>
-                               <td className="border-[3px] border-black p-3 font-black text-xl bg-black/5">دستخط ممتحن</td>
+                               <td className="border-[3px] border-black p-3 font-black text-xl bg-black/5 font-sans">Examiner's Sign</td>
                                <td className="border-[3px] border-black p-3"></td>
                             </tr>
                          </tbody>
@@ -838,7 +836,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
             className="absolute top-0 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white px-8 py-3 rounded-2xl shadow-xl flex items-center gap-2"
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>پرچہ کامیابی سے محفوظ کر لیا گیا ہے!</span>
+            <span>Paper saved successfully!</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -924,34 +922,34 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
           <div className="max-w-6xl mx-auto space-y-8">
              <div className="flex flex-wrap gap-3 items-center justify-between">
                 <div className="flex flex-wrap gap-3 items-center">
-                  <button 
-                    onClick={handleCreateNew}
-                    className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
-                  >
-                    <Plus className="w-6 h-6" />
-                    <span>نیا پرچہ بنائیں</span>
-                  </button>
+                   <button 
+                     onClick={handleCreateNew}
+                     className="bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-blue-700 transition-all shadow-xl shadow-blue-500/20"
+                   >
+                     <Plus className="w-6 h-6" />
+                     <span>Create New Paper</span>
+                   </button>
 
-                  <button 
-                    onClick={() => {
-                      setAiConfig({
-                        subject: '',
-                        className: availableGrades[0] || 'اولیٰ',
-                        difficulty: 'درمیانہ',
-                        topics: '',
-                        marks: 100,
-                        questionTypes: ['MCQ', 'Short', 'Long']
-                      });
-                      setAiError(null);
-                      setShowAiModal(true);
-                    }}
-                    className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
-                  >
-                    <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
-                    <span>AI سے پرچہ بنائیں</span>
-                  </button>
+                   <button 
+                     onClick={() => {
+                       setAiConfig({
+                         subject: '',
+                         className: availableGrades[0] || 'Grade 1',
+                         difficulty: 'Medium',
+                         topics: '',
+                         marks: 100,
+                         questionTypes: ['MCQ', 'Short', 'Long']
+                       });
+                       setAiError(null);
+                       setShowAiModal(true);
+                     }}
+                     className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:from-indigo-700 hover:to-purple-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95"
+                   >
+                     <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
+                     <span>Generate Paper with AI</span>
+                   </button>
                 </div>
-                <div className="text-slate-400 text-sm font-urdu">کل پرچہ جات: {papers.length}</div>
+                <div className="text-slate-400 text-sm font-sans">Total Papers: {papers.length}</div>
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-20">
@@ -967,26 +965,26 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                        <div className="w-24 h-24 bg-slate-50 text-slate-800 rounded-[2rem] flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
                           <FileText className="w-10 h-10" />
                        </div>
-                       <h3 className="text-2xl font-black text-slate-900 mb-2 truncate w-full px-4">{paper.book || 'بغیر نام'}</h3>
+                       <h3 className="text-2xl font-black text-slate-900 mb-2 truncate w-full px-4">{paper.book || 'Untitled Paper'}</h3>
                        <div className="flex items-center gap-2 text-slate-400">
                           <GraduationCap size={14} />
-                          <span className="text-sm font-bold">درجہ: {paper.grade || '---'}</span>
+                          <span className="text-sm font-bold">Grade: {paper.grade || '---'}</span>
                        </div>
                     </div>
 
                     <div className="mt-auto pt-8 flex items-center justify-between gap-4">
                        <div className="flex gap-2">
                           <button 
-                            onClick={(e) => { e.stopPropagation(); handleDelete(paper.id); }}
-                            className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
-                            title="Delete"
+                             onClick={(e) => { e.stopPropagation(); handleDelete(paper.id); }}
+                             className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all shadow-sm"
+                             title="Delete"
                           >
                              <Trash2 size={20} />
                           </button>
                           <button 
-                            onClick={(e) => { e.stopPropagation(); handleEdit(paper); setView('print'); }}
-                            className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-900 hover:text-white transition-all shadow-sm"
-                            title="Print Preview"
+                             onClick={(e) => { e.stopPropagation(); handleEdit(paper); setView('print'); }}
+                             className="p-4 bg-slate-50 text-slate-400 rounded-2xl hover:bg-slate-900 hover:text-white transition-all shadow-sm"
+                             title="Print Preview"
                           >
                              <Printer size={20} />
                           </button>
@@ -995,7 +993,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                          onClick={() => handleEdit(paper)}
                          className="flex-1 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-sm hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20 active:scale-95"
                        >
-                         ایڈٹ کریں
+                         Edit Paper
                        </button>
                     </div>
                   </motion.div>
@@ -1003,7 +1001,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                 {papers.length === 0 && (
                   <div className="col-span-full py-32 text-center text-slate-300">
                     <PenTool className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                    <p className="font-urdu">کوئی پرچہ موجود نہیں ہے۔ نیا پرچہ بنانے کے لیے بٹن پر کلک کریں۔</p>
+                    <p className="font-sans text-sm">No papers found. Click the button above to create a new paper.</p>
                   </div>
                 )}
              </div>
@@ -1093,27 +1091,20 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                     <div className="flex items-center gap-2">
                                        <span className="text-[10px] font-bold text-slate-400">نمبر:</span>
                                        <input 
-                                         type="number" 
-                                         value={q.marks}
-                                         onChange={(e) => updateQuestion(q.id, 'marks', parseInt(e.target.value) || 0)}
-                                         className="w-16 bg-white border border-slate-200 rounded-lg text-center font-mono py-1 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold"
-                                       />
-                                    </div>
-                                 </div>
-                                                 {/* Parts / Juzz UI */}
+                                         type="number" value={q.marks} onChange={(e) => updateQuestion(q.id, "marks", parseInt(e.target.value) || 0)} className="w-16 bg-white border border-slate-200 rounded-lg text-center font-mono py-1 outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-bold" /></div></div>
                                   <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
                                      {q.parts && q.parts.map((part, pIdx) => (
                                         <div key={part.id} className="flex gap-4 items-start pl-8">
-                                           <div className="bg-white w-8 h-8 rounded-lg flex items-center justify-center font-urdu text-sm font-bold text-blue-600 shadow-sm border border-blue-100 shrink-0">
-                                              {['الف', 'ب', 'ج', 'د', 'ہ', 'و', 'ز', 'ح', 'ط', 'ی'][pIdx % 10]}
+                                           <div className="bg-white w-8 h-8 rounded-lg flex items-center justify-center font-sans text-sm font-bold text-blue-600 shadow-sm border border-blue-100 shrink-0">
+                                              {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'][pIdx % 10]}
                                            </div>
                                            <div className="flex-1 bg-white rounded-xl p-4 border border-slate-200">
                                               <textarea 
                                                  value={part.text}
                                                  onChange={(e) => updateQuestionPart(q.id, part.id, 'text', e.target.value)}
-                                                 className={"w-full bg-transparent border-none outline-none text-right " + (part.fontFamily || 'font-urdu') + " text-base resize-none min-h-[60px]"}
-                                                 placeholder="جزو کا سوال یہاں لکھیں..."
-                                                 dir="rtl"
+                                                 className={"w-full bg-transparent border-none outline-none text-left " + (part.fontFamily || 'font-sans') + " text-base resize-none min-h-[60px]"}
+                                                 placeholder="Write part question text here..."
+                                                 dir="ltr"
                                               />
                                               <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-100">
                                                  <div className="flex items-center gap-2">
@@ -1124,31 +1115,20 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                                       <Trash2 size={14} />
                                                    </button>
                                                    <select 
-                                                      value={part.fontFamily || 'font-urdu'}
+                                                      value={part.fontFamily || 'font-sans'}
                                                       onChange={(e) => updateQuestionPart(q.id, part.id, 'fontFamily', e.target.value)}
                                                       className="text-[10px] font-bold bg-slate-100 p-1 rounded-lg border border-slate-200 outline-none cursor-pointer"
                                                    >
+                                                      <option value="font-sans">Standard Sans-serif</option>
+                                                      <option value="font-serif">Elegant Serif</option>
+                                                      <option value="font-mono">Monospace</option>
                                                       <option value="font-faiz">Urdu (Faiz Lahori)</option>
                                                       <option value="font-urdu">Urdu (Jameel)</option>
                                                       <option value="font-classic">Arabic (Amiri)</option>
-                                                      <option value="font-noto">Noto Nastaliq</option>
-                                                      <option value="font-scheherazade">Scheherazade</option>
-                                                      <option value="font-lateef">Lateef</option>
-                                                      <option value="font-katibeh">Katibeh</option>
-                                                      <option value="font-harmattan">Harmattan</option>
-                                          <option value="font-naskh">خطِ نسخ (Naskh)</option>
-                                          <option value="font-ruqah">خطِ رقعہ (Ruq'ah)</option>
-                                          <option value="font-diwani">خطِ طغریٰ یا دیوانی (Thuluth / Diwani)</option>
-                                          <option value="font-naskh">خطِ نسخ (Naskh)</option>
-                                          <option value="font-ruqah">خطِ رقعہ (Ruq'ah)</option>
-                                          <option value="font-diwani">خطِ طغریٰ یا دیوانی (Thuluth / Diwani)</option>
-                                          <option value="font-naskh">خطِ نسخ (Naskh)</option>
-                                          <option value="font-ruqah">خطِ رقعہ (Ruq'ah)</option>
-                                          <option value="font-diwani">خطِ طغریٰ یا دیوانی (Thuluth / Diwani)</option>
                                                    </select>
                                                  </div>
                                                  <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-slate-400">نمبر:</span>
+                                                    <span className="text-[10px] font-bold text-slate-400">Marks:</span>
                                                     <input 
                                                        type="number" 
                                                        value={part.marks}
@@ -1166,66 +1146,64 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                           className="text-xs font-bold text-blue-500 hover:text-blue-700 flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
                                        >
                                           <Plus size={14} />
-                                          جزو شامل کریں
+                                          Add Part Question
                                        </button>
                                      </div>
                                   </div>
                                </div>
-                           </motion.div>
-                        ))}
+                            </motion.div>
+                         ))}
                       </AnimatePresence>
                    </div>
                 </div>
              </div>
-
-             {/* Right: Paper Meta */}
              <div className="lg:col-span-5 space-y-6">
                 <div className="bg-white rounded-[40px] shadow-2xl p-10 border border-slate-100 space-y-8 sticky top-8">
-                   <div className="flex items-center gap-3 pb-6 border-b border-slate-50 justify-end">
-                      <h2 className="text-xl font-black text-slate-800">پیپر کی معلومات</h2>
+                   <div className="flex items-center gap-3 pb-6 border-b border-slate-50 justify-between">
                       <Settings className="w-5 h-5 text-slate-400" />
+                      <h2 className="text-xl font-black text-slate-800">Paper Settings</h2>
                    </div>
 
-                   <div className="space-y-6" dir="rtl">
+                   <div className="space-y-6" dir="ltr">
                       <div className="space-y-2">
-                         <label className="text-right block text-xs font-bold text-slate-500 mr-2">امتحان منتخب کریں</label>
+                         <label className="text-left block text-xs font-bold text-slate-500 ml-2">Select Exam Type</label>
                          <div className="relative">
-                            <FileText className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <select 
                                value={currentPaper?.examName}
                                onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, examName: e.target.value } : null)}
-                               className="w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-urdu font-bold appearance-none"
+                               className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-sans font-bold appearance-none cursor-pointer"
                             >
                                {examTypes.map(t => <option key={t} value={t}>{t}</option>)}
                             </select>
+                            <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                          </div>
                       </div>
 
                       <div className="space-y-2">
-                         <label className="text-right block text-xs font-bold text-slate-500 mr-2">کتاب منتخب کریں</label>
+                         <label className="text-left block text-xs font-bold text-slate-500 ml-2">Subject / Book Name</label>
                          <div className="relative">
-                            <Book className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input 
                               type="text" 
                               value={currentPaper?.book}
                               onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, book: e.target.value } : null)}
-                              placeholder="کتاب کا نام"
-                              className="w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-urdu font-bold"
+                              placeholder="Subject Name"
+                              className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-sans font-bold"
                             />
+                            <Book className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                          </div>
                       </div>
 
                       <div className="space-y-2">
-                         <label className="text-right block text-xs font-bold text-slate-500 mr-2">درجہ (دستی لکھیں یا نیچے سے منتخب کریں)</label>
+                         <label className="text-left block text-xs font-bold text-slate-500 ml-2">Grade / Class</label>
                          <div className="relative">
-                            <GraduationCap className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <input 
                                type="text"
                                value={currentPaper?.grade || ''}
                                onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, grade: e.target.value } : null)}
-                               placeholder="درجہ لکھیں یا نیچے سے منتخب کریں..."
-                               className="w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-urdu font-bold text-right text-slate-700"
+                               placeholder="Enter class name or select below"
+                               className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-sans font-bold text-left text-slate-700"
                             />
+                            <GraduationCap className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                          </div>
                          <div className="flex flex-wrap gap-1.5 justify-start mt-2 max-h-[120px] overflow-y-auto p-1 bg-slate-50/50 rounded-xl border border-slate-100">
                             {availableGrades.map(g => (
@@ -1233,10 +1211,10 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                                   key={g}
                                   type="button"
                                   onClick={() => setCurrentPaper(prev => prev ? { ...prev, grade: g } : null)}
-                                  className={`px-3 py-1 text-xs rounded-lg border transition-all font-urdu font-bold ${
+                                  className={`px-3 py-1 text-xs rounded-lg border transition-all font-sans font-bold ${
                                      currentPaper?.grade === g 
-                                        ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
-                                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                                         ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                                         : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                                   }`}
                                >
                                   {g}
@@ -1247,7 +1225,7 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
                       <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-2">
-                            <label className="text-right block text-[10px] font-bold text-slate-400 mr-2 uppercase">کل نمبر</label>
+                            <label className="text-left block text-[10px] font-bold text-slate-400 ml-2 uppercase">Total Marks</label>
                             <input 
                               type="number" 
                               value={currentPaper?.totalMarks}
@@ -1256,42 +1234,40 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                             />
                          </div>
                          <div className="space-y-2">
-                            <label className="text-right block text-[10px] font-bold text-slate-400 mr-2 uppercase">وقت</label>
+                            <label className="text-left block text-[10px] font-bold text-slate-400 ml-2 uppercase">Time Allowed</label>
                             <div className="relative">
-                               <Clock className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                <input 
                                  type="text" 
                                  value={currentPaper?.time}
                                  onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, time: e.target.value } : null)}
-                                 className="w-full pr-12 pl-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-center font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10"
+                                 className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-center font-bold text-slate-700 outline-none focus:ring-4 focus:ring-blue-500/10"
                                />
+                               <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             </div>
                          </div>
                       </div>
 
                       <div className="space-y-2 pt-4">
-                         <div className="flex justify-between items-center mr-2 mb-1">
+                         <div className="flex justify-between items-center ml-2 mb-1">
+                            <label className="text-left block text-xs font-bold text-slate-500">General Instructions & Font</label>
                             <select 
-                               value={currentPaper?.noteFontFamily || 'font-urdu'}
+                               value={currentPaper?.noteFontFamily || 'font-sans'}
                                onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, noteFontFamily: e.target.value } : null)}
                                className="text-xs font-bold bg-white p-1.5 rounded-lg border border-slate-200 outline-none cursor-pointer"
                             >
+                               <option value="font-sans">Sans-serif</option>
+                               <option value="font-serif">Serif</option>
+                               <option value="font-mono">Monospace</option>
                                <option value="font-faiz">Urdu (Faiz Lahori)</option>
                                <option value="font-urdu">Urdu (Jameel)</option>
                                <option value="font-classic">Arabic (Amiri)</option>
-                               <option value="font-noto">Noto Nastaliq</option>
-                               <option value="font-scheherazade">Scheherazade</option>
-                               <option value="font-lateef">Lateef</option>
-                               <option value="font-katibeh">Katibeh</option>
-                               <option value="font-harmattan">Harmattan</option>
                             </select>
-                            <label className="text-right block text-xs font-bold text-slate-500">اہم ہدایات (ملاحظہ عامہ) اور اس کا فونٹ</label>
                          </div>
                          <textarea 
                            value={currentPaper?.note}
                            onChange={(e) => setCurrentPaper(prev => prev ? { ...prev, note: e.target.value } : null)}
-                           className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 h-32 text-xs text-right outline-none focus:bg-white resize-none ${currentPaper?.noteFontFamily || 'font-urdu'}`}
-                           placeholder="اہم ہدایات..."
+                           className={`w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 h-32 text-xs text-left outline-none focus:bg-white resize-none ${currentPaper?.noteFontFamily || 'font-sans'}`}
+                           placeholder="Enter general instructions for the paper..."
                          />
                       </div>
                    </div>
@@ -1301,11 +1277,11 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                      className="w-full bg-[#1e293b] text-white py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-4 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-2xl shadow-slate-900/20"
                    >
                       <Save className="w-8 h-8" />
-                      <span>پیپر محفوظ کریں</span>
+                      <span>Save Paper</span>
                    </button>
                 </div>
              </div>
-          </div>
+           </div>
         )}
       </div>
 
@@ -1316,8 +1292,8 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl border border-slate-100 font-urdu relative overflow-hidden"
-              dir="rtl"
+              className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl border border-slate-100 font-sans relative overflow-hidden"
+              dir="ltr"
             >
               <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-3">
@@ -1325,8 +1301,8 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
                     <Sparkles className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black text-slate-900">AI خودکار پرچہ ساز (AI Paper Generator)</h3>
-                    <p className="text-xs text-slate-400 font-sans">اے آئی کی مدد سے امتحانی پرچہ بنائیں</p>
+                    <h3 className="text-xl font-black text-slate-900">AI Exam Paper Generator</h3>
+                    <p className="text-xs text-slate-400 font-sans">Generate comprehensive exam papers powered by AI</p>
                   </div>
                 </div>
                 <button onClick={() => setShowAiModal(false)} className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100">

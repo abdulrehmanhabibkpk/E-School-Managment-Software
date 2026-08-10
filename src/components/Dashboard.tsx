@@ -47,6 +47,9 @@ import {
   Printer,
   QrCode,
   ShieldCheck,
+  Tag,
+  Layers,
+  Briefcase,
 } from "lucide-react";
 import {
   useNavigate,
@@ -65,6 +68,7 @@ import StudentProfile from "./StudentProfile";
 import SecurityAttendance from "./SecurityAttendance";
 import CameraView from "./CameraView";
 import FinanceManagement from "./FinanceManagement";
+import ProjectsManagement from "./ProjectsManagement";
 import StaffManagement from "./StaffManagement";
 import MessagingCenter from "./MessagingCenter";
 import GradeManagement from "./GradeManagement";
@@ -90,6 +94,23 @@ import AdminDashboard from "./AdminPanel/AdminDashboard";
 import Notepad from "./Notepad";
 import SuperAdminPanel from "./SuperAdminPanel";
 import DailyLessons from "./DailyLessons";
+import GuardiansDirectory from "./GuardiansDirectory";
+import LeaveRequests from "./LeaveRequests";
+import BulkOperations from "./BulkOperations";
+import BulkPhotos from "./BulkPhotos";
+import TeachingManagement from "./TeachingManagement";
+import {
+  ChevronDown,
+  ChevronUp,
+  Heart,
+  CalendarDays,
+  Sliders,
+  Images,
+  Wand2,
+  Eye,
+  Video,
+  BarChart3,
+} from "lucide-react";
 import {
   updateCentralKey,
 } from "../syncService";
@@ -100,6 +121,7 @@ import {
   Upload,
   CheckSquare,
   FileText as FileTextIcon,
+  FolderOpen,
 } from "lucide-react";
 
 interface SidebarItemProps {
@@ -186,6 +208,63 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [activeModuleName, setActiveModuleName] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 1024);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStudentsDropdownOpen, setIsStudentsDropdownOpen] = useState(() => {
+    const studentPaths = [
+      "/dashboard/students",
+      "/dashboard/all-students",
+      "/dashboard/guardians",
+      "/dashboard/leave-requests",
+      "/dashboard/bulk-operations",
+      "/dashboard/bulk-photos"
+    ];
+    return studentPaths.some(path => location.pathname.startsWith(path));
+  });
+
+  const [isTeachingDropdownOpen, setIsTeachingDropdownOpen] = useState(() => {
+    const teachingPaths = [
+      "/dashboard/teaching/mark-attendance",
+      "/dashboard/teaching/attendance-summary",
+      "/dashboard/teaching/timetable",
+      "/dashboard/teaching/tt-wizard",
+      "/dashboard/teaching/draft-preview",
+      "/dashboard/teaching/examinations",
+      "/dashboard/teaching/online-classes"
+    ];
+    return teachingPaths.some(path => location.pathname.startsWith(path));
+  });
+
+  const [isFeesDropdownOpen, setIsFeesDropdownOpen] = useState(() => {
+    const feesPaths = [
+      "/dashboard/fees/collections",
+      "/dashboard/fees/scan-to-collect",
+      "/dashboard/fees/vouchers",
+      "/dashboard/fees/advance-voucher",
+      "/dashboard/fees/split-installments",
+      "/dashboard/fees/heads",
+      "/dashboard/fees/structures"
+    ];
+    return feesPaths.some(path => location.pathname.startsWith(path));
+  });
+
+  const [isFinanceDropdownOpen, setIsFinanceDropdownOpen] = useState(() => {
+    const financePaths = [
+      "/dashboard/finance/overview",
+      "/dashboard/finance/expenses",
+      "/dashboard/finance/bank-accounts",
+      "/dashboard/finance/third-party-money",
+      "/dashboard/finance/journal-ledger",
+      "/dashboard/finance/reports"
+    ];
+    return financePaths.some(path => location.pathname.startsWith(path));
+  });
+
+  const [isProjectsDropdownOpen, setIsProjectsDropdownOpen] = useState(() => {
+    const projectsPaths = [
+      "/dashboard/projects/all",
+      "/dashboard/projects/tasks"
+    ];
+    return projectsPaths.some(path => location.pathname.startsWith(path));
+  });
 
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
@@ -878,6 +957,13 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       subLabel: "Bookkeeping",
     },
     {
+      id: "projects",
+      path: "/dashboard/projects",
+      icon: Briefcase,
+      label: "Projects",
+      subLabel: "Task Board",
+    },
+    {
       id: "library",
       path: "/dashboard/library",
       icon: Library,
@@ -945,8 +1031,8 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     },
     {
       id: "relatives",
-      path: "/dashboard/placeholder",
-      icon: Users,
+      path: "/dashboard/guardians",
+      icon: Heart,
       title: "Guardians",
       subtitle: "Family Info",
       color: "bg-indigo-600",
@@ -993,7 +1079,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     },
     {
       id: "fees_grid",
-      path: "/dashboard/fees",
+      path: "/dashboard/fees/collections",
       icon: CreditCard,
       title: "Fees Management",
       subtitle: "Collections",
@@ -1384,8 +1470,514 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
         </div>
 
         <div className="flex-1 px-2 space-y-1">
+          {/* 1. Dashboard standard flat item */}
+          {sidebarItems
+            .filter((item) => item.id === "dashboard")
+            .map((item) => (
+              <SidebarItem
+                key={item.id}
+                id={`nav-${item.id}`}
+                icon={item.icon}
+                label={item.label}
+                subLabel={item.subLabel}
+                active={
+                  location.pathname === item.path ||
+                  location.pathname === "/dashboard"
+                }
+                onClick={() => {
+                  navigate(item.path);
+                  if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                }}
+              />
+            ))}
+
+          {/* 2. Collapsible Students Dropdown Group */}
+          <div className="flex flex-col">
+            <div
+              onClick={() => setIsStudentsDropdownOpen(!isStudentsDropdownOpen)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all mx-2 my-1 rounded-lg ${
+                [
+                  "/dashboard/students",
+                  "/dashboard/all-students",
+                  "/dashboard/guardians",
+                  "/dashboard/leave-requests",
+                  "/dashboard/bulk-operations",
+                  "/dashboard/bulk-photos"
+                ].some((path) => location.pathname === path)
+                  ? "bg-white/20 text-white shadow-lg border border-white/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Users className="w-5 h-5 text-white/60" />
+                <div className="flex flex-col text-left" dir="ltr">
+                  <span className="text-[13px] font-bold text-white leading-tight">
+                    Students
+                  </span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase text-white/40">
+                    Student Center
+                  </span>
+                </div>
+              </div>
+              {isStudentsDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-white/60" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              )}
+            </div>
+
+            {/* Submenu Items */}
+            {isStudentsDropdownOpen && (
+              <div className="pl-6 pr-2 space-y-0.5 mt-0.5 transition-all">
+                {[
+                  {
+                    id: "all_students",
+                    path: "/dashboard/all-students",
+                    icon: Users,
+                    label: "All Students",
+                  },
+                  {
+                    id: "guardians",
+                    path: "/dashboard/guardians",
+                    icon: Heart,
+                    label: "Guardians",
+                  },
+                  {
+                    id: "leave_requests",
+                    path: "/dashboard/leave-requests",
+                    icon: CalendarDays,
+                    label: "Leave Requests",
+                  },
+                  {
+                    id: "bulk_operations",
+                    path: "/dashboard/bulk-operations",
+                    icon: Sliders,
+                    label: "Bulk Operations",
+                  },
+                  {
+                    id: "bulk_photos",
+                    path: "/dashboard/bulk-photos",
+                    icon: Images,
+                    label: "Bulk Photos",
+                  },
+                ].map((subItem) => {
+                  const isActive = location.pathname === subItem.path;
+                  const Icon = subItem.icon;
+                  return (
+                    <div
+                      key={subItem.id}
+                      onClick={() => {
+                        navigate(subItem.path);
+                        if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all rounded-lg ${
+                        isActive
+                          ? "bg-white/15 text-white font-bold border border-white/5 shadow-xs"
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-amber-400 fill-amber-400/10" : "text-white/40"}`} />
+                      <span className="text-[12.5px] leading-none">{subItem.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Teaching Dropdown Group */}
+          <div className="flex flex-col">
+            <div
+              onClick={() => setIsTeachingDropdownOpen(!isTeachingDropdownOpen)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all mx-2 my-1 rounded-lg ${
+                [
+                  "/dashboard/teaching/mark-attendance",
+                  "/dashboard/teaching/attendance-summary",
+                  "/dashboard/teaching/timetable",
+                  "/dashboard/teaching/tt-wizard",
+                  "/dashboard/teaching/draft-preview",
+                  "/dashboard/teaching/examinations",
+                  "/dashboard/teaching/online-classes"
+                ].some((path) => location.pathname === path)
+                  ? "bg-white/20 text-white shadow-lg border border-white/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <BookOpen className="w-5 h-5 text-white/60" />
+                <div className="flex flex-col text-left" dir="ltr">
+                  <span className="text-[13px] font-bold text-white leading-tight">
+                    Teaching
+                  </span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase text-white/40">
+                    Teaching Center
+                  </span>
+                </div>
+              </div>
+              {isTeachingDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-white/60" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              )}
+            </div>
+
+            {/* Submenu Items */}
+            {isTeachingDropdownOpen && (
+              <div className="pl-6 pr-2 space-y-0.5 mt-0.5 transition-all">
+                {[
+                  {
+                    id: "teaching_mark_attendance",
+                    path: "/dashboard/teaching/mark-attendance",
+                    icon: CheckSquare,
+                    label: "Mark Attendance",
+                  },
+                  {
+                    id: "teaching_attendance_summary",
+                    path: "/dashboard/teaching/attendance-summary",
+                    icon: BarChart3,
+                    label: "Attendance Summary",
+                  },
+                  {
+                    id: "teaching_timetable",
+                    path: "/dashboard/teaching/timetable",
+                    icon: CalendarDays,
+                    label: "Timetable",
+                  },
+                  {
+                    id: "teaching_tt_wizard",
+                    path: "/dashboard/teaching/tt-wizard",
+                    icon: Wand2,
+                    label: "TT Wizard",
+                  },
+                  {
+                    id: "teaching_draft_preview",
+                    path: "/dashboard/teaching/draft-preview",
+                    icon: Eye,
+                    label: "Draft Preview",
+                  },
+                  {
+                    id: "teaching_examinations",
+                    path: "/dashboard/teaching/examinations",
+                    icon: GraduationCap,
+                    label: "Examinations",
+                  },
+                  {
+                    id: "teaching_online_classes",
+                    path: "/dashboard/teaching/online-classes",
+                    icon: Video,
+                    label: "Online Classes",
+                  },
+                ].map((subItem) => {
+                  const isActive = location.pathname === subItem.path;
+                  const Icon = subItem.icon;
+                  return (
+                    <div
+                      key={subItem.id}
+                      onClick={() => {
+                        navigate(subItem.path);
+                        if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all rounded-lg ${
+                        isActive
+                          ? "bg-white/15 text-white font-bold border border-white/5 shadow-xs"
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-amber-400 fill-amber-400/10" : "text-white/40"}`} />
+                      <span className="text-[12.5px] leading-none">{subItem.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Fees Dropdown Group */}
+          <div className="flex flex-col">
+            <div
+              onClick={() => setIsFeesDropdownOpen(!isFeesDropdownOpen)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all mx-2 my-1 rounded-lg ${
+                [
+                  "/dashboard/fees/collections",
+                  "/dashboard/fees/scan-to-collect",
+                  "/dashboard/fees/vouchers",
+                  "/dashboard/fees/advance-voucher",
+                  "/dashboard/fees/split-installments",
+                  "/dashboard/fees/heads",
+                  "/dashboard/fees/structures"
+                ].some((path) => location.pathname === path)
+                  ? "bg-white/20 text-white shadow-lg border border-white/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-5 h-5 text-white/60" />
+                <div className="flex flex-col text-left" dir="ltr">
+                  <span className="text-[13px] font-bold text-white leading-tight">
+                    Fees Center
+                  </span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase text-white/40">
+                    Finance & Billing
+                  </span>
+                </div>
+              </div>
+              {isFeesDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-white/60" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              )}
+            </div>
+
+            {/* Submenu Items */}
+            {isFeesDropdownOpen && (
+              <div className="pl-6 pr-2 space-y-0.5 mt-0.5 transition-all">
+                {[
+                  {
+                    id: "fees_collections",
+                    path: "/dashboard/fees/collections",
+                    icon: Wallet,
+                    label: "Collections",
+                  },
+                  {
+                    id: "fees_scan",
+                    path: "/dashboard/fees/scan-to-collect",
+                    icon: QrCode,
+                    label: "Scan to Collect",
+                  },
+                  {
+                    id: "fees_vouchers",
+                    path: "/dashboard/fees/vouchers",
+                    icon: FileText,
+                    label: "Fee Vouchers",
+                  },
+                  {
+                    id: "fees_advance",
+                    path: "/dashboard/fees/advance-voucher",
+                    icon: CalendarDays,
+                    label: "Advance Voucher",
+                  },
+                  {
+                    id: "fees_split",
+                    path: "/dashboard/fees/split-installments",
+                    icon: Sliders,
+                    label: "Split Installments",
+                  },
+                  {
+                    id: "fees_heads",
+                    path: "/dashboard/fees/heads",
+                    icon: Tag,
+                    label: "Fee Heads",
+                  },
+                  {
+                    id: "fees_structures",
+                    path: "/dashboard/fees/structures",
+                    icon: Layers,
+                    label: "Fee Structures",
+                  },
+                ].map((subItem) => {
+                  const isActive = location.pathname === subItem.path;
+                  const Icon = subItem.icon;
+                  return (
+                    <div
+                      key={subItem.id}
+                      onClick={() => {
+                        navigate(subItem.path);
+                        if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all rounded-lg ${
+                        isActive
+                          ? "bg-white/15 text-white font-bold border border-white/5 shadow-xs"
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-amber-400 fill-amber-400/10" : "text-white/40"}`} />
+                      <span className="text-[12.5px] leading-none">{subItem.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Finance Dropdown Group */}
+          <div className="flex flex-col">
+            <div
+              onClick={() => setIsFinanceDropdownOpen(!isFinanceDropdownOpen)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all mx-2 my-1 rounded-lg ${
+                [
+                  "/dashboard/finance/overview",
+                  "/dashboard/finance/expenses",
+                  "/dashboard/finance/bank-accounts",
+                  "/dashboard/finance/third-party-money",
+                  "/dashboard/finance/journal-ledger",
+                  "/dashboard/finance/reports"
+                ].some((path) => location.pathname === path)
+                  ? "bg-white/20 text-white shadow-lg border border-white/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Landmark className="w-5 h-5 text-white/60" />
+                <div className="flex flex-col text-left" dir="ltr">
+                  <span className="text-[13px] font-bold text-white leading-tight">
+                    Finance
+                  </span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase text-white/40">
+                    Accounts Center
+                  </span>
+                </div>
+              </div>
+              {isFinanceDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-white/60" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              )}
+            </div>
+
+            {/* Submenu Items */}
+            {isFinanceDropdownOpen && (
+              <div className="pl-6 pr-2 space-y-0.5 mt-0.5 transition-all">
+                {[
+                  {
+                    id: "finance_overview",
+                    path: "/dashboard/finance/overview",
+                    icon: LayoutDashboard,
+                    label: "Overview",
+                  },
+                  {
+                    id: "finance_expenses",
+                    path: "/dashboard/finance/expenses",
+                    icon: FileText,
+                    label: "Expenses",
+                  },
+                  {
+                    id: "finance_bank",
+                    path: "/dashboard/finance/bank-accounts",
+                    icon: Landmark,
+                    label: "Bank Accounts",
+                  },
+                  {
+                    id: "finance_third_party",
+                    path: "/dashboard/finance/third-party-money",
+                    icon: Wallet,
+                    label: "Third-Party Money",
+                  },
+                  {
+                    id: "finance_ledger",
+                    path: "/dashboard/finance/journal-ledger",
+                    icon: List,
+                    label: "Journal Ledger",
+                  },
+                  {
+                    id: "finance_reports",
+                    path: "/dashboard/finance/reports",
+                    icon: BarChart3,
+                    label: "Reports",
+                  },
+                ].map((subItem) => {
+                  const isActive = location.pathname === subItem.path;
+                  const Icon = subItem.icon;
+                  return (
+                    <div
+                      key={subItem.id}
+                      onClick={() => {
+                        navigate(subItem.path);
+                        if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all rounded-lg ${
+                        isActive
+                          ? "bg-white/15 text-white font-bold border border-white/5 shadow-xs"
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-amber-400 fill-amber-400/10" : "text-white/40"}`} />
+                      <span className="text-[12.5px] leading-none">{subItem.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Collapsible Projects Dropdown Group */}
+          <div className="flex flex-col">
+            <div
+              onClick={() => setIsProjectsDropdownOpen(!isProjectsDropdownOpen)}
+              className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all mx-2 my-1 rounded-lg ${
+                [
+                  "/dashboard/projects/all",
+                  "/dashboard/projects/tasks"
+                ].some((path) => location.pathname === path)
+                  ? "bg-white/20 text-white shadow-lg border border-white/10"
+                  : "text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Briefcase className="w-5 h-5 text-white/60" />
+                <div className="flex flex-col text-left" dir="ltr">
+                  <span className="text-[13px] font-bold text-white leading-tight">
+                    Projects
+                  </span>
+                  <span className="text-[9px] font-medium tracking-wide uppercase text-white/40">
+                    Operation Center
+                  </span>
+                </div>
+              </div>
+              {isProjectsDropdownOpen ? (
+                <ChevronUp className="w-4 h-4 text-white/60" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-white/60" />
+              )}
+            </div>
+
+            {/* Submenu Items */}
+            {isProjectsDropdownOpen && (
+              <div className="pl-6 pr-2 space-y-0.5 mt-0.5 transition-all">
+                {[
+                  {
+                    id: "projects_all",
+                    path: "/dashboard/projects/all",
+                    icon: FolderOpen,
+                    label: "All Projects",
+                  },
+                  {
+                    id: "projects_tasks",
+                    path: "/dashboard/projects/tasks",
+                    icon: CheckSquare,
+                    label: "My Tasks",
+                  },
+                ].map((subItem) => {
+                  const isActive = location.pathname === subItem.path;
+                  const Icon = subItem.icon;
+                  return (
+                    <div
+                      key={subItem.id}
+                      onClick={() => {
+                        navigate(subItem.path);
+                        if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-all rounded-lg ${
+                        isActive
+                          ? "bg-white/15 text-white font-bold border border-white/5 shadow-xs"
+                          : "text-white/60 hover:bg-white/5 hover:text-white"
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${isActive ? "text-amber-400 fill-amber-400/10" : "text-white/40"}`} />
+                      <span className="text-[12.5px] leading-none">{subItem.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 3. Render all other non-dashboard, non-student modules */}
           {sidebarItems
             .filter((item) => {
+              if (["dashboard", "students", "all_students", "fees", "finance", "projects"].includes(item.id)) {
+                return false;
+              }
+
               // 1. Master Check (Master Admins see everything)
               if (isAdmin) return true;
 
@@ -1398,26 +1990,25 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
               }
 
               // 4. Default Static Permissions (Fallback)
-              if (item.id === "dashboard") return true;
-              return item.label.toLowerCase().includes(sidebarSearchTerm.toLowerCase()) || item.subLabel.toLowerCase().includes(sidebarSearchTerm.toLowerCase());
+              return (
+                item.label.toLowerCase().includes(sidebarSearchTerm.toLowerCase()) ||
+                item.subLabel.toLowerCase().includes(sidebarSearchTerm.toLowerCase())
+              );
             })
             .map((item) => (
-            <SidebarItem
-              key={item.id}
-              id={`nav-${item.id}`}
-              icon={item.icon}
-              label={item.label}
-              subLabel={item.subLabel}
-              active={
-                location.pathname === item.path ||
-                (item.id === "dashboard" && location.pathname === "/dashboard")
-              }
-              onClick={() => {
-                navigate(item.path);
-                if (window.innerWidth <= 1024) setIsSidebarOpen(false);
-              }}
-            />
-          ))}
+              <SidebarItem
+                key={item.id}
+                id={`nav-${item.id}`}
+                icon={item.icon}
+                label={item.label}
+                subLabel={item.subLabel}
+                active={location.pathname === item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  if (window.innerWidth <= 1024) setIsSidebarOpen(false);
+                }}
+              />
+            ))}
         </div>
 
         <div className="p-6 mt-auto">
@@ -1518,6 +2109,30 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
             }
           />
           <Route
+            path="/guardians"
+            element={
+              <GuardiansDirectory onBack={() => navigate("/dashboard")} />
+            }
+          />
+          <Route
+            path="/leave-requests"
+            element={
+              <LeaveRequests onBack={() => navigate("/dashboard")} />
+            }
+          />
+          <Route
+            path="/bulk-operations"
+            element={
+              <BulkOperations onBack={() => navigate("/dashboard")} />
+            }
+          />
+          <Route
+            path="/bulk-photos"
+            element={
+              <BulkPhotos onBack={() => navigate("/dashboard")} />
+            }
+          />
+          <Route
             path="/document-capture"
             element={
               <StudentDocumentCapture onBack={() => navigate("/dashboard")} />
@@ -1579,9 +2194,43 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           />
           <Route
             path="/finance"
-            element={
-              <FinanceManagement onBack={() => navigate("/dashboard")} />
-            }
+            element={<FinanceManagement subView="overview" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/overview"
+            element={<FinanceManagement subView="overview" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/expenses"
+            element={<FinanceManagement subView="expenses" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/bank-accounts"
+            element={<FinanceManagement subView="bank-accounts" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/third-party-money"
+            element={<FinanceManagement subView="third-party-money" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/journal-ledger"
+            element={<FinanceManagement subView="journal-ledger" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/finance/reports"
+            element={<FinanceManagement subView="reports" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/projects"
+            element={<ProjectsManagement subView="all" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/projects/all"
+            element={<ProjectsManagement subView="all" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/projects/tasks"
+            element={<ProjectsManagement subView="tasks" onBack={() => navigate("/dashboard")} />}
           />
           <Route
             path="/staff"
@@ -1669,7 +2318,35 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           />
           <Route
             path="/fees"
-            element={<FeesManagement onBack={() => navigate("/dashboard")} />}
+            element={<FeesManagement subView="collections" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/collections"
+            element={<FeesManagement subView="collections" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/scan-to-collect"
+            element={<FeesManagement subView="scan-to-collect" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/vouchers"
+            element={<FeesManagement subView="vouchers" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/advance-voucher"
+            element={<FeesManagement subView="advance-voucher" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/split-installments"
+            element={<FeesManagement subView="split-installments" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/heads"
+            element={<FeesManagement subView="heads" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/fees/structures"
+            element={<FeesManagement subView="structures" onBack={() => navigate("/dashboard")} />}
           />
           <Route
             path="/documents"
@@ -1699,6 +2376,35 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                 onBack={() => navigate("/dashboard")}
               />
             }
+          />
+
+          <Route
+            path="/teaching/mark-attendance"
+            element={<TeachingManagement subView="mark-attendance" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/attendance-summary"
+            element={<TeachingManagement subView="attendance-summary" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/timetable"
+            element={<TeachingManagement subView="timetable" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/tt-wizard"
+            element={<TeachingManagement subView="tt-wizard" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/draft-preview"
+            element={<TeachingManagement subView="draft-preview" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/examinations"
+            element={<TeachingManagement subView="examinations" onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/teaching/online-classes"
+            element={<TeachingManagement subView="online-classes" onBack={() => navigate("/dashboard")} />}
           />
 
           <Route

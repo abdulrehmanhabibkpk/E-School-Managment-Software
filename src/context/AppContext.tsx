@@ -82,7 +82,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const websiteConfig = {
     title: 'Assan School Portal & Accounting ERP',
-    tagline: 'اب اکاؤنٹس اور اسکول مینجمنٹ ہوئے آسان',
+    tagline: 'Now Accounts and School Management Made Easy',
     phone: '0319-5702823',
     email: 'info@assanaccounts.com',
   };
@@ -125,7 +125,7 @@ export const useApp = () => {
       companies: [],
       websiteConfig: {
         title: 'Assan School Portal',
-        tagline: 'اب اکاؤنٹس اور اسکول مینجمنٹ ہوئے آسان',
+        tagline: 'Now Accounts and School Management Made Easy',
         phone: '0319-5702823',
         email: 'info@assanaccounts.com',
       },

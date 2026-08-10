@@ -1,5 +1,16 @@
-// Removed Firebase dependencies as per user request
 import { sanitizeLocalStorage } from './lib/dataSanitizer';
+import { 
+  db, 
+  auth, 
+  doc, 
+  setDoc, 
+  collection, 
+  getDocs, 
+  onSnapshot, 
+  OperationType, 
+  handleFirestoreError,
+  onAuthStateChanged
+} from './firebase';
 
 // List of all keys we sync between localStorage and Firestore
 const SYNC_KEYS = [
@@ -50,36 +61,111 @@ const SYNC_KEYS = [
 ];
 
 /**
- * Update a specific key in local storage.
+ * Update a specific key in local storage and write to Firestore.
  */
 export async function updateCentralKey(key: string, value: any): Promise<boolean> {
   // Always update local storage first for instant UI response
-  localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+  const valString = typeof value === 'string' ? value : JSON.stringify(value);
+  localStorage.setItem(key, valString);
   window.dispatchEvent(new Event('storage_updated'));
+
+  // Sync to Firestore if signed in
+  if (auth.currentUser) {
+    try {
+      let rawData = value;
+      if (typeof value === 'string') {
+        try {
+          rawData = JSON.parse(value);
+        } catch (e) {
+          // If not a valid JSON string, keep as string
+        }
+      }
+
+      const docRef = doc(db, 'state', key);
+      await setDoc(docRef, {
+        key: key,
+        data: rawData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `state/${key}`);
+    }
+  }
   return true;
 }
 
 /**
- * Pull all data (No-op in local-only mode)
+ * Pull all data from Firestore to local storage.
  */
 export async function pullGlobalData(): Promise<void> {
+  if (auth.currentUser) {
+    try {
+      const colRef = collection(db, 'state');
+      const querySnapshot = await getDocs(colRef);
+      querySnapshot.forEach((docSnap) => {
+        const docData = docSnap.data();
+        if (docData && docData.key && docData.data !== undefined) {
+          const key = docData.key;
+          const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
+          localStorage.setItem(key, valString);
+        }
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.LIST, 'state');
+    }
+  }
   sanitizeLocalStorage();
   window.dispatchEvent(new Event('storage_updated'));
-  console.log('Local data sanitized and UI updated.');
 }
 
+let unsubscribeSync: (() => void) | null = null;
+
 /**
- * Start real-time listeners (No-op in local-only mode)
+ * Start real-time listeners.
  */
 export function startRealTimeSync() {
-  console.log('Real-time sync is now local-only.');
+  if (unsubscribeSync) {
+    unsubscribeSync();
+    unsubscribeSync = null;
+  }
+
+  if (auth.currentUser) {
+    const colRef = collection(db, 'state');
+    unsubscribeSync = onSnapshot(colRef, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'added' || change.type === 'modified') {
+          const docData = change.doc.data();
+          if (docData && docData.key && docData.data !== undefined) {
+            const key = docData.key;
+            const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
+            
+            // Check current local state to prevent infinite loops of local events
+            const currentLocal = localStorage.getItem(key);
+            if (currentLocal !== valString) {
+              localStorage.setItem(key, valString);
+              window.dispatchEvent(new Event('storage_updated'));
+            }
+          }
+        }
+      });
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'state');
+    });
+    console.log('Real-time sync listeners active.');
+  } else {
+    console.log('Real-time sync skipped (not authenticated).');
+  }
 }
 
 /**
- * Stop all active real-time listeners (No-op in local-only mode)
+ * Stop all active real-time listeners.
  */
 export function stopRealTimeSync() {
-  console.log('Stopped local sync listeners.');
+  if (unsubscribeSync) {
+    unsubscribeSync();
+    unsubscribeSync = null;
+    console.log('Stopped active sync listeners.');
+  }
 }
 
 /**
@@ -92,20 +178,46 @@ localStorage.setItem = function(key: string, value: string): void {
   
   if (SYNC_KEYS.includes(key)) {
     window.dispatchEvent(new Event('storage_updated'));
+    // Trigger async push to Firestore
+    if (auth.currentUser) {
+      updateCentralKey(key, value).catch(err => {
+        console.error(`Deferred sync error for key ${key}:`, err);
+      });
+    }
   }
 };
 
 /**
- * Perform manual sync fallback (No-op in local-only mode)
+ * Perform manual sync fallback pushing all local state keys to firestore.
  */
 export async function triggerClientOfflineSync(): Promise<void> {
-  // No-op
+  if (auth.currentUser) {
+    for (const key of SYNC_KEYS) {
+      const localVal = localStorage.getItem(key);
+      if (localVal !== null) {
+        await updateCentralKey(key, localVal);
+      }
+    }
+  }
 }
 
-// Global network status listeners
+// Set up automatic listeners on Auth state changed
 if (typeof window !== 'undefined') {
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      console.log('User signed into Firebase:', user.email);
+      await pullGlobalData();
+      startRealTimeSync();
+    } else {
+      console.log('User logged out from Firebase.');
+      stopRealTimeSync();
+    }
+  });
+
+  // Global network status listeners
   window.addEventListener('online', () => {
     window.dispatchEvent(new Event('network_online'));
+    triggerClientOfflineSync().catch(err => console.error('Offline sync failed:', err));
   });
   
   window.addEventListener('offline', () => {
@@ -114,6 +226,9 @@ if (typeof window !== 'undefined') {
 }
 
 export async function syncToServer(): Promise<boolean> {
-  return true;
+  if (auth.currentUser) {
+    await triggerClientOfflineSync();
+    return true;
+  }
+  return false;
 }
-
