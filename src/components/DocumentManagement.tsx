@@ -20,7 +20,7 @@ const DocumentManagement: React.FC<DocumentManagementProps> = ({ onBack }) => {
     { 
       id: 'attendance_sheet', 
       urdu: 'یومیہ حاضری شیٹ', 
-      english: 'Daily Attendance Sheet', 
+      english: 'Attendance Sheet', 
       icon: ClipboardList, 
       color: 'bg-blue-600',
       onClick: () => setActiveTab('attendance_sheet')

@@ -88,6 +88,7 @@ import QRManualAttendance from "./QRManualAttendance";
 import DegreeDistribution from "./DegreeDistribution";
 import AdminDashboard from "./AdminPanel/AdminDashboard";
 import Notepad from "./Notepad";
+import SuperAdminPanel from "./SuperAdminPanel";
 import {
   updateCentralKey,
 } from "../syncService";
@@ -450,6 +451,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
 
   const ADMIN_EMAILS = [
     "abdulrehmanhabib.com@gmail.com",
+    "adminabdulrehmanhabibkpk",
     "jamiaarabiasirajululoomjabori@gmail.com",
     "muhammadabdullahshh@gmail.com",
   ];
@@ -719,13 +721,6 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       icon: Camera,
       label: "Documents",
       subLabel: "Scan Center",
-    },
-    {
-      id: "attendance",
-      path: "/dashboard/attendance",
-      icon: UserCheck,
-      label: "Attendance",
-      subLabel: "Daily Attendance",
     },
     {
       id: "lessons",
@@ -1304,6 +1299,19 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     canEdit: isAdmin || currentUserProfile?.permissions?.canEdit,
     canDelete: isAdmin || currentUserProfile?.permissions?.canDelete,
   };
+
+  const isSuperAdminAccount = 
+    currentUserEmail.toLowerCase().includes('adminabdulrehmanhabibkpk') || 
+    localStorage.getItem('isSuperAdmin') === 'true' ||
+    userRole === 'Super Admin';
+
+  if (isSuperAdminAccount && location.pathname !== '/dashboard/school-view') {
+    return (
+      <div className="w-full h-screen bg-slate-900 overflow-hidden">
+        <SuperAdminPanel onClose={() => navigate('/dashboard/school-view')} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-row h-screen bg-[#F4F7F6] overflow-hidden print:block print:h-auto print:bg-transparent relative">
@@ -1933,7 +1941,7 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex flex-col text-left">
-                             <span className="text-[11px] font-bold text-slate-800">Daily Attendance</span>
+                             <span className="text-[11px] font-bold text-slate-800">Student Attendance</span>
                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Attendance Status</span>
                           </div>
                           {isInitialLoading ? (

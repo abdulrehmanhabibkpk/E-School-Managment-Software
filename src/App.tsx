@@ -4,12 +4,14 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import AuthSystem from './components/AuthSystem';
 import Dashboard from './components/Dashboard';
 import PublicAdmissionForm from './components/PublicAdmissionForm';
 import SecurityGate from './components/SecurityGate';
-import AssanSchoolPortal from './components/assan_school_portal/AssanSchoolPortal';
+import { LandingView } from './components/assan_school_portal/LandingView';
+import { LoginView } from './components/assan_school_portal/LoginView';
+import { AppProvider } from './context/AppContext';
 import { startRealTimeSync, stopRealTimeSync, pullGlobalData } from './syncService';
 import { logActivity } from './utils/logger';
 import { sanitizeLocalStorage } from './lib/dataSanitizer';
@@ -19,6 +21,26 @@ function ProtectedRoute({ children, isLoggedIn }: { children: React.ReactNode, i
     return <Navigate to="/login" replace />;
   }
   return <>{children}</>;
+}
+
+function LandingRoute() {
+  const navigate = useNavigate();
+  return (
+    <LandingView 
+      onOpenLogin={(mode) => navigate('/login')}
+      onLoginSuccess={() => navigate('/dashboard')}
+    />
+  );
+}
+
+function LoginRoute() {
+  const navigate = useNavigate();
+  return (
+    <LoginView 
+      onBackToLanding={() => navigate('/')}
+      onLoginSuccess={() => navigate('/dashboard')}
+    />
+  );
 }
 
 export default function App() {
@@ -46,23 +68,27 @@ export default function App() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/admission-form" element={<PublicAdmissionForm />} />
-        <Route path="/portal" element={<AssanSchoolPortal />} />
-        <Route path="/landing" element={<AssanSchoolPortal />} />
-        <Route path="/website" element={<AssanSchoolPortal />} />
-        <Route 
-          path="/dashboard/*" 
-          element={<Dashboard onLogout={handleLogout} />} 
-        />
-        {/* Landing Page Website */}
-        <Route path="/" element={<AssanSchoolPortal />} />
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/portal" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <AppProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/accounts/login" element={<LoginRoute />} />
+          <Route path="/admission-form" element={<PublicAdmissionForm />} />
+          <Route path="/portal" element={<LandingRoute />} />
+          <Route path="/landing" element={<LandingRoute />} />
+          <Route path="/website" element={<LandingRoute />} />
+          <Route path="/accounts/*" element={<LandingRoute />} />
+          <Route 
+            path="/dashboard/*" 
+            element={<Dashboard onLogout={handleLogout} />} 
+          />
+          {/* Landing Page Website */}
+          <Route path="/" element={<LandingRoute />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AppProvider>
   );
 }
 

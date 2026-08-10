@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, X, Trash2, Pencil, Plus, Printer, Download } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, X, Trash2, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { getMadrassaName } from '../config';
 import { generateNumericId } from '../lib/idUtils';
 
 interface ManualAttendanceProps {
@@ -36,7 +35,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
   // Shared Sources
   const [classes, setClasses] = useState<string[]>([]);
   const [hours, setHours] = useState<string[]>([]);
-  const [teachersList, setTeachersList] = useState<string[]>(['صابر اللہ', 'شفیق الرحمن', 'ذیشان خان', 'ابوبکر']);
+  const [teachersList, setTeachersList] = useState<string[]>(['Saber Allah', 'Shafiq ur Rehman', 'Zeeshan Khan', 'Abu Bakr']);
 
   React.useEffect(() => {
     // Load student data
@@ -48,12 +47,12 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
     const savedGrades = JSON.parse(localStorage.getItem('grades') || '[]');
     const combined = [...savedGradesList, ...savedGrades];
     const gradeNames = Array.from(new Set(combined.map((g: any) => typeof g === 'string' ? g : (g.name || '')).filter(Boolean)));
-    setClasses(gradeNames.length > 0 ? gradeNames : ['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'سادسہ', 'سابعہ', 'دورہ حدیث']);
+    setClasses(gradeNames.length > 0 ? gradeNames : ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Class 6', 'Class 7', 'Class 8']);
 
     const savedHours = JSON.parse(localStorage.getItem('hours') || '[]');
-    setHours(savedHours.length > 0 ? savedHours : ['صبح', 'دوپہر', 'شام', 'مغرب', 'عشاء']);
+    setHours(savedHours.length > 0 ? savedHours : ['Morning', 'Afternoon', 'Evening', 'Period 1', 'Period 2']);
     
-    // Potential: Load teachers from staff module if added later
+    // Load teachers from staff module if available
     const savedStaff = JSON.parse(localStorage.getItem('staff') || '[]');
     if (savedStaff.length > 0) {
       setTeachersList(savedStaff.map((s: any) => s.name));
@@ -110,8 +109,8 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
       hour: teacherHour,
       date: teacherDate,
       status: teacherStatus,
-      arrival: teacherStatus === 'P' ? new Date().toLocaleTimeString() : 'غائب',
-      departure: teacherStatus === 'P' ? 'منتظر' : 'غائب'
+      arrival: teacherStatus === 'P' ? new Date().toLocaleTimeString() : 'Absent',
+      departure: teacherStatus === 'P' ? 'Pending' : 'Absent'
     };
     setTeacherRecords([record, ...teacherRecords]);
     setTeacherName('');
@@ -128,30 +127,29 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-urdu" dir="rtl">
+    <div className="min-h-screen bg-slate-50 font-sans" dir="ltr">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm">
         <h2 className="text-xl font-bold text-slate-800">
-          {attendanceType === 'student' ? 'طلبہ کی حاضری' : 'اساتذہ کی حاضری'}
+          {attendanceType === 'student' ? 'Student Manual Attendance' : 'Teacher Attendance'}
         </h2>
         
-          {/* Header */}
         <div className="flex items-center gap-4">
           <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
             <button 
               onClick={() => setAttendanceType('student')}
               className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${attendanceType === 'student' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-            >شاگرد</button>
+            >Student</button>
             <button 
               onClick={() => setAttendanceType('teacher')}
               className={`px-6 py-2 rounded-lg text-sm font-bold transition-all ${attendanceType === 'teacher' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-500 hover:bg-slate-200'}`}
-            >استاد</button>
+            >Teacher</button>
           </div>
 
           <div className="h-8 w-px bg-slate-200 mx-2" />
 
           {isSaved && (
-            <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold">حاضری محفوظ کر لی گئی ہے!</span>
+            <span className="bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg text-xs font-bold">Attendance saved successfully!</span>
           )}
 
           <button 
@@ -159,7 +157,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
             className="bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-600 shadow-md"
           >
             <X className="w-4 h-4" />
-            <span>بند کریں</span>
+            <span>Close</span>
           </button>
         </div>
       </div>
@@ -169,60 +167,60 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
           {attendanceType === 'student' ? (
             <motion.div 
               key="students-view"
-              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
               <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <div className="bg-blue-600 px-6 py-3 text-white font-bold text-sm">حاضری درج کریں (طلبہ)</div>
+                <div className="bg-blue-600 px-6 py-3 text-white font-bold text-sm">Mark Manual Attendance (Students)</div>
                 <div className="p-8 grid grid-cols-1 md:grid-cols-4 gap-6 items-end border-b border-slate-100">
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400">کلاس منتخب کریں</label>
-                    <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
-                      <option value="">-- منتخب کریں --</option>
+                    <label className="text-xs font-bold text-slate-400">Select Class / Grade</label>
+                    <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium">
+                      <option value="">-- Select Class --</option>
                       {classes.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400">گھنٹہ منتخب کریں</label>
-                    <select value={selectedHour} onChange={e => setSelectedHour(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm">
-                      <option value="">-- منتخب کریں --</option>
+                    <label className="text-xs font-bold text-slate-400">Select Hour / Session</label>
+                    <select value={selectedHour} onChange={e => setSelectedHour(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-medium">
+                      <option value="">-- Select Hour --</option>
                       {hours.map(h => <option key={h} value={h}>{h}</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-slate-400">تاریخ</label>
+                    <label className="text-xs font-bold text-slate-400">Date</label>
                     <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm font-mono" />
                   </div>
                   <button onClick={handleStudentSearch} className="bg-blue-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-500/10">
-                    <Search className="w-4 h-4" /> تلاش کریں
+                    <Search className="w-4 h-4" /> Fetch Students
                   </button>
                 </div>
 
                 <div className="p-8">
                   {!hasSearched ? (
-                    <div className="bg-blue-50 text-blue-600 p-8 rounded-2xl text-center border border-blue-100">
-                      براہ کرم اوپر دی گئی فیلڈز سے کلاس اور گھنٹہ منتخب کریں
+                    <div className="bg-blue-50 text-blue-600 p-8 rounded-2xl text-center border border-blue-100 font-medium">
+                      Please select Class and Session from above options to load student list.
                     </div>
                   ) : (
                     <div className="space-y-6">
                       <div className="bg-cyan-50 border border-cyan-100 p-4 rounded-xl flex items-center justify-between">
                          <div className="flex gap-4 text-xs font-bold text-cyan-700">
-                            <span>کلاس: {selectedClass}</span>
-                            <span>گھنٹہ: {selectedHour}</span>
-                            <span>تاریخ: {selectedDate}</span>
+                            <span>Class: {selectedClass}</span>
+                            <span>Session: {selectedHour}</span>
+                            <span>Date: {selectedDate}</span>
                          </div>
-                         <button className="bg-amber-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold">مزید طلبہ شامل کریں</button>
+                         <button className="bg-amber-500 text-white px-4 py-1.5 rounded-lg text-xs font-bold">Add More Students</button>
                       </div>
 
                       <div className="overflow-x-auto">
-                        <table className="w-full text-right">
+                        <table className="w-full text-left">
                           <thead>
                             <tr className="bg-slate-50 text-slate-500 text-xs font-bold">
                               <th className="px-4 py-4 w-12 text-center">#</th>
-                              <th className="px-6 py-4">نام</th>
-                              <th className="px-6 py-4">رجسٹریشن نمبر</th>
-                              <th className="px-6 py-4 text-center">حاضری</th>
-                              <th className="px-4 py-4 text-center">عمل</th>
+                              <th className="px-6 py-4">Student Name</th>
+                              <th className="px-6 py-4">Reg / Roll No</th>
+                              <th className="px-6 py-4 text-center">Attendance Status</th>
+                              <th className="px-4 py-4 text-center">Action</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-50">
@@ -230,13 +228,13 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
                               <tr key={s.id} className="hover:bg-slate-50/50">
                                 <td className="px-4 py-4 text-center text-slate-400 text-xs">{idx + 1}</td>
                                 <td className="px-6 py-4 font-bold text-slate-700">{s.name}</td>
-                                <td className="px-6 py-4 font-mono text-xs text-slate-400">{s.regNo || '---'}</td>
+                                <td className="px-6 py-4 font-mono text-xs text-slate-400">{s.regNo || s.rollNo || '---'}</td>
                                 <td className="px-6 py-4">
                                   <div className="flex justify-center gap-4">
-                                    <AttendToggle status="P" label="حاضر" active={studentAttendanceData[s.id] === 'P'} onClick={() => handleStudentAttendChange(s.id, 'P')} color="text-green-600" />
-                                    <AttendToggle status="A" label="غیر حاضر" active={studentAttendanceData[s.id] === 'A'} onClick={() => handleStudentAttendChange(s.id, 'A')} color="text-red-600" />
-                                    <AttendToggle status="L" label="رخصت" active={studentAttendanceData[s.id] === 'L'} onClick={() => handleStudentAttendChange(s.id, 'L')} color="text-amber-600" />
-                                    <AttendToggle status="S" label="بیماری" active={studentAttendanceData[s.id] === 'S'} onClick={() => handleStudentAttendChange(s.id, 'S')} color="text-blue-600" />
+                                    <AttendToggle status="P" label="Present" active={studentAttendanceData[s.id] === 'P'} onClick={() => handleStudentAttendChange(s.id, 'P')} color="text-green-600" />
+                                    <AttendToggle status="A" label="Absent" active={studentAttendanceData[s.id] === 'A'} onClick={() => handleStudentAttendChange(s.id, 'A')} color="text-red-600" />
+                                    <AttendToggle status="L" label="Leave" active={studentAttendanceData[s.id] === 'L'} onClick={() => handleStudentAttendChange(s.id, 'L')} color="text-amber-600" />
+                                    <AttendToggle status="S" label="Sick" active={studentAttendanceData[s.id] === 'S'} onClick={() => handleStudentAttendChange(s.id, 'S')} color="text-blue-600" />
                                   </div>
                                 </td>
                                 <td className="px-4 py-4 text-center">
@@ -249,10 +247,10 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
                       </div>
 
                       <div className="flex items-center justify-between pt-6 border-t border-slate-100">
-                        <button onClick={markAllPresent} className="bg-slate-600 text-white px-6 py-2 rounded-xl text-xs font-bold">سب کو حاضر کریں</button>
+                        <button onClick={markAllPresent} className="bg-slate-600 text-white px-6 py-2 rounded-xl text-xs font-bold">Mark All Present</button>
                         <div className="flex gap-4">
-                          <button onClick={onBack} className="bg-slate-100 text-slate-500 px-6 py-2 rounded-xl text-xs font-bold border border-slate-200">واپس جائیں</button>
-                          <button onClick={handleSaveStudentAttendance} className="bg-blue-600 text-white px-8 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20">حاضری محفوظ کریں</button>
+                          <button onClick={onBack} className="bg-slate-100 text-slate-500 px-6 py-2 rounded-xl text-xs font-bold border border-slate-200">Go Back</button>
+                          <button onClick={handleSaveStudentAttendance} className="bg-blue-600 text-white px-8 py-2 rounded-xl text-xs font-bold shadow-lg shadow-blue-500/20">Save Attendance</button>
                         </div>
                       </div>
                     </div>
@@ -263,75 +261,75 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
           ) : (
             <motion.div 
               key="teachers-view"
-              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
               <div className="bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
-                <div className="bg-blue-600 px-6 py-3 text-white font-bold text-sm">حاضری درج کریں اساتذہ (ایک استاد ملٹی گھنٹوں کی حاضری لگا سکتا ہے)</div>
+                <div className="bg-blue-600 px-6 py-3 text-white font-bold text-sm">Teacher Attendance Entry</div>
                 <div className="p-8">
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end mb-8">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">استاد منتخب کریں</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Select Teacher</label>
                       <select value={teacherName} onChange={e => setTeacherName(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs">
-                        <option value="">-- منتخب کریں --</option>
+                        <option value="">-- Select Teacher --</option>
                         {teachersList.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">کلاس منتخب کریں</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Select Class</label>
                       <select value={teacherClass} onChange={e => setTeacherClass(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs">
-                        <option value="">-- منتخب کریں --</option>
+                        <option value="">-- Select Class --</option>
                         {classes.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">گھنٹہ منتخب کریں</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Select Session/Hour</label>
                       <select value={teacherHour} onChange={e => setTeacherHour(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs">
-                        <option value="">-- منتخب کریں --</option>
+                        <option value="">-- Select Hour --</option>
                         {hours.map(h => <option key={h} value={h}>{h}</option>)}
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">حاضری</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Status</label>
                       <select value={teacherStatus} onChange={e => setTeacherStatus(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs">
-                        <option value="P">حاضر</option>
-                        <option value="A">غیر حاضر</option>
-                        <option value="L">رخصت</option>
+                        <option value="P">Present</option>
+                        <option value="A">Absent</option>
+                        <option value="L">Leave</option>
                       </select>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase">تاریخ</label>
+                      <label className="text-[10px] font-bold text-slate-400 uppercase">Date</label>
                       <input type="date" value={teacherDate} onChange={e => setTeacherDate(e.target.value)} className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs font-mono" />
                     </div>
                   </div>
                   
                   <div className="flex justify-end gap-3">
-                    <button onClick={() => { setTeacherName(''); setTeacherClass(''); }} className="bg-slate-500 text-white px-8 py-2 rounded-lg text-xs font-bold">صاف کریں</button>
-                    <button onClick={handleSaveTeacherAttendance} className="bg-blue-600 text-white px-8 py-2 rounded-lg text-xs font-bold shadow-md">حاضری محفوظ کریں</button>
+                    <button onClick={() => { setTeacherName(''); setTeacherClass(''); }} className="bg-slate-500 text-white px-8 py-2 rounded-lg text-xs font-bold">Clear</button>
+                    <button onClick={handleSaveTeacherAttendance} className="bg-blue-600 text-white px-8 py-2 rounded-lg text-xs font-bold shadow-md">Save Attendance</button>
                   </div>
                 </div>
 
                 <div className="border-t border-slate-100">
                    <div className="bg-slate-50 px-8 py-3 flex justify-between items-center">
-                      <h4 className="text-sm font-bold text-slate-600">حاضری کا ریکارڈ</h4>
+                      <h4 className="text-sm font-bold text-slate-600">Attendance Log History</h4>
                       <div className="flex gap-2">
-                        <button className="text-[10px] bg-sky-100 text-sky-700 px-3 py-1 rounded font-bold border border-sky-200">ایکسپورٹ کریں (Excel)</button>
-                        <button className="text-[10px] bg-teal-100 text-teal-700 px-3 py-1 rounded font-bold border border-teal-200">فلٹر رپورٹ دیکھیں</button>
+                        <button className="text-[10px] bg-sky-100 text-sky-700 px-3 py-1 rounded font-bold border border-sky-200">Export (Excel)</button>
+                        <button className="text-[10px] bg-teal-100 text-teal-700 px-3 py-1 rounded font-bold border border-teal-200">Filtered Report</button>
                       </div>
                    </div>
                    
                    <div className="overflow-x-auto">
-                     <table className="w-full text-right border-collapse text-xs">
+                     <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="bg-slate-900 text-white">
-                            <th className="px-4 py-3 border-r border-white/10 text-center">استاد کا نام</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">کلاس</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">گھنٹہ</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">تاریخ</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">آنے کا وقت</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">جانے کا وقت</th>
-                            <th className="px-4 py-3 border-r border-white/10 text-center">حیثیت</th>
-                            <th className="px-4 py-3 text-center">عمل</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Teacher Name</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Class</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Hour</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Date</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">In Time</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Out Time</th>
+                            <th className="px-4 py-3 border-r border-white/10 text-center">Status</th>
+                            <th className="px-4 py-3 text-center">Action</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -345,7 +343,7 @@ const ManualAttendance: React.FC<ManualAttendanceProps> = ({ onBack }) => {
                               <td className="px-4 py-3 font-mono text-slate-400 text-center border-r border-slate-100">{r.departure}</td>
                               <td className="px-4 py-3 text-center border-r border-slate-100">
                                 <span className={`px-3 py-0.5 rounded font-bold ${r.status === 'P' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                  {r.status === 'P' ? 'حاضر' : r.status === 'A' ? 'غائب' : 'رخصت'}
+                                  {r.status === 'P' ? 'Present' : r.status === 'A' ? 'Absent' : 'Leave'}
                                 </span>
                               </td>
                               <td className="px-4 py-3 text-center">
@@ -378,7 +376,7 @@ const AttendToggle = ({ status, label, active, onClick, color }: any) => (
     >
       {active && <div className={`w-2 h-2 rounded-full bg-current`} />}
     </div>
-    <span className={`text-xs font-bold font-urdu group-hover:opacity-80 transition-opacity ${active ? color : 'text-slate-400'}`}>
+    <span className={`text-xs font-bold group-hover:opacity-80 transition-opacity ${active ? color : 'text-slate-400'}`}>
       {label}
     </span>
   </label>

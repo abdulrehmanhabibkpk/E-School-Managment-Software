@@ -22,7 +22,7 @@ interface Grade {
 const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [activeTab, setActiveTab] = useState<'list' | 'add' | 'add_book' | 'all_books' | 'syllabus' | 'assignments' | 'result_books_setup'>('list');
   const [searchQuery, setSearchQuery] = useState('');
-  const [yearFilter, setYearFilter] = useState('تمام سال');
+  const [yearFilter, setYearFilter] = useState('All Years');
   
   const [selectedGradeForSetup, setSelectedGradeForSetup] = useState('');
   const [setupMapping, setSetupMapping] = useState<any>(() => {
@@ -40,151 +40,60 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return () => window.removeEventListener('storage_updated', handleStorageUpdated);
   }, []);
   
+  const getDefaultBooks = () => [
+    { id: 101, name: 'English Language & Grammar', grade: 'Grade 1', totalSyllabus: '100 Pages', coveredSyllabus: '40 Pages', teacher: '' },
+    { id: 102, name: 'Mathematics & Arithmetic', grade: 'Grade 1', totalSyllabus: '120 Pages', coveredSyllabus: '50 Pages', teacher: '' },
+    { id: 103, name: 'General Science', grade: 'Grade 1', totalSyllabus: '90 Pages', coveredSyllabus: '30 Pages', teacher: '' },
+    { id: 104, name: 'Computer Studies', grade: 'Grade 1', totalSyllabus: '80 Pages', coveredSyllabus: '20 Pages', teacher: '' },
+    { id: 105, name: 'Social Studies', grade: 'Grade 1', totalSyllabus: '100 Pages', coveredSyllabus: '45 Pages', teacher: '' },
+    { id: 106, name: 'Ethics & Values', grade: 'Grade 1', totalSyllabus: '60 Pages', coveredSyllabus: '25 Pages', teacher: '' },
+    
+    { id: 201, name: 'English Literature', grade: 'Grade 2', totalSyllabus: '110 Pages', coveredSyllabus: '35 Pages', teacher: '' },
+    { id: 202, name: 'Elementary Algebra', grade: 'Grade 2', totalSyllabus: '130 Pages', coveredSyllabus: '60 Pages', teacher: '' },
+    { id: 203, name: 'Environmental Science', grade: 'Grade 2', totalSyllabus: '100 Pages', coveredSyllabus: '40 Pages', teacher: '' },
+    { id: 204, name: 'Information Technology', grade: 'Grade 2', totalSyllabus: '85 Pages', coveredSyllabus: '30 Pages', teacher: '' },
+    { id: 205, name: 'World Geography', grade: 'Grade 2', totalSyllabus: '95 Pages', coveredSyllabus: '25 Pages', teacher: '' },
+    { id: 206, name: 'Art & Design', grade: 'Grade 2', totalSyllabus: '50 Pages', coveredSyllabus: '20 Pages', teacher: '' },
+
+    { id: 301, name: 'Advanced English Grammar', grade: 'Grade 3', totalSyllabus: '120 Pages', coveredSyllabus: '40 Pages', teacher: '' },
+    { id: 302, name: 'Geometry & Mathematics', grade: 'Grade 3', totalSyllabus: '140 Pages', coveredSyllabus: '60 Pages', teacher: '' },
+    { id: 303, name: 'Physics & Chemistry Basics', grade: 'Grade 3', totalSyllabus: '110 Pages', coveredSyllabus: '45 Pages', teacher: '' },
+    { id: 304, name: 'Programming & Logic', grade: 'Grade 3', totalSyllabus: '90 Pages', coveredSyllabus: '35 Pages', teacher: '' },
+    { id: 305, name: 'History & Civilization', grade: 'Grade 3', totalSyllabus: '100 Pages', coveredSyllabus: '30 Pages', teacher: '' },
+    { id: 306, name: 'Creative Writing', grade: 'Grade 3', totalSyllabus: '70 Pages', coveredSyllabus: '30 Pages', teacher: '' },
+
+    { id: 401, name: 'English Communications', grade: 'Grade 4', totalSyllabus: '130 Pages', coveredSyllabus: '50 Pages', teacher: '' },
+    { id: 402, name: 'Calculus & Statistics', grade: 'Grade 4', totalSyllabus: '150 Pages', coveredSyllabus: '70 Pages', teacher: '' },
+    { id: 403, name: 'Biology & Life Science', grade: 'Grade 4', totalSyllabus: '120 Pages', coveredSyllabus: '50 Pages', teacher: '' },
+    { id: 404, name: 'Data Structures', grade: 'Grade 4', totalSyllabus: '100 Pages', coveredSyllabus: '40 Pages', teacher: '' },
+    { id: 405, name: 'Global Economics', grade: 'Grade 4', totalSyllabus: '110 Pages', coveredSyllabus: '35 Pages', teacher: '' },
+    { id: 406, name: 'Physical Education', grade: 'Grade 4', totalSyllabus: '60 Pages', coveredSyllabus: '30 Pages', teacher: '' },
+  ];
+
   const [books, setBooks] = useState<any[]>(() => {
     const saved = localStorage.getItem('books_list');
-    if (saved) return JSON.parse(saved);
-    
-    // Default Wafaq ul Madaris Syllabus with exactly 6 papers per grade
-    const defaultBooks = [
-      // درجہ اولیٰ (6 Papers - ثانویہ عامہ میٹرک سال اول)
-      { id: 101, name: 'نحو (علم النحو / نحو میر فارسی / عربی، شرح مائۃ عامل مع الترکیب)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 102, name: 'صرف (میزان الصرف و منشعب / ارشاد الصرف اردو یا علم الصرف تین حصے)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 103, name: 'تمرین الصرف (صفوۃ المصادر، تیسیر الابواب)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 104, name: 'تمرین النحو (المنہاج فی القواعد والاعراب، النحو الیسیر، تسہیل النحو)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 105, name: 'لغۃ عربیہ و حفظ حدیث (الطریقۃ العصریہ جلد اول و دوم، حفظ حدیث جوامع الکلم)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 106, name: 'تجوید (جمال القرآن، حفظ پارہ عم نصف آخر مع التجوید)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ ثانیہ (6 Papers)
-      { id: 201, name: 'علم الصیغہ', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 202, name: 'نحومیر', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 203, name: 'قدوری (عبادات)', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 204, name: 'مانیۃ المصلٰی', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 205, name: 'روضۃ الادب', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 206, name: 'معلم الانشاء', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ ثالثہ (6 Papers)
-      { id: 301, name: 'شرح مائۃ عامل', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 302, name: 'ہدایۃ النحو', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 303, name: 'قدوری (معاملات)', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 304, name: 'نور الایضاح', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 305, name: 'نفحۃ العرب', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 306, name: 'القراءۃ الراشدہ', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ رابعہ (6 Papers)
-      { id: 401, name: 'کافیہ', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 402, name: 'شرح جامی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 403, name: 'اصول الشاشی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 404, name: 'کنز الدقائق', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 405, name: 'قطبی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 406, name: 'مقامات حریری', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ خامسہ (6 Papers)
-      { id: 501, name: 'مختصر المعانی', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 502, name: 'ہدایہ (اول)', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 503, name: 'نور الانوار', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 504, name: 'سلم العلوم', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 505, name: 'جلالین (اول)', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 506, name: 'السراجی فی المیراث', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ سادسہ (6 Papers)
-      { id: 601, name: 'مشکوٰۃ المصابیح (اول)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 602, name: 'مشکوٰۃ المصابیح (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 603, name: 'جلالین (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 604, name: 'شرح عقائد نسفی', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 605, name: 'ہدایہ (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 606, name: 'حسامی', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ سابعہ (6 Papers)
-      { id: 701, name: 'تفسیر بیضاوی', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 702, name: 'شرح معانی الآثار (طحاوی - اول)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 703, name: 'شرح معانی الآثار (طحاوی - ثانی)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 704, name: 'ہدایہ (اخیرین)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 705, name: 'مطول', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 706, name: 'میبذی / عقود رسم المفتي', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      
-      // درجہ دورہ حدیث (6 Papers)
-      { id: 801, name: 'صحیح بخاری (جلد اول)', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 802, name: 'صحیح بخاری (جلد ثانی)', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 803, name: 'صحیح مسلم', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 804, name: 'جامع ترمذی', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 805, name: 'سنن ابی داؤد', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      { id: 806, name: 'سنن نسائی و ابن ماجہ', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-    ];
-    localStorage.setItem('books_list', JSON.stringify(defaultBooks));
-    return defaultBooks;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Clean out any old Urdu default books if present
+      if (parsed.length > 0 && parsed[0]?.name?.includes('نحو')) {
+        const defaults = getDefaultBooks();
+        localStorage.setItem('books_list', JSON.stringify(defaults));
+        return defaults;
+      }
+      return parsed;
+    }
+    const defaults = getDefaultBooks();
+    localStorage.setItem('books_list', JSON.stringify(defaults));
+    return defaults;
   });
 
-  const loadWifaqSyllabus = async () => {
-    if (confirm('کیا آپ وفاق المدارس کا نصاب (ہر درجہ کے لیے 6 پرچے) لوڈ کرنا چاہتے ہیں؟ اس سے موجودہ کتب کی فہرست تبدیل ہو جائے گی۔')) {
-      const defaultBooks = [
-        // درجہ اولیٰ
-        { id: 101, name: 'نحو (علم النحو / نحو میر فارسی / عربی، شرح مائۃ عامل مع الترکیب)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 102, name: 'صرف (میزان الصرف و منشعب / ارشاد الصرف اردو یا علم الصرف تین حصے)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 103, name: 'تمرین الصرف (صفوۃ المصادر، تیسیر الابواب)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 104, name: 'تمرین النحو (المنہاج فی القواعد والاعراب، النحو الیسیر، تسہیل النحو)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 105, name: 'لغۃ عربیہ و حفظ حدیث (الطریقۃ العصریہ جلد اول و دوم، حفظ حدیث جوامع الکلم)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 106, name: 'تجوید (جمال القرآن، حفظ پارہ عم نصف آخر مع التجوید)', grade: 'اولیٰ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ ثانیہ
-        { id: 201, name: 'علم الصیغہ', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 202, name: 'نحومیر', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 203, name: 'قدوری (عبادات)', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 204, name: 'مانیۃ المصلٰی', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 205, name: 'روضۃ الادب', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 206, name: 'معلم الانشاء', grade: 'ثانیہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ ثالثہ
-        { id: 301, name: 'شرح مائۃ عامل', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 302, name: 'ہدایۃ النحو', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 303, name: 'قدوری (معاملات)', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 304, name: 'نور الایضاح', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 305, name: 'نفحۃ العرب', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 306, name: 'القراءۃ الراشدہ', grade: 'ثالثہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ رابعہ
-        { id: 401, name: 'کافیہ', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 402, name: 'شرح جامی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 403, name: 'اصول الشاشی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 404, name: 'کنز الدقائق', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 405, name: 'قطبی', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 406, name: 'مقامات حریری', grade: 'رابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ خامسہ
-        { id: 501, name: 'مختصر المعانی', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 502, name: 'ہدایہ (اول)', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 503, name: 'نور الانوار', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 504, name: 'سلم العلوم', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 505, name: 'جلالین (اول)', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 506, name: 'السراجی فی المیراث', grade: 'خامسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ سادسہ
-        { id: 601, name: 'مشکوٰۃ المصابیح (اول)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 602, name: 'مشکوٰۃ المصابیح (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 603, name: 'جلالین (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 604, name: 'شرح عقائد نسفی', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 605, name: 'ہدایہ (ثانی)', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 606, name: 'حسامی', grade: 'سادسہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ سابعہ
-        { id: 701, name: 'تفسیر بیضاوی', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 702, name: 'شرح معانی الآثار (طحاوی - اول)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 703, name: 'شرح معانی الآثار (طحاوی - ثانی)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 704, name: 'ہدایہ (اخیرین)', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 705, name: 'مطول', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 706, name: 'میبذی / عقود رسم المفتي', grade: 'سابعہ', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        
-        // درجہ دورہ حدیث
-        { id: 801, name: 'صحیح بخاری (جلد اول)', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 802, name: 'صحیح بخاری (جلد ثانی)', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 803, name: 'صحیح مسلم', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 804, name: 'جامع ترمذی', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 805, name: 'سنن ابی داؤد', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-        { id: 806, name: 'سنن نسائی و ابن ماجہ', grade: 'دورہ حدیث', totalSyllabus: '', coveredSyllabus: '', teacher: '' },
-      ];
+  const loadStandardCurriculum = async () => {
+    if (confirm('Load standard English curriculum (6 subjects per grade)? This will update current subjects list.')) {
+      const defaultBooks = getDefaultBooks();
       setBooks(defaultBooks);
       localStorage.setItem('books_list', JSON.stringify(defaultBooks));
       await syncToServer();
-      alert('وفاقی نصاب کامیابی سے لوڈ ہو گیا (ہر درجہ میں 6 پرچے)۔');
+      alert('Standard English Curriculum loaded successfully.');
     }
   };
 
@@ -208,59 +117,31 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     localStorage.setItem('books_list', JSON.stringify(books));
   }, [books]);
 
-  // Clean up duplicate IDs on mount
-  useEffect(() => {
-    const seenGradeIds = new Set();
-    let gradesChanged = false;
-    const cleanedGrades = grades.map(g => {
-      if (seenGradeIds.has(g.id) || !g.id) {
-        gradesChanged = true;
-        const newId = Date.now() + Math.floor(Math.random() * 1000000);
-        seenGradeIds.add(newId);
-        return { ...g, id: newId };
-      }
-      seenGradeIds.add(g.id);
-      return g;
-    });
-
-    const seenBookIds = new Set();
-    let booksChanged = false;
-    const cleanedBooks = books.map(b => {
-      if (seenBookIds.has(b.id) || !b.id) {
-        booksChanged = true;
-        const newId = Date.now() + Math.floor(Math.random() * 1000000);
-        seenBookIds.add(newId);
-        return { ...b, id: newId };
-      }
-      seenBookIds.add(b.id);
-      return b;
-    });
-
-    if (gradesChanged) setGrades(cleanedGrades);
-    if (booksChanged) setBooks(cleanedBooks);
-  }, []);
-
-  const handleAddBook = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newBook.name || !newBook.grade) return;
-    const bookId = generateNumericId();
-    const updatedBooks = [...books, { id: bookId, ...newBook }];
-    setBooks(updatedBooks);
-    localStorage.setItem('books_list', JSON.stringify(updatedBooks));
-    setNewBook({ name: '', grade: '', totalSyllabus: '', coveredSyllabus: '', teacher: '' });
-    setActiveTab('all_books');
-    await syncToServer();
-  };
-  
   const [grades, setGrades] = useState<Grade[]>(() => {
     const saved = localStorage.getItem('grades_list');
-    if (saved) return JSON.parse(saved);
-    return [
-      { id: 1, name: 'اولیٰ', year: 'اول', section: '', totalStudents: 1, teacher: 'عبدالوحید' },
-      { id: 2, name: 'اولیٰ', year: 'اول', section: 'الف', totalStudents: 0, teacher: '--- کوئی مسئول منتخب نہیں ---' },
-      { id: 3, name: 'اولیٰ', year: 'اول', section: 'اے', totalStudents: 0, teacher: 'شفیق الرحمن' },
-      { id: 4, name: 'اولیٰ', year: '2026', section: '', totalStudents: 0, teacher: '--- کوئی مسئول منتخب نہیں ---' }
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Clean out old Urdu grade defaults
+      if (parsed.length > 0 && (parsed[0]?.name?.includes('اولیٰ') || parsed[0]?.teacher?.includes('عبدالوحید'))) {
+        const defaults: Grade[] = [
+          { id: 1, name: 'Grade 1', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+          { id: 2, name: 'Grade 2', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+          { id: 3, name: 'Grade 3', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+          { id: 4, name: 'Grade 4', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' }
+        ];
+        localStorage.setItem('grades_list', JSON.stringify(defaults));
+        return defaults;
+      }
+      return parsed;
+    }
+    const defaults: Grade[] = [
+      { id: 1, name: 'Grade 1', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+      { id: 2, name: 'Grade 2', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+      { id: 3, name: 'Grade 3', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' },
+      { id: 4, name: 'Grade 4', year: '2026', section: 'A', totalStudents: 0, teacher: 'Unassigned', books: 'English, Math, Science' }
     ];
+    localStorage.setItem('grades_list', JSON.stringify(defaults));
+    return defaults;
   });
 
   const [newGrade, setNewGrade] = useState({
@@ -284,12 +165,23 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       return g;
     });
     
-    // Only update state if something changed to avoid infinite loop
-    const hasChanges = updatedGrades.some((g, i) => g.totalStudents !== grades[i].totalStudents);
+    const hasChanges = updatedGrades.some((g, i) => g.totalStudents !== grades[i]?.totalStudents);
     if (hasChanges) {
       setGrades(updatedGrades);
     }
   }, [grades]);
+
+  const handleAddBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newBook.name || !newBook.grade) return;
+    const bookId = generateNumericId();
+    const updatedBooks = [...books, { id: bookId, ...newBook }];
+    setBooks(updatedBooks);
+    localStorage.setItem('books_list', JSON.stringify(updatedBooks));
+    setNewBook({ name: '', grade: '', totalSyllabus: '', coveredSyllabus: '', teacher: '' });
+    setActiveTab('all_books');
+    await syncToServer();
+  };
 
   const handleAddGrade = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -301,7 +193,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
       year: newGrade.year,
       section: newGrade.section,
       totalStudents: 0,
-      teacher: newGrade.teacher || '--- کوئی مسئول منتخب نہیں ---',
+      teacher: newGrade.teacher || 'Unassigned',
       books: newGrade.books
     };
 
@@ -314,7 +206,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const handleDelete = async (id: number) => {
-    if (confirm('کیا آپ اس درجہ کو ختم کرنا چاہتے ہیں؟')) {
+    if (confirm('Are you sure you want to delete this grade?')) {
       const gradeToDelete = grades.find(g => g.id === id);
       if (gradeToDelete) {
         addToRecycleBin('grades', gradeToDelete, 'name');
@@ -327,44 +219,49 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   };
 
   const filteredGrades = grades.filter(g => {
-    const matchesSearch = g.name.includes(searchQuery) || g.year.includes(searchQuery) || g.section.includes(searchQuery);
-    const matchesYear = yearFilter === 'تمام سال' || g.year === yearFilter;
+    const matchesSearch = g.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          g.year.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          g.section.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesYear = yearFilter === 'All Years' || g.year === yearFilter;
     return matchesSearch && matchesYear;
   });
 
-  const uniqueYears = ['تمام سال', ...Array.from(new Set(grades.map(g => g.year)))];
+  const uniqueYears = ['All Years', ...Array.from(new Set(grades.map(g => g.year)))];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 font-urdu" dir="rtl">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 font-sans" dir="ltr">
       {/* Header */}
-      <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between shadow-sm sticky top-0 z-10">
+      <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm sticky top-0 z-10">
         <div className="flex items-center gap-4">
           <button 
             onClick={onBack}
             className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500"
           >
-            <ArrowRight className="w-5 h-5" />
+            <ArrowRight className="w-5 h-5 rotate-180" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="bg-purple-100 p-2 rounded-lg">
-              <Grid className="w-5 h-5 text-purple-600" />
+          <div className="flex items-center gap-3">
+            <div className="bg-indigo-100 p-2.5 rounded-xl">
+              <Grid className="w-6 h-6 text-indigo-600" />
             </div>
-            <h1 className="text-xl font-bold text-slate-800 tracking-tight">درجات کا انتظام</h1>
+            <div>
+              <h1 className="text-xl font-bold text-slate-800 tracking-tight">Academics & Curriculum Management</h1>
+              <p className="text-xs text-slate-500">Manage grades, subjects, syllabus tracking, and course assignments.</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button 
             onClick={() => exportToExcel(grades, 'grades_record')}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg transition-all font-urdu font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/20 text-sm"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl transition-all font-bold flex items-center gap-2 shadow-sm text-xs"
           >
             <Download className="w-4 h-4" />
-            ایکسل ایکسپورٹ
+            Export Excel
           </button>
           
-          <label className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-all font-urdu font-bold flex items-center gap-2 shadow-lg shadow-orange-500/20 cursor-pointer text-sm">
+          <label className="bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2 rounded-xl transition-all font-bold flex items-center gap-2 shadow-sm cursor-pointer text-xs">
             <Upload className="w-4 h-4" />
-            ایکسل اپلوڈ
+            Import Excel
             <input 
               type="file" 
               accept=".xlsx, .xls" 
@@ -376,9 +273,9 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     const merged = [...grades, ...data];
                     setGrades(merged);
                     localStorage.setItem('grades_list', JSON.stringify(merged));
-                    alert('ڈیٹا کامیابی سے اپلوڈ ہو گیا۔');
+                    alert('Grades imported successfully.');
                   } catch (err) {
-                    alert('ایکسل فائل پڑھنے میں خرابی۔');
+                    alert('Error importing Excel file.');
                   }
                 }
               }} 
@@ -386,58 +283,58 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           </label>
           <button 
             onClick={() => setActiveTab('assignments')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'assignments' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'assignments' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <Users className="w-4 h-4 inline-block ml-2" />
-            کتابوں کی تقسیم
+            <Users className="w-4 h-4 inline-block mr-1.5" />
+            Course Assignments
           </button>
           <button 
             onClick={() => setActiveTab('syllabus')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'syllabus' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'syllabus' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <BarChart2 className="w-4 h-4 inline-block ml-2" />
-            نصاب
+            <BarChart2 className="w-4 h-4 inline-block mr-1.5" />
+            Syllabus Tracker
           </button>
           <button 
             onClick={() => setActiveTab('result_books_setup')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'result_books_setup' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'result_books_setup' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <BookOpen className="w-4 h-4 inline-block ml-2" />
-            نتائج بک سیٹ اپ
+            <BookOpen className="w-4 h-4 inline-block mr-1.5" />
+            Exam Course Setup
           </button>
           <button 
             onClick={() => setActiveTab('all_books')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'all_books' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'all_books' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <BookOpen className="w-4 h-4 inline-block ml-2" />
-            تمام کتب
+            <BookOpen className="w-4 h-4 inline-block mr-1.5" />
+            All Subjects
           </button>
           <button 
             onClick={() => setActiveTab('add_book')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'add_book' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'add_book' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <Book className="w-4 h-4 inline-block ml-2" />
-            نئی کتاب
+            <Book className="w-4 h-4 inline-block mr-1.5" />
+            Add Subject
           </button>
           <button 
             onClick={() => setActiveTab('list')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'list' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'list' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <List className="w-4 h-4 inline-block ml-2" />
-            تمام درجات
+            <List className="w-4 h-4 inline-block mr-1.5" />
+            All Grades
           </button>
           <button 
             onClick={() => setActiveTab('add')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'add' ? 'bg-purple-600 text-white shadow-lg shadow-purple-200' : 'text-slate-500 hover:bg-slate-50'}`}
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === 'add' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200' : 'text-slate-600 hover:bg-slate-100'}`}
           >
-            <Plus className="w-4 h-4 inline-block ml-2" />
-            نیا درجہ
+            <Plus className="w-4 h-4 inline-block mr-1.5" />
+            Add Grade
           </button>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-7xl mx-auto space-y-6">
           <AnimatePresence mode="wait">
             {activeTab === 'list' ? (
               <motion.div
@@ -447,23 +344,23 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 exit={{ opacity: 0, y: -10 }}
                 className="space-y-6"
               >
-                {/* Filters */}
+                {/* Search & Filter Controls */}
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-                  <div className="relative flex-1 group">
-                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-purple-500 transition-colors" />
+                  <div className="relative flex-1 w-full group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
                     <input 
                       type="text"
-                      placeholder="درجہ، سال یا سیکشن تلاش کریں..."
+                      placeholder="Search grade name, year, or section..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pr-12 pl-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all text-sm"
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-medium"
                     />
                   </div>
                   <div className="w-full md:w-64">
                     <select 
                       value={yearFilter}
                       onChange={(e) => setYearFilter(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-100 rounded-xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all text-sm font-bold"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm font-semibold"
                     >
                       {uniqueYears.map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -472,59 +369,50 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   </div>
                 </div>
 
-                {/* Table */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+                {/* Grades Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-right border-collapse">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-[#832c2c] text-white">
-                          <th className="px-4 py-4 text-xs font-bold border-l border-white/10 text-center">#</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10">درجہ کا نام</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10 text-center">سال</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10 text-center">سیکشن</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10 text-center">کل طلبہ کی تعداد</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10">مسئول استاد</th>
-                          <th className="px-6 py-4 text-xs font-bold border-l border-white/10">مقررہ کتابیں</th>
-                          <th className="px-6 py-4 text-xs font-bold text-center">عمل</th>
+                        <tr className="bg-slate-900 text-white text-xs uppercase tracking-wider font-semibold">
+                          <th className="px-4 py-4 text-center w-12">#</th>
+                          <th className="px-6 py-4">Grade Name</th>
+                          <th className="px-6 py-4 text-center">Academic Year</th>
+                          <th className="px-6 py-4 text-center">Section</th>
+                          <th className="px-6 py-4 text-center">Enrolled Students</th>
+                          <th className="px-6 py-4">Lead Teacher</th>
+                          <th className="px-6 py-4">Assigned Subjects</th>
+                          <th className="px-6 py-4 text-center">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 text-sm">
                         {filteredGrades.map((grade, index) => (
                           <tr key={grade.id} className="hover:bg-slate-50/80 transition-colors group">
                             <td className="px-4 py-4 text-xs font-bold text-slate-400 text-center">{index + 1}</td>
-                            <td className="px-6 py-4">
-                              <span className="text-sm font-bold text-slate-700">{grade.name}</span>
+                            <td className="px-6 py-4 font-bold text-slate-800">{grade.name}</td>
+                            <td className="px-6 py-4 text-center">
+                              <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold">{grade.year}</span>
+                            </td>
+                            <td className="px-6 py-4 text-center text-slate-500 font-medium">
+                              {grade.section || '---'}
                             </td>
                             <td className="px-6 py-4 text-center">
-                              <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">{grade.year}</span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <span className="text-xs text-slate-500">{grade.section || '---'}</span>
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                              <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-blue-100 text-blue-600 text-xs font-bold">
+                              <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-xs font-bold">
                                 {grade.totalStudents}
                               </div>
                             </td>
+                            <td className="px-6 py-4 text-slate-600 font-medium">{grade.teacher || 'Unassigned'}</td>
                             <td className="px-6 py-4">
-                              <span className="text-xs text-slate-600">{grade.teacher}</span>
+                              <span className="text-xs text-slate-500 max-w-[180px] truncate block" title={grade.books}>{grade.books || 'None'}</span>
                             </td>
                             <td className="px-6 py-4">
-                              <span className="text-xs text-slate-600 max-w-[120px] truncate inline-block" title={grade.books}>{grade.books || 'کوئی نہیں'}</span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button className="p-1.5 bg-blue-100 text-blue-600 rounded-md hover:bg-blue-600 hover:text-white transition-all">
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button className="p-1.5 bg-cyan-100 text-cyan-600 rounded-md hover:bg-cyan-600 hover:text-white transition-all">
-                                  <Info className="w-3.5 h-3.5" />
-                                </button>
+                              <div className="flex items-center justify-center gap-2">
                                 <button 
                                   onClick={() => handleDelete(grade.id)}
-                                  className="p-1.5 bg-red-100 text-red-600 rounded-md hover:bg-red-600 hover:text-white transition-all"
+                                  className="p-1.5 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all"
+                                  title="Delete Grade"
                                 >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <Trash2 className="w-4 h-4" />
                                 </button>
                               </div>
                             </td>
@@ -532,10 +420,10 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         ))}
                         {filteredGrades.length === 0 && (
                           <tr>
-                            <td colSpan={8} className="py-20 text-center">
+                            <td colSpan={8} className="py-16 text-center">
                               <div className="flex flex-col items-center gap-3 text-slate-400">
-                                <Search className="w-10 h-10 opacity-20" />
-                                <span className="text-sm">کوئی درجہ نہیں ملا</span>
+                                <Search className="w-10 h-10 opacity-30" />
+                                <span className="text-sm font-medium">No grades found</span>
                               </div>
                             </td>
                           </tr>
@@ -553,100 +441,100 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 exit={{ opacity: 0, y: -10 }}
                 className="max-w-2xl mx-auto"
               >
-                <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl overflow-hidden">
-                  <div className="bg-[#832c2c] p-8 text-white relative">
-                    <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-16 -translate-y-16" />
-                    <h2 className="text-2xl font-bold font-urdu relative z-10 flex items-center gap-3">
-                      <div className="bg-white/20 p-2 rounded-xl">
-                        <Plus className="w-6 h-6" />
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white relative">
+                    <h2 className="text-2xl font-bold relative z-10 flex items-center gap-3">
+                      <div className="bg-white/10 p-2 rounded-xl">
+                        <Plus className="w-6 h-6 text-indigo-400" />
                       </div>
-                      نیا درجہ شامل کریں
+                      Add New Grade / Class
                     </h2>
                   </div>
 
                   <form onSubmit={handleAddGrade} className="p-8 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1">درجہ کا نام</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Grade Name</label>
                         <select 
                           required
                           value={newGrade.name}
                           onChange={(e) => setNewGrade({...newGrade, name: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         >
-                          <option value="">-- منتخب کریں --</option>
-                          <option value="اولیٰ">اولیٰ</option>
-                          <option value="ثانیہ">ثانیہ</option>
-                          <option value="ثالثہ">ثالثہ</option>
-                          <option value="رابعہ">رابعہ</option>
-                          <option value="خامسہ">خامسہ</option>
-                          <option value="سادسہ">سادسہ</option>
-                          <option value="سابعہ">سابعہ</option>
-                          <option value="دورہ حدیث">دورہ حدیث</option>
+                          <option value="">-- Select Grade --</option>
+                          <option value="Grade 1">Grade 1</option>
+                          <option value="Grade 2">Grade 2</option>
+                          <option value="Grade 3">Grade 3</option>
+                          <option value="Grade 4">Grade 4</option>
+                          <option value="Grade 5">Grade 5</option>
+                          <option value="Grade 6">Grade 6</option>
+                          <option value="Grade 7">Grade 7</option>
+                          <option value="Grade 8">Grade 8</option>
+                          <option value="Grade 9">Grade 9</option>
+                          <option value="Grade 10">Grade 10</option>
                         </select>
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1">سال</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Academic Year</label>
                         <input 
                           required
                           type="text"
-                          placeholder="مثال: اول، 2026"
+                          placeholder="e.g. 2026"
                           value={newGrade.year}
                           onChange={(e) => setNewGrade({...newGrade, year: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1">سیکشن</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Section</label>
                         <input 
                           type="text"
-                          placeholder="مثال: الف، اے، ا لف"
+                          placeholder="e.g. Section A, Section B"
                           value={newGrade.section}
                           onChange={(e) => setNewGrade({...newGrade, section: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1">مسئول اساتذہ</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Lead Teacher</label>
                         <input 
                           type="text"
-                          placeholder="استاد کا نام لکھیں..."
+                          placeholder="Enter teacher name..."
                           value={newGrade.teacher}
                           onChange={(e) => setNewGrade({...newGrade, teacher: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         />
-                        <p className="text-[9px] text-slate-400 mr-1 mt-1">ایک سے زیادہ اساتذہ منتخب کیے جا سکتے ہیں۔</p>
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1">مقررہ کتابیں (کوما لگا کر الگ کریں)</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block">Assigned Subjects (comma separated)</label>
                         <textarea 
-                          placeholder="مثال: تجوید، نحو، صرف..."
+                          placeholder="e.g. Mathematics, English, Science, Computer Studies..."
                           value={newGrade.books || ''}
                           onChange={(e) => setNewGrade({...newGrade, books: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold min-h-[80px]"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm min-h-[90px]"
                         />
                       </div>
                     </div>
 
-                    <div className="pt-8 flex gap-4">
+                    <div className="pt-4 flex gap-4">
                       <button 
                         type="submit"
-                        className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                        className="flex-1 bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-sm text-sm"
                       >
                         <Save className="w-5 h-5" />
-                        محفوظ کریں
+                        Save Grade
                       </button>
                       <button 
                         type="button"
                         onClick={() => setActiveTab('list')}
-                        className="px-8 bg-slate-100 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-200 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                        className="px-6 bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold hover:bg-slate-200 transition-all flex items-center justify-center gap-2 text-sm"
                       >
                         <RotateCcw className="w-5 h-5" />
-                        واپس
+                        Cancel
                       </button>
                     </div>
                   </form>
@@ -660,54 +548,54 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 exit={{ opacity: 0, y: -10 }}
                 className="max-w-2xl mx-auto"
               >
-                <div className="bg-white rounded-[32px] border border-slate-200 shadow-2xl overflow-hidden">
-                  <div className="bg-[#832c2c] p-8 text-white relative">
-                    <h2 className="text-2xl font-bold font-urdu relative z-10 flex items-center gap-3">
-                      <Book className="w-6 h-6" />
-                      کتاب شامل کریں
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                  <div className="bg-slate-900 p-8 text-white">
+                    <h2 className="text-2xl font-bold flex items-center gap-3">
+                      <Book className="w-6 h-6 text-indigo-400" />
+                      Add New Subject
                     </h2>
                   </div>
                   <form onSubmit={handleAddBook} className="p-8 space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1 mb-2">درجہ کا انتخاب کریں</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Select Target Grade</label>
                         <select 
                           required
                           value={newBook.grade}
                           onChange={(e) => setNewBook({...newBook, grade: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         >
-                          <option value="">-- درجہ منتخب کریں --</option>
+                          <option value="">-- Select Grade --</option>
                           {grades.map(g => <option key={g.id} value={g.name}>{g.name} ({g.year})</option>)}
                         </select>
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1 mb-2">کتاب کا نام</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Subject Name</label>
                         <input 
                           required
                           type="text"
-                          placeholder="مثال: قدوری، ہدایہ..."
+                          placeholder="e.g. Physics, World History, Algebra..."
                           value={newBook.name}
                           onChange={(e) => setNewBook({...newBook, name: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mr-1 mb-2">استاد (متبادل - براہ راست تقسیم میں بھی کیا جا سکتا ہے)</label>
+                        <label className="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Assigned Subject Teacher</label>
                         <select 
                           value={newBook.teacher}
                           onChange={(e) => setNewBook({...newBook, teacher: e.target.value})}
-                          className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:bg-white focus:ring-4 focus:ring-purple-500/10 focus:border-purple-500 transition-all font-bold"
+                          className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-semibold text-sm"
                         >
-                          <option value="">-- استاد منتخب کریں --</option>
+                          <option value="">-- Select Teacher --</option>
                           {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                         </select>
                       </div>
                     </div>
                     <div className="pt-4 flex gap-4">
-                      <button type="submit" className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-xl shadow-emerald-200 hover:bg-emerald-700 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                      <button type="submit" className="flex-1 bg-emerald-600 text-white py-3.5 rounded-xl font-bold hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 text-sm shadow-sm">
                         <Save className="w-5 h-5" />
-                        محفوظ کریں
+                        Save Subject
                       </button>
                     </div>
                   </form>
@@ -719,20 +607,20 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
               >
-                <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <Users className="text-purple-600" />
-                  کتابوں کی تقسیم (کونسی کتاب کس استاد کے پاس ہے)
+                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <Users className="text-indigo-600" />
+                  Course & Subject Teacher Assignments
                 </h3>
                 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-right">
+                  <table className="w-full text-sm text-left">
                     <thead>
-                      <tr className="bg-slate-900 text-white">
-                        <th className="py-4 px-6 border-l border-white/10">درجہ</th>
-                        <th className="py-4 px-6 border-l border-white/10">کتاب</th>
-                        <th className="py-4 px-6">ذمہ دار استاد</th>
+                      <tr className="bg-slate-900 text-white font-semibold text-xs uppercase tracking-wider">
+                        <th className="py-4 px-6">Grade</th>
+                        <th className="py-4 px-6">Subject</th>
+                        <th className="py-4 px-6">Assigned Instructor</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -741,7 +629,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         return gradeBooks.map(b => (
                           <tr key={`${g.id}-${b.id}`} className="hover:bg-slate-50 transition-colors">
                             <td className="py-4 px-6 font-bold text-slate-700">{g.name} ({g.year})</td>
-                            <td className="py-4 px-6 text-slate-600">{b.name}</td>
+                            <td className="py-4 px-6 text-slate-600 font-medium">{b.name}</td>
                             <td className="py-4 px-6">
                               <select 
                                 value={b.teacher || ''}
@@ -749,9 +637,9 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                   const updatedBooks = books.map(bk => bk.id === b.id ? {...bk, teacher: e.target.value} : bk);
                                   setBooks(updatedBooks);
                                 }}
-                                className="w-full max-w-xs px-3 py-2 bg-slate-100 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-purple-500 font-bold text-xs"
+                                className="w-full max-w-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-xs"
                               >
-                                <option value="">-- استاد منتخب کریں --</option>
+                                <option value="">-- Select Teacher --</option>
                                 {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                               </select>
                             </td>
@@ -759,7 +647,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         ));
                       })}
                       {books.length === 0 && (
-                        <tr><td colSpan={3} className="py-20 text-center text-slate-400">کوئی کتاب موجود نہیں ہے۔</td></tr>
+                        <tr><td colSpan={3} className="py-16 text-center text-slate-400 font-medium">No subjects available for assignment.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -771,59 +659,28 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold text-slate-800">درجہ وار کتب کی تفصیل</h3>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-800">Grade Curriculum Details</h3>
+                    <p className="text-xs text-slate-500">List of active subjects grouped by academic grade.</p>
+                  </div>
                   <div className="flex gap-2">
                     <button 
-                      onClick={loadWifaqSyllabus}
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all font-urdu font-bold flex items-center gap-2 shadow-lg shadow-indigo-500/10 text-xs"
+                      onClick={loadStandardCurriculum}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl transition-all font-bold flex items-center gap-2 text-xs shadow-sm"
                     >
-                      <BookOpen className="w-3.5 h-3.5" />
-                      لوڈ وفاقی نصاب (6 پرچے)
+                      <BookOpen className="w-4 h-4" />
+                      Load Standard Curriculum (6 Subjects)
                     </button>
                     <button 
                       onClick={() => exportToExcel(books, 'books_list')}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg transition-all font-urdu font-bold flex items-center gap-2 shadow-lg shadow-emerald-500/10 text-xs"
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl transition-all font-bold flex items-center gap-2 text-xs shadow-sm"
                     >
-                      <Download className="w-3.5 h-3.5" />
-                      ایکسپورٹ
+                      <Download className="w-4 h-4" />
+                      Export
                     </button>
-                    <label className="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg transition-all font-urdu font-bold flex items-center gap-2 shadow-lg shadow-orange-500/10 cursor-pointer text-xs">
-                      <Upload className="w-3.5 h-3.5" />
-                      امپورٹ
-                      <input 
-                        type="file" 
-                        accept=".xlsx, .xls" 
-                        className="hidden" 
-                        onChange={async (e) => {
-                          if (e.target.files && e.target.files[0]) {
-                            try {
-                              const data = await importFromExcel(e.target.files[0]);
-                              const dataWithIds = data.map((item: any) => ({
-                                id: item.id || (Date.now() + Math.floor(Math.random() * 1000000)),
-                                ...item
-                              }));
-                              const merged = [...books];
-                              dataWithIds.forEach((newItem: any) => {
-                                const exists = merged.find(b => b.name === newItem.name && b.grade === newItem.grade);
-                                if (exists) {
-                                  Object.assign(exists, newItem);
-                                } else {
-                                  merged.push(newItem);
-                                }
-                              });
-                              setBooks(merged);
-                              localStorage.setItem('books_list', JSON.stringify(merged));
-                              alert('کتابیں کامیابی سے اپلوڈ ہو گئیں۔');
-                            } catch (err) {
-                              alert('فائل پڑھنے میں خرابی۔');
-                            }
-                          }
-                        }} 
-                      />
-                    </label>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -832,12 +689,12 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     if (gradeBooks.length === 0) return null;
                     return (
                       <div key={g.id} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
-                        <h4 className="font-bold text-lg text-purple-700 border-b border-slate-200 pb-2 mb-3">{g.name} ({g.year})</h4>
+                        <h4 className="font-bold text-base text-indigo-700 border-b border-slate-200 pb-2 mb-3">{g.name} ({g.year})</h4>
                         <ul className="space-y-2">
                           {gradeBooks.map((b, i) => (
                             <li key={b.id} className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-slate-100 shadow-sm">
-                              <span className="font-bold text-slate-700 text-sm">{i+1}. {b.name}</span>
-                              <button onClick={() => { if(confirm('حذف کریں؟')) setBooks(books.filter(bk => bk.id !== b.id)) }} className="text-red-400 hover:text-red-600 transition-colors">
+                              <span className="font-semibold text-slate-700 text-xs">{i+1}. {b.name}</span>
+                              <button onClick={() => { if(confirm('Delete this subject?')) setBooks(books.filter(bk => bk.id !== b.id)) }} className="text-rose-400 hover:text-rose-600 transition-colors">
                                 <Trash2 size={14} />
                               </button>
                             </li>
@@ -846,7 +703,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                       </div>
                     );
                   })}
-                  {books.length === 0 && <div className="col-span-full text-center text-slate-400 py-10">کوئی کتاب شامل نہیں کی گئی۔</div>}
+                  {books.length === 0 && <div className="col-span-full text-center text-slate-400 py-12 font-medium">No subjects added yet.</div>}
                 </div>
               </motion.div>
             ) : activeTab === 'result_books_setup' ? (
@@ -855,24 +712,24 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
               >
-                <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                  <BookOpen className="text-purple-600" />
-                  امتحانی کتب سیٹ اپ (ثبت نتائج کتب)
+                <h3 className="text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+                  <BookOpen className="text-indigo-600" />
+                  Exam Subject Mapping
                 </h3>
-                <p className="text-xs text-slate-500 mb-6 font-urdu">
-                  کلاس منتخب کر کے مقرر کریں کہ کونسی کتاب کا کس امتحان میں پرچہ لیا جائے گا۔ نتائج شیٹ میں صرف تفویض کردہ کتب کالم بن کر دکھائی دیں گی۔
+                <p className="text-xs text-slate-500 mb-6">
+                  Select a grade and choose which subjects participate in each specific exam term.
                 </p>
 
                 <div className="mb-6 max-w-xs">
-                  <label className="text-xs font-bold text-slate-600 block mb-2">درجہ (کلاس) کا انتخاب کریں</label>
+                  <label className="text-xs font-bold text-slate-600 block mb-2">Select Grade</label>
                   <select
                     value={selectedGradeForSetup}
                     onChange={(e) => setSelectedGradeForSetup(e.target.value)}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 font-semibold text-sm"
                   >
-                    <option value="">-- درجہ منتخب کریں --</option>
+                    <option value="">-- Select Grade --</option>
                     {Array.from(new Set(grades.map(g => g.name))).map((gradeName: string) => (
                       <option key={gradeName} value={gradeName}>{gradeName}</option>
                     ))}
@@ -880,38 +737,32 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 </div>
 
                 {selectedGradeForSetup ? (
-                  <div className="overflow-x-auto border border-slate-100 rounded-xl">
-                    <table className="w-full text-right border-collapse text-sm">
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                    <table className="w-full text-left border-collapse text-sm">
                       <thead>
-                        <tr className="bg-slate-900 text-white">
-                          <th className="py-3 px-4 border-l border-slate-700">کتاب کا نام</th>
-                          {Array.from(new Set([
-                            ...(JSON.parse(localStorage.getItem('exams') || '[]')),
-                            'جائزہ', 'سالانہ', 'ششماہی', 'سہ ماہی'
-                          ])).map((examName: any) => (
-                            <th key={examName} className="py-3 px-4 text-center border-l border-slate-700">{examName}</th>
+                        <tr className="bg-slate-900 text-white font-semibold text-xs">
+                          <th className="py-3 px-4">Subject Name</th>
+                          {['Quiz 1', 'Midterm', 'Final Exam', 'Term 1'].map((examName: string) => (
+                            <th key={examName} className="py-3 px-4 text-center">{examName}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {books.filter(b => {
-                          const bGrade = String(b.grade || b.class || b.darja || '').trim();
+                          const bGrade = String(b.grade || '').trim();
                           const selGrade = String(selectedGradeForSetup).trim();
-                          return bGrade === selGrade || bGrade.includes(selGrade) || selGrade.includes(bGrade);
+                          return bGrade === selGrade || bGrade.includes(selGrade);
                         }).map((book: any) => {
-                          const examList = Array.from(new Set([
-                            ...(JSON.parse(localStorage.getItem('exams') || '[]')),
-                            'جائزہ', 'سالانہ', 'ششماہی', 'سہ ماہی'
-                          ]));
+                          const examList = ['Quiz 1', 'Midterm', 'Final Exam', 'Term 1'];
                           const bookMapping = setupMapping[selectedGradeForSetup]?.[book.name] || [];
                           
                           return (
                             <tr key={book.id} className="hover:bg-slate-50">
-                              <td className="py-4 px-4 font-bold text-slate-700">{book.name}</td>
-                              {examList.map((examName: any) => {
+                              <td className="py-3.5 px-4 font-bold text-slate-700">{book.name}</td>
+                              {examList.map((examName: string) => {
                                 const isChecked = bookMapping.includes(examName);
                                 return (
-                                  <td key={examName} className="py-4 px-4 text-center">
+                                  <td key={examName} className="py-3.5 px-4 text-center">
                                     <input
                                       type="checkbox"
                                       checked={isChecked}
@@ -935,7 +786,7 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                         localStorage.setItem('exam_book_setup', JSON.stringify(updatedSetup));
                                         syncToServer();
                                       }}
-                                      className="w-4 h-4 text-purple-600 rounded border-slate-300 focus:ring-purple-500"
+                                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
                                     />
                                   </td>
                                 );
@@ -944,13 +795,13 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                           );
                         })}
                         {books.filter(b => {
-                          const bGrade = String(b.grade || b.class || b.darja || '').trim();
+                          const bGrade = String(b.grade || '').trim();
                           const selGrade = String(selectedGradeForSetup).trim();
-                          return bGrade === selGrade || bGrade.includes(selGrade) || selGrade.includes(bGrade);
+                          return bGrade === selGrade || bGrade.includes(selGrade);
                         }).length === 0 && (
                           <tr>
-                            <td colSpan={10} className="py-10 text-center text-slate-400">
-                              اس درجہ میں کوئی کتاب شامل نہیں ہے! براہ کرم تمام کتب یا نئی کتاب سے پہلے کتب شامل کریں۔
+                            <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
+                              No subjects found for this grade. Please add subjects first.
                             </td>
                           </tr>
                         )}
@@ -958,8 +809,8 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </table>
                   </div>
                 ) : (
-                  <div className="bg-purple-50 text-purple-700 p-8 rounded-xl border border-purple-100 text-center font-bold">
-                    براہ کرم اوپر دیے گئے باکس سے کسی درجہ کا انتخاب کریں!
+                  <div className="bg-indigo-50 text-indigo-700 p-8 rounded-xl border border-indigo-100 text-center font-bold text-sm">
+                    Please select a grade from the dropdown above to configure exam subjects.
                   </div>
                 )}
               </motion.div>
@@ -969,48 +820,48 @@ const GradeManagement: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6"
+                className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6"
               >
-                <h3 className="text-xl font-bold text-slate-800 mb-6">نصاب کی تفصیل (Syllabus)</h3>
+                <h3 className="text-lg font-bold text-slate-800 mb-6">Syllabus Completion Tracker</h3>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-right">
+                  <table className="w-full text-sm text-left">
                     <thead>
-                      <tr className="bg-slate-100 text-slate-600">
-                        <th className="py-3 px-4 border-l">کتاب کا نام</th>
-                        <th className="py-3 px-4 border-l text-center">درجہ</th>
-                        <th className="py-3 px-4 border-l text-center">مجموعی نصاب (صفحات/اسباق)</th>
-                        <th className="py-3 px-4 border-l text-center">پڑھا ہوا نصاب</th>
-                        <th className="py-3 px-4 text-center">عمل</th>
+                      <tr className="bg-slate-100 text-slate-600 font-semibold text-xs">
+                        <th className="py-3 px-4">Subject Name</th>
+                        <th className="py-3 px-4 text-center">Grade</th>
+                        <th className="py-3 px-4 text-center">Total Syllabus</th>
+                        <th className="py-3 px-4 text-center">Covered Syllabus</th>
+                        <th className="py-3 px-4 text-center">Auto Saved</th>
                       </tr>
                     </thead>
                     <tbody>
                       {books.map(b => (
                         <tr key={b.id} className="border-b hover:bg-slate-50 transition-colors">
-                          <td className="py-3 px-4 font-bold text-slate-800">{b.name}</td>
-                          <td className="py-3 px-4 text-center font-bold text-slate-600">{b.grade}</td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3.5 px-4 font-bold text-slate-800">{b.name}</td>
+                          <td className="py-3.5 px-4 text-center font-bold text-slate-600">{b.grade}</td>
+                          <td className="py-3.5 px-4 text-center">
                             <input 
                               type="text" 
                               value={b.totalSyllabus || ''} 
                               onChange={(e) => setBooks(books.map(bk => bk.id === b.id ? {...bk, totalSyllabus: e.target.value} : bk))}
-                              className="w-24 text-center border border-slate-200 rounded px-2 py-1 outline-none focus:border-purple-500" 
-                              placeholder="کل نصاب" 
+                              className="w-28 text-center border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-500 font-medium" 
+                              placeholder="Total syllabus" 
                             />
                           </td>
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-3.5 px-4 text-center">
                             <input 
                               type="text" 
                               value={b.coveredSyllabus || ''} 
                               onChange={(e) => setBooks(books.map(bk => bk.id === b.id ? {...bk, coveredSyllabus: e.target.value} : bk))}
-                              className="w-24 text-center border border-slate-200 rounded px-2 py-1 outline-none focus:border-purple-500" 
-                              placeholder="پڑھا گیا" 
+                              className="w-28 text-center border border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-indigo-500 font-medium" 
+                              placeholder="Covered" 
                             />
                           </td>
-                          <td className="py-3 px-4 text-center text-xs text-slate-400">خود بخود محفوظ ہوتا ہے</td>
+                          <td className="py-3.5 px-4 text-center text-xs text-slate-400 font-medium">Saved automatically</td>
                         </tr>
                       ))}
                       {books.length === 0 && (
-                        <tr><td colSpan={5} className="py-10 text-center text-slate-400">کوئی کتاب نہیں ہے</td></tr>
+                        <tr><td colSpan={5} className="py-12 text-center text-slate-400 font-medium">No subjects found.</td></tr>
                       )}
                     </tbody>
                   </table>

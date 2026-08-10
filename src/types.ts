@@ -86,3 +86,17 @@ export interface Teacher {
   subjects: string[];
   department: string;
 }
+
+export interface SystemUser {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: 'Super Admin' | 'Admin' | 'Staff' | 'Teacher' | 'Student' | string;
+  status: 'Active' | 'Suspended' | string;
+  activity?: string;
+  companyId?: string;
+  companyName?: string;
+  password?: string;
+  emailVerified?: boolean;
+}

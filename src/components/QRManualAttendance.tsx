@@ -77,9 +77,9 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
       const savedGrades = JSON.parse(localStorage.getItem('grades') || '[]');
       const combined = [...savedGradesList, ...savedGrades];
       const gradeNames = Array.from(new Set(combined.map((g: any) => typeof g === 'string' ? g : (g?.name || '')).filter(Boolean)));
-      setAllGrades(gradeNames.length > 0 ? gradeNames : ['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ']);
+      setAllGrades(gradeNames.length > 0 ? gradeNames : ['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']);
     } catch (e) {
-      setAllGrades(['اولیٰ', 'ثانیہ', 'ثالثہ', 'رابعہ', 'خامسہ', 'عالمیہ']);
+      setAllGrades(['Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6']);
     }
   }, []);
 
@@ -139,7 +139,7 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
           );
         } catch (err) {
           console.error("Html5QrcodeScanner initialization error:", err);
-          alert("کیمرہ اوپن کرنے میں مسئلہ پیش آیا۔ براہ کرم نیچے دیے گئے 'دستی رول نمبر' آپشن کا استعمال کریں!");
+          alert("Could not open camera scanner. Please use the Manual Roll No search option below.");
           setIsScanning(false);
         }
       }, 200); // short timeout ensuring element is fully painted in DOM
@@ -202,10 +202,10 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
       studentId: student.id || student.rollNo,
       name: student.name,
       rollNo: student.rollNo,
-      grade: student.grade || 'نامعلوم درجہ',
+      grade: student.grade || 'General',
       status: type,
       timestamp: new Date().toISOString(),
-      markedBy: currentUser?.username || currentUser?.email || 'استادِ محترم'
+      markedBy: currentUser?.username || currentUser?.email || 'Teacher'
     };
 
     logActivity(`Marked attendance for ${student.name} as ${type.toUpperCase()}`, 'Attendance');
@@ -224,7 +224,7 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
         grade: student.grade,
         status: type,
         timestamp: new Date().toISOString(),
-        markedBy: currentUser?.username || currentUser?.email || 'استادِ محترم',
+        markedBy: currentUser?.username || currentUser?.email || 'Teacher',
         method: 'QR_Portal_Scanner'
       };
       records.push(generalRecord);
@@ -245,27 +245,27 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
   };
 
   const handleDeleteLog = (id: string) => {
-    if (confirm("کیا آپ واقعی یہ حاضری ریکارڈ حذف کرنا چاہتے ہیں؟")) {
+    if (confirm("Are you sure you want to delete this attendance record?")) {
       const filtered = logs.filter(l => l.id !== id);
       setLogs(filtered);
     }
   };
 
   const clearAllLogs = () => {
-    if (confirm("کیا آپ واقعی آج کے تمام اسکین شدہ حاضری ریکارڈز صاف کرنا چاہتے ہیں؟")) {
+    if (confirm("Are you sure you want to clear all scanned attendance records for today?")) {
       setLogs([]);
     }
   };
 
   // Filter logs for displaying
   const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.name.includes(searchQuery) || log.rollNo.includes(searchQuery);
+    const matchesSearch = log.name.toLowerCase().includes(searchQuery.toLowerCase()) || log.rollNo.includes(searchQuery);
     const matchesGrade = selectedGradeFilter ? log.grade === selectedGradeFilter : true;
     return matchesSearch && matchesGrade;
   });
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-urdu p-4 md:p-8" dir="rtl">
+    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 md:p-8" dir="ltr">
       {/* Header Panel */}
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-slate-800/80 p-5 rounded-3xl border border-slate-700 backdrop-blur-md shadow-2xl">
         <div className="flex items-center gap-4">
@@ -273,9 +273,9 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
             <QrCode className="w-8 h-8 text-white animate-pulse" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white font-urdu">QR دستی اور تصدیقی حاضری سسٹم</h1>
+            <h1 className="text-2xl font-black text-white">QR & Manual Attendance Verification</h1>
             <p className="text-xs text-slate-400 font-sans tracking-wider mt-1">
-              CONNECTED TEACHER: <span className="text-blue-400 font-bold">{currentUser?.username || currentUser?.email || 'استادِ محترم'} (لاگ ان)</span>
+              CONNECTED TEACHER: <span className="text-blue-400 font-bold">{currentUser?.username || currentUser?.email || 'Teacher'} (Logged In)</span>
             </p>
           </div>
         </div>
@@ -284,8 +284,8 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
           onClick={onBack} 
           className="self-start md:self-auto bg-slate-700/60 hover:bg-slate-700 text-white border border-slate-600 px-5 py-2.5 rounded-2xl transition-all flex items-center gap-2 text-sm font-bold shadow-md active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4 ml-1" />
-          واپس ڈیش بورڈ
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          Back to Dashboard
         </button>
       </div>
 
@@ -296,8 +296,8 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
           
           {/* Main Verification Section */}
           <div className="bg-slate-800/60 p-6 rounded-3xl border border-slate-700 shadow-xl backdrop-blur-sm">
-            <h3 className="text-lg font-bold text-white mb-6 font-urdu border-r-4 border-blue-500 pr-3">
-              حاضری اسکیننگ اور تلاش (Verification Portal)
+            <h3 className="text-lg font-bold text-white mb-6 border-l-4 border-blue-500 pl-3">
+              Attendance Verification & Search Portal
             </h3>
 
             {/* Quick Actions / Manual input form */}
@@ -306,30 +306,30 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                 
                 {/* Manual Roll No Form */}
                 <form onSubmit={handleManualSearch} className="flex flex-col gap-2">
-                  <label className="text-xs font-bold text-slate-400 font-urdu">رول نمبر یا رجسٹریشن نمبر درج کریں:</label>
+                  <label className="text-xs font-bold text-slate-400">Enter Roll No or Registration No:</label>
                   <div className="flex gap-2">
                     <div className="relative flex-1">
                       <input 
                         type="text" 
                         value={manualRollNo}
                         onChange={(e) => setManualRollNo(e.target.value)}
-                        placeholder="جیسے: 1042..."
-                        className="w-full bg-slate-900/90 text-white placeholder-slate-500 px-4 py-3 rounded-xl border border-slate-700 text-right font-mono font-bold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                        placeholder="e.g. 1042..."
+                        className="w-full bg-slate-900/90 text-white placeholder-slate-500 px-4 py-3 rounded-xl border border-slate-700 text-left font-mono font-bold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
                       />
-                      <Search className="absolute left-3.5 top-3.5 w-5 h-5 text-slate-500" />
+                      <Search className="absolute right-3.5 top-3.5 w-5 h-5 text-slate-500" />
                     </div>
                     <button 
                       type="submit" 
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-urdu font-bold transition-all text-sm flex items-center gap-2 active:scale-95 shadow-md shadow-blue-900/20"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-bold transition-all text-sm flex items-center gap-2 active:scale-95 shadow-md shadow-blue-900/20"
                     >
-                      تلاش کریں
+                      Search
                     </button>
                   </div>
                 </form>
 
                 <div className="relative py-4">
                   <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-700"></div></div>
-                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-800 px-3 text-slate-500 font-urdu font-bold">یا پھر کیمرہ استعمال کریں</span></div>
+                  <div className="relative flex justify-center text-xs uppercase"><span className="bg-slate-800 px-3 text-slate-500 font-bold">OR USE CAMERA SCANNER</span></div>
                 </div>
 
                 {/* Big Camera trigger */}
@@ -337,15 +337,15 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                   <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <Camera className="w-7 h-7 text-blue-400" />
                   </div>
-                  <p className="text-slate-300 mb-6 font-urdu text-sm px-6 leading-relaxed">
-                    امتحانی حاضری شیٹ یا طالب علم کے شناختی کارڈ پر موجود کیو آر کوڈ (QR Code) کو اسکین کرنے کے لیے لائیو کیمرہ کھولیں۔
+                  <p className="text-slate-300 mb-6 text-sm px-6 leading-relaxed">
+                    Open live camera to scan QR code on student ID card or exam attendance sheet.
                   </p>
                   <button 
                     onClick={() => setIsScanning(true)}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-2xl font-bold font-urdu transition-all flex items-center gap-2.5 mx-auto shadow-lg shadow-emerald-950/40 active:scale-95"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-2xl font-bold transition-all flex items-center gap-2.5 mx-auto shadow-lg shadow-emerald-950/40 active:scale-95"
                   >
                     <QrCode className="w-5 h-5" />
-                    لائیو اسکینر کھولیں
+                    Open Live Scanner
                   </button>
                 </div>
               </div>
@@ -363,9 +363,9 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                 <div className="flex justify-center mt-2">
                   <button 
                     onClick={() => setIsScanning(false)}
-                    className="bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 font-urdu"
+                    className="bg-slate-700 hover:bg-slate-600 text-slate-300 border border-slate-600 px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95"
                   >
-                    بند کریں (مکتبی تلاش پر جائیں)
+                    Close (Switch to Manual Search)
                   </button>
                 </div>
               </div>
@@ -381,21 +381,21 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                   className="bg-red-500/10 border border-red-500/20 p-8 rounded-2xl text-center"
                 >
                   <AlertCircle className="w-14 h-14 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-black text-red-500 mb-2 font-urdu">طالب علم کا کارڈ یا ریکارڈ نہیں ملا</h3>
-                  <p className="text-slate-400 font-urdu mb-6 text-sm">درج شدہ یا اسکین شدہ نمبر کا کوئی طالب علم سسٹم میں درج نہیں ہے۔ حاصل کردہ شناختی معلومات: <span className="font-mono text-white bg-slate-900 border px-2 py-0.5 rounded">{scannedData}</span></p>
+                  <h3 className="text-lg font-black text-red-500 mb-2">Student Card / Record Not Found</h3>
+                  <p className="text-slate-400 mb-6 text-sm">No registered student found for ID or code: <span className="font-mono text-white bg-slate-900 border px-2 py-0.5 rounded">{scannedData}</span></p>
                   <div className="flex justify-center gap-3">
                     <button 
                       onClick={() => { setStatus('idle'); setManualRollNo(''); }}
-                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-5 py-2.5 rounded-xl font-urdu text-xs transition-all"
+                      className="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white px-5 py-2.5 rounded-xl text-xs transition-all"
                     >
-                      دوبارہ ٹائپ کریں
+                      Type Again
                     </button>
                     <button 
                       onClick={() => { setStatus('idle'); setIsScanning(true); }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-urdu text-xs transition-all flex items-center gap-1.5"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs transition-all flex items-center gap-1.5"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
-                      نیا اسکین کریں
+                      Scan New Code
                     </button>
                   </div>
                 </motion.div>
@@ -423,38 +423,38 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                       </div>
                     </div>
 
-                    <div className="flex-1 text-center md:text-right">
-                      <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold mb-2 font-urdu">
-                        طالب علم کا ریکارڈ تصدیق شدہ ہے (Active)
+                    <div className="flex-1 text-center md:text-left">
+                      <div className="inline-flex items-center gap-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-0.5 rounded-full text-[10px] font-bold mb-2">
+                        Student Record Verified (Active)
                       </div>
-                      <h2 className="text-2xl font-black text-white font-urdu">{student.name}</h2>
-                      <p className="text-sm text-slate-400 font-urdu mt-1">ولدیت: {student.fatherName}</p>
+                      <h2 className="text-2xl font-black text-white">{student.name}</h2>
+                      <p className="text-sm text-slate-400 mt-1">Father: {student.fatherName}</p>
                     </div>
                   </div>
 
                   {/* Metadata fields */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 my-6">
                     <div className="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700 text-center">
-                      <span className="text-[9px] text-slate-400 block mb-1 font-urdu">رول نمبر</span>
-                      <span className="text-lg font-mono font-bold text-white tracking-wider font-urdu">{student.rollNo}</span>
+                      <span className="text-[9px] text-slate-400 block mb-1">Roll No</span>
+                      <span className="text-lg font-mono font-bold text-white tracking-wider">{student.rollNo}</span>
                     </div>
                     <div className="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700 text-center">
-                      <span className="text-[9px] text-slate-400 block mb-1 font-urdu">درجہ / کلاس</span>
-                      <span className="text-lg font-bold text-white font-urdu">{student.grade}</span>
+                      <span className="text-[9px] text-slate-400 block mb-1">Grade / Class</span>
+                      <span className="text-lg font-bold text-white">{student.grade}</span>
                     </div>
                     <div className="bg-slate-800/50 p-3.5 rounded-xl border border-slate-700 text-center col-span-2 md:col-span-1">
-                      <span className="text-[9px] text-slate-400 block mb-1 font-urdu">رجسٹریشن نمبر</span>
-                      <span className="text-lg font-mono font-bold text-slate-300 font-urdu">{student.registrationNo || '----'}</span>
+                      <span className="text-[9px] text-slate-400 block mb-1">Registration No</span>
+                      <span className="text-lg font-mono font-bold text-slate-300">{student.registrationNo || '----'}</span>
                     </div>
                   </div>
 
                   {/* Attendance Actions */}
                   <div className="bg-slate-800/30 p-4 rounded-2xl border border-slate-700/60">
-                    <p className="text-xs text-center text-slate-400 font-urdu mb-4 font-bold">حاضری کی حتمی کیفیت منتخب کریں:</p>
+                    <p className="text-xs text-center text-slate-400 mb-4 font-bold">Select Attendance Status:</p>
                     {status === 'saved' ? (
                       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 rounded-2xl text-center flex flex-col items-center gap-1.5 shadow-lg shadow-emerald-900/20">
                         <CheckCircle2 className="w-10 h-10 text-white animate-bounce" />
-                        <span className="text-base font-black font-urdu">حاضری کامیابی سے مارک ہو کر کلاؤڈ پر محفوظ ہو گئی!</span>
+                        <span className="text-base font-black">Attendance saved successfully!</span>
                       </div>
                     ) : (
                       <div className="flex flex-col gap-3">
@@ -462,24 +462,24 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                           <button 
                             type="button"
                             onClick={() => handleMarkAttendance('present')}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold font-urdu text-lg transition-all shadow-md active:scale-95 shadow-emerald-950/20"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-xl font-bold text-lg transition-all shadow-md active:scale-95 shadow-emerald-950/20"
                           >
-                            حاضر (Present)
+                            Present
                           </button>
                           <button 
                             type="button"
                             onClick={() => handleMarkAttendance('absent')}
-                            className="bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-bold font-urdu text-lg transition-all shadow-md active:scale-95 shadow-red-950/20"
+                            className="bg-red-600 hover:bg-red-700 text-white py-3.5 rounded-xl font-bold text-lg transition-all shadow-md active:scale-95 shadow-red-950/20"
                           >
-                            غائب (Absent)
+                            Absent
                           </button>
                         </div>
                         <button 
                           type="button"
                           onClick={() => handleMarkAttendance('late')}
-                          className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 py-3 rounded-xl font-black font-urdu text-base transition-all active:scale-95 shadow-md shadow-amber-950/20"
+                          className="w-full bg-amber-500 hover:bg-amber-600 text-slate-950 py-3 rounded-xl font-black text-base transition-all active:scale-95 shadow-md shadow-amber-950/20"
                         >
-                          رخصت / تاخیر (Late/Leave)
+                          Late / Leave
                         </button>
                       </div>
                     )}
@@ -491,9 +491,9 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                       <button 
                         type="button" 
                         onClick={() => { setStudent(null); setManualRollNo(''); setScannedData(null); }}
-                        className="text-slate-500 hover:text-slate-300 transition-colors text-xs font-urdu font-bold"
+                        className="text-slate-500 hover:text-slate-300 transition-colors text-xs font-bold"
                       >
-                        کینسل اور نیا ریکارڈ
+                        Cancel & New Record
                       </button>
                     </div>
                   )}
@@ -503,12 +503,12 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
           </div>
 
           {/* Guidelines instruction card */}
-          <div className="bg-blue-500/5 border border-blue-500/10 p-5 rounded-3xl flex gap-4 text-right">
+          <div className="bg-blue-500/5 border border-blue-500/10 p-5 rounded-3xl flex gap-4 text-left">
             <Info className="w-6 h-6 text-blue-400 shrink-0 mt-0.5" />
             <div>
-              <h4 className="text-blue-400 font-bold text-sm font-urdu">امتحانی حاضری اسکینر گائیڈ اور مدد:</h4>
-              <p className="text-[11px] text-slate-450 mt-1 leading-relaxed font-urdu">
-                یہ اسمارٹ ماڈیول امتحانی حاضری شیٹ پر موجود ہر سٹوڈنٹ کے کیو آر کوڈ (QR Code) کو اسکین کر کے سیکنڈز میں حاضری کی تصدیق کرتا ہے۔ اگر کیمرہ بلاک ہو یا پرنٹ میں دھندلا پن ہو، تو آپ 'رول نمبر' مینوئل ٹائپ کر کے بھی تصدیق کا عمل مکمل کر سکتے ہیں۔ لائیو ڈیش بورڈ آپ کی محفوظ کردہ حاضریوں کی تصدیق فوری کرتا ہے۔
+              <h4 className="text-blue-400 font-bold text-sm">Attendance Scanner Instructions & Guide:</h4>
+              <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Scan the student QR code on their ID card or exam sheet to verify attendance in real-time. If the camera is unavailable or the code is damaged, enter the Roll Number manually to complete verification.
               </p>
             </div>
           </div>
@@ -520,36 +520,36 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
           {/* Stats Bento boxes */}
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700 text-center">
-              <span className="text-slate-400 text-[10px] block font-urdu">کل اسکین شدہ حاضری</span>
-              <span className="text-3xl font-black text-white font-urdu font-mono block mt-1">{stats.total}</span>
+              <span className="text-slate-400 text-[10px] block">Total Scanned Logs</span>
+              <span className="text-3xl font-black text-white font-mono block mt-1">{stats.total}</span>
             </div>
             <div className="bg-slate-800/60 p-4 rounded-2xl border border-emerald-950 text-center">
-              <span className="text-emerald-400 text-[10px] block font-urdu">مجموعی حاضر (P)</span>
-              <span className="text-3xl font-black text-emerald-400 font-urdu font-mono block mt-1">{stats.present}</span>
+              <span className="text-emerald-400 text-[10px] block">Total Present (P)</span>
+              <span className="text-3xl font-black text-emerald-400 font-mono block mt-1">{stats.present}</span>
             </div>
             <div className="bg-slate-800/60 p-4 rounded-2xl border border-red-950 text-center">
-              <span className="text-red-400 text-[10px] block font-urdu">مجموعی غائب (A)</span>
-              <span className="text-3xl font-black text-red-400 font-urdu font-mono block mt-1">{stats.absent}</span>
+              <span className="text-red-400 text-[10px] block">Total Absent (A)</span>
+              <span className="text-3xl font-black text-red-400 font-mono block mt-1">{stats.absent}</span>
             </div>
             <div className="bg-slate-800/60 p-4 rounded-2xl border border-amber-950 text-center">
-              <span className="text-amber-400 text-[10px] block font-urdu">تاخیر / رخصت (L)</span>
-              <span className="text-3xl font-black text-amber-500 font-urdu font-mono block mt-1">{stats.late}</span>
+              <span className="text-amber-400 text-[10px] block">Late / Leave (L)</span>
+              <span className="text-3xl font-black text-amber-500 font-mono block mt-1">{stats.late}</span>
             </div>
           </div>
 
           {/* Session History panel */}
           <div className="bg-slate-800/60 p-5 rounded-3xl border border-slate-700 shadow-xl flex-1 flex flex-col min-h-[400px]">
             <div className="flex items-center justify-between pb-4 border-b border-slate-700 mb-4">
-              <h3 className="text-base font-bold text-white font-urdu flex items-center gap-2">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Clock className="w-4 h-4 text-emerald-400" />
-                آج کے اسکین شدہ ریکارڈز ({filteredLogs.length})
+                Today's Scanned Logs ({filteredLogs.length})
               </h3>
               {logs.length > 0 && (
                 <button 
                   onClick={clearAllLogs}
-                  className="text-[10px] text-red-400 hover:text-red-500 font-urdu font-bold"
+                  className="text-[10px] text-red-400 hover:text-red-500 font-bold"
                 >
-                  تمام صاف کریں
+                  Clear All
                 </button>
               )}
             </div>
@@ -560,15 +560,15 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                 type="text" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="نام یا رول نمبر سے فلٹر کریں..."
-                className="bg-slate-950 text-white placeholder-slate-600 px-3 py-2 rounded-xl text-[10px] border border-slate-755 outline-none font-urdu"
+                placeholder="Filter by name or roll no..."
+                className="bg-slate-950 text-white placeholder-slate-600 px-3 py-2 rounded-xl text-[10px] border border-slate-700 outline-none"
               />
               <select 
                 value={selectedGradeFilter}
                 onChange={(e) => setSelectedGradeFilter(e.target.value)}
-                className="bg-slate-950 text-slate-300 px-3 py-2 rounded-xl text-[10px] border border-slate-755 outline-none font-urdu"
+                className="bg-slate-950 text-slate-300 px-3 py-2 rounded-xl text-[10px] border border-slate-700 outline-none"
               >
-                <option value="">تمام درجات</option>
+                <option value="">All Classes</option>
                 {allGrades.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
@@ -577,29 +577,29 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
             <div className="flex-1 overflow-y-auto max-h-[350px] space-y-2 pr-1 custom-scrollbar">
               {filteredLogs.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center py-12 text-slate-500">
-                  <p className="text-xs font-urdu font-bold">ابھی تک کوئی حاضری اسکین نہیں کی گئی</p>
-                  <p className="text-[9px] text-slate-600 mt-1 font-urdu">طالب علم کا کیو آر کوڈ اسکین کر کے حاضری فوری شروع کریں۔</p>
+                  <p className="text-xs font-bold">No attendance scanned yet</p>
+                  <p className="text-[9px] text-slate-600 mt-1">Scan student QR code or search Roll No to mark attendance.</p>
                 </div>
               ) : (
                 filteredLogs.map((log) => (
                   <div 
                     key={log.id} 
-                    className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 flex items-center justify-between text-right"
+                    className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 flex items-center justify-between text-left"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-white font-urdu">{log.name}</span>
-                        <span className="text-[8px] bg-slate-800 text-slate-400 px-2 py-0.2 rounded font-mono select-all">رول: {log.rollNo}</span>
+                        <span className="text-xs font-black text-white">{log.name}</span>
+                        <span className="text-[8px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-mono select-all">Roll: {log.rollNo}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-[9px] text-slate-500">
-                        <span className="font-urdu">{log.grade}</span>
+                        <span>{log.grade}</span>
                         <span>•</span>
-                        <span className="font-mono">{new Date(log.timestamp).toLocaleTimeString('ur-PK', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span className="font-mono">{new Date(log.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-2.5">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-urdu font-black ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black ${
                         log.status === 'present' 
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
                           : log.status === 'absent' 
@@ -607,12 +607,12 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
                           : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                         }`}
                       >
-                        {log.status === 'present' ? 'حاضر' : log.status === 'absent' ? 'غائب' : 'رخصت'}
+                        {log.status === 'present' ? 'Present' : log.status === 'absent' ? 'Absent' : 'Leave'}
                       </span>
                       <button 
                         onClick={() => handleDeleteLog(log.id)}
                         className="text-slate-600 hover:text-red-400 p-1 rounded-lg transition-colors"
-                        title="حذف کریں"
+                        title="Delete"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -623,7 +623,7 @@ export default function QRManualAttendance({ onBack }: QRManualAttendanceProps) 
             </div>
             
             <p className="text-[10px] text-center text-slate-500 border-t border-slate-800 pt-3 mt-4 select-none">
-              E-Jamia Smart Scanner Panel • Verified Secure Session
+              Smart Scanner Panel • Verified Secure Session
             </p>
           </div>
         </div>

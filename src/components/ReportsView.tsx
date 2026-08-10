@@ -50,7 +50,7 @@ export default function ReportsView({ onBack }: ReportsViewProps) {
     { id: 'positions', title: 'Position Holders', icon: Trophy, color: 'bg-orange-500' },
     { id: 'fee_card', title: 'Fee Card', icon: CreditCard, color: 'bg-teal-500' },
     { id: 'student_list', title: 'Student List', icon: Users, color: 'bg-blue-600' },
-    { id: 'daily_attendance_sheet', title: 'Daily Attendance Sheet', icon: FileText, color: 'bg-emerald-600' },
+    { id: 'daily_attendance_sheet', title: 'Attendance Sheet', icon: FileText, color: 'bg-emerald-600' },
     { id: 'blank_admission', title: 'Blank Admission Form', icon: FileMinus, color: 'bg-green-600' },
     { id: 'id_card', title: 'ID Card Generator', icon: IdCard, color: 'bg-purple-600' },
   ];

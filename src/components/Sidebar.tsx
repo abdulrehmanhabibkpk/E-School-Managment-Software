@@ -28,7 +28,6 @@ interface SidebarProps {
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'students', label: 'Students', icon: Users },
-  { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
   { id: 'fees', label: 'Fees Management', icon: Wallet },
   { id: 'papers', label: 'AI Paper Maker', icon: FileText },
   { id: 'exams', label: 'Examinations', icon: GraduationCap },
