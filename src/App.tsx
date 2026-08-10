@@ -18,7 +18,7 @@ import { sanitizeLocalStorage } from './lib/dataSanitizer';
 
 function ProtectedRoute({ children, isLoggedIn }: { children: React.ReactNode, isLoggedIn: boolean }) {
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
   return <>{children}</>;
 }
@@ -27,17 +27,7 @@ function LandingRoute() {
   const navigate = useNavigate();
   return (
     <LandingView 
-      onOpenLogin={(mode) => navigate('/login')}
-      onLoginSuccess={() => navigate('/dashboard')}
-    />
-  );
-}
-
-function LoginRoute() {
-  const navigate = useNavigate();
-  return (
-    <LoginView 
-      onBackToLanding={() => navigate('/')}
+      onOpenLogin={() => navigate('/')}
       onLoginSuccess={() => navigate('/dashboard')}
     />
   );
@@ -45,7 +35,11 @@ function LoginRoute() {
 
 export default function App() {
   const handleLogout = () => {
-    // Logout disabled as requested
+    localStorage.removeItem('isSuperAdmin');
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('currentUserName');
+    localStorage.removeItem('currentUserRole');
   };
 
   useEffect(() => {
@@ -71,8 +65,8 @@ export default function App() {
     <AppProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<LoginRoute />} />
-          <Route path="/accounts/login" element={<LoginRoute />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/accounts/login" element={<Navigate to="/" replace />} />
           <Route path="/admission-form" element={<PublicAdmissionForm />} />
           <Route path="/portal" element={<LandingRoute />} />
           <Route path="/landing" element={<LandingRoute />} />

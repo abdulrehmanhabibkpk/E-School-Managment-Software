@@ -353,7 +353,7 @@ export default function SuperAdminPanel({ onClose }: SuperAdminPanelProps) {
   };
 
   const copyLoginCredentials = (school: any) => {
-    const text = `*Assan School Portal & Management System*\n\n🏫 *School Name:* ${school.madrassaName}\n👤 *Username/Email:* ${school.username || school.email}\n🔑 *Password:* ${school.password}\n💰 *Monthly Fee:* PKR ${school.monthlyFee?.toLocaleString() || 5000}\n📅 *Expiry Date:* ${school.expiryDate}\n\n🌐 *Portal Link:* https://ais-dev-zfcwykw2vjedmwyfl437lx-558162687380.asia-east1.run.app/login\n\n_Assan Accounts Central Administration_`;
+    const text = `*Assan School Portal & Management System*\n\n🏫 *School Name:* ${school.madrassaName}\n👤 *Username/Email:* ${school.username || school.email}\n🔑 *Password:* ${school.password}\n💰 *Monthly Fee:* PKR ${school.monthlyFee?.toLocaleString() || 5000}\n📅 *Expiry Date:* ${school.expiryDate}\n\n🌐 *Portal Link:* https://ais-dev-zfcwykw2vjedmwyfl437lx-558162687380.asia-east1.run.app\n\n_Assan Accounts Central Administration_`;
     
     navigator.clipboard.writeText(text);
     setCopiedId(school.id);

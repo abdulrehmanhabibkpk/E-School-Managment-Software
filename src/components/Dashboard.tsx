@@ -89,6 +89,7 @@ import DegreeDistribution from "./DegreeDistribution";
 import AdminDashboard from "./AdminPanel/AdminDashboard";
 import Notepad from "./Notepad";
 import SuperAdminPanel from "./SuperAdminPanel";
+import DailyLessons from "./DailyLessons";
 import {
   updateCentralKey,
 } from "../syncService";
@@ -976,11 +977,11 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
     },
     {
       id: "lessons_daily",
-      path: "/dashboard/placeholder",
+      path: "/dashboard/lessons",
       icon: BookOpen,
-      title: "Teaching Progress",
-      subtitle: "Daily Log",
-      color: "bg-teal-500",
+      title: "Daily Lessons & Homework",
+      subtitle: "WhatsApp Diary",
+      color: "bg-emerald-600",
     },
     {
       id: "scholarship",
@@ -1441,9 +1442,14 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
             <button
               onClick={() => {
                 onLogout();
-                navigate("/login");
+                localStorage.removeItem('isSuperAdmin');
+                localStorage.removeItem('currentUser');
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('currentUserName');
+                localStorage.removeItem('currentUserRole');
+                navigate("/");
               }}
-              className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] rounded-lg transition-colors flex items-center justify-center gap-2"
+              className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-[10px] rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogOut className="w-3 h-3" />
               <span>Logout</span>
@@ -1584,6 +1590,10 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route
             path="/messaging"
             element={<MessagingCenter onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/lessons"
+            element={<DailyLessons onBack={() => navigate("/dashboard")} />}
           />
           <Route
             path="/grade"
