@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Send, MessageSquare, ShieldCheck, Wifi, WifiOff, 
   History, Clock, Bell, UserCheck, ArrowRight, ExternalLink,
-  Search, User, BookOpen, Plus, Trash2, X, Check, FileText
+  Search, User, BookOpen, Plus, Trash2, X, Check, FileText, Smartphone,
+  Zap, Info, CheckCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { syncToServer } from '../syncService';
@@ -22,7 +23,7 @@ interface MessageLog {
 
 const MessagingCenter: React.FC<MessagingCenterProps> = ({ onBack }) => {
   // Tabs & Modes
-  const [activeTab, setActiveTab] = useState<'message' | 'diary'>('message');
+  const [activeTab, setActiveTab] = useState<'message' | 'diary' | 'sms'>('message');
   const [recipient, setRecipient] = useState('All Students');
   const [messageType, setMessageType] = useState('Notice');
   const [content, setContent] = useState('');
@@ -359,6 +360,15 @@ const MessagingCenter: React.FC<MessagingCenterProps> = ({ onBack }) => {
           >
             <BookOpen className="w-4 h-4" />
             <span>روزانہ کی تعلیمی ڈائری (Daily Diary)</span>
+          </button>
+          <button 
+            onClick={() => setActiveTab('sms')}
+            className={`py-4 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
+              activeTab === 'sms' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Smartphone className="w-4 h-4" />
+            <span>ایس ایم ایس گیٹ وے (SMS Gateway)</span>
           </button>
         </div>
       </div>
@@ -759,6 +769,112 @@ const MessagingCenter: React.FC<MessagingCenterProps> = ({ onBack }) => {
               </div>
             )}
 
+            {/* TAB 3: SMS Gateway */}
+            {activeTab === 'sms' && (
+              <div className="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm space-y-8 animate-in fade-in zoom-in duration-300">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-amber-50 p-1.5 rounded-lg">
+                      <Zap className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-slate-800">ایس ایم ایس گیٹ وے سیٹ اپ (SMS API Setup)</h2>
+                  </div>
+                  <div className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[10px] font-black rounded-full uppercase tracking-widest border border-emerald-100">
+                    Ready to Connect
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-4 p-5 bg-slate-50 border border-slate-200 rounded-[24px]">
+                      <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                        <Settings className="w-4 h-4 text-blue-600" /> API کنفیگریشن
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">SMS Provider</label>
+                          <select className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 outline-none">
+                            <option>Twilio SMS</option>
+                            <option>Vonage API</option>
+                            <option>Infobip</option>
+                            <option>Local SMS Gateway (Android)</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">API Key / Token</label>
+                          <input type="password" placeholder="••••••••••••••••" className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-mono outline-none" />
+                        </div>
+                        <button className="w-full py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/20 active:scale-95 transition-all">
+                          کنکشن چیک کریں (Test Connection)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-blue-50 border border-blue-100 rounded-[24px] space-y-3">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <Info className="w-4 h-4" />
+                        <span className="text-xs font-black uppercase tracking-wider">SMS کے فوائد</span>
+                      </div>
+                      <ul className="space-y-2">
+                        {[
+                          'بغیر انٹرنیٹ کے پیغام پہنچنا (Offline Delivery)',
+                          'والدین کو فوری الرٹس (Emergency Alerts)',
+                          'فیس کی خودکار یاد دہانی (Auto Fee Reminders)',
+                          'غیر حاضری کی اطلاع (Absence Notification)'
+                        ].map((txt, i) => (
+                          <li key={i} className="flex items-start gap-2 text-[11px] font-bold text-blue-800 leading-relaxed">
+                            <CheckCircle className="w-3 h-3 mt-0.5 shrink-0" /> {txt}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    <div className="p-6 bg-slate-900 rounded-[32px] text-white space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available Credits</span>
+                        <Zap className="w-4 h-4 text-amber-400" />
+                      </div>
+                      <div className="text-3xl font-black">2,450 <span className="text-sm font-bold text-slate-500 uppercase tracking-tighter">SMS</span></div>
+                      <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="h-full w-2/3 bg-blue-500 rounded-full" />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-500 leading-relaxed">
+                        آپ کا بیلنس 15 جون 2024 تک کارآمد ہے۔ مزید کریڈٹ خریدنے کے لیے یہاں کلک کریں۔
+                      </p>
+                      <button className="w-full py-3 bg-white text-slate-900 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-50 transition-all">
+                        Buy More Credits
+                      </button>
+                    </div>
+
+                    <div className="p-6 border border-slate-200 rounded-[32px] space-y-4">
+                      <h4 className="text-xs font-black text-slate-800 uppercase tracking-widest border-b border-slate-100 pb-2">خودکار ایس ایم ایس (Automation)</h4>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-600">غیر حاضری پر SMS</span>
+                          <div className="w-10 h-5 bg-emerald-500 rounded-full p-0.5 relative cursor-pointer shadow-inner">
+                            <div className="absolute right-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-600">فیس واؤچر جنریشن</span>
+                          <div className="w-10 h-5 bg-slate-200 rounded-full p-0.5 relative cursor-pointer shadow-inner">
+                            <div className="absolute left-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-slate-600">امتحانی نتیجہ</span>
+                          <div className="w-10 h-5 bg-emerald-500 rounded-full p-0.5 relative cursor-pointer shadow-inner">
+                            <div className="absolute right-0.5 w-4 h-4 bg-white rounded-full shadow-sm" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Sidebars (Col Span 1) */}

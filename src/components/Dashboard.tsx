@@ -52,6 +52,9 @@ import {
   Briefcase,
   Database,
   Video,
+  Bus,
+  Package,
+  Home,
 } from "lucide-react";
 import {
   useNavigate,
@@ -103,6 +106,9 @@ import LeaveRequests from "./LeaveRequests";
 import BulkOperations from "./BulkOperations";
 import BulkPhotos from "./BulkPhotos";
 import TeachingManagement from "./TeachingManagement";
+import InventoryManagement from "./InventoryManagement";
+import TransportManagement from "./TransportManagement";
+import ParentPortal from "./ParentPortal";
 import {
   ChevronDown,
   ChevronUp,
@@ -820,6 +826,27 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       subLabel: "Student Log",
     },
     {
+      id: "inventory",
+      path: "/dashboard/inventory",
+      icon: Package,
+      label: "Inventory",
+      subLabel: "Stock Control",
+    },
+    {
+      id: "transport",
+      path: "/dashboard/transport",
+      icon: Bus,
+      label: "Transport",
+      subLabel: "Routes & Fleet",
+    },
+    {
+      id: "parent_portal",
+      path: "/dashboard/parent-portal",
+      icon: Home,
+      label: "Parent Portal",
+      subLabel: "Child View",
+    },
+    {
       id: "external_services",
       path: "/dashboard/external",
       icon: Database,
@@ -1078,6 +1105,30 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       title: "Diary Management",
       subtitle: "Student Log",
       color: "bg-blue-600",
+    },
+    {
+      id: "inventory",
+      path: "/dashboard/inventory",
+      icon: Package,
+      title: "Inventory Control",
+      subtitle: "Stock & Assets",
+      color: "bg-amber-600",
+    },
+    {
+      id: "transport",
+      path: "/dashboard/transport",
+      icon: Bus,
+      title: "Transport",
+      subtitle: "Fleet Management",
+      color: "bg-amber-500",
+    },
+    {
+      id: "parent_portal",
+      path: "/dashboard/parent-portal",
+      icon: Home,
+      title: "Parent Portal",
+      subtitle: "Student View",
+      color: "bg-slate-900",
     },
     {
       id: "scholarship",
@@ -2297,6 +2348,18 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route
             path="/external"
             element={<ExternalServicesDemo />}
+          />
+          <Route
+            path="/inventory"
+            element={<InventoryManagement onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/transport"
+            element={<TransportManagement onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/parent-portal"
+            element={<ParentPortal onLogout={() => navigate("/dashboard")} />}
           />
           <Route
             path="/grade"
