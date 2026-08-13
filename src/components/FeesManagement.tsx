@@ -118,6 +118,7 @@ export default function FeesManagement({ subView, onBack }: FeesManagementProps)
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'collect' | 'history'>('collect');
   const [reprintData, setReprintData] = useState<FeeTransaction | null>(null);
+  const [printVoucher, setPrintVoucher] = useState<BulkVoucher | null>(null);
   const [historySearch, setHistorySearch] = useState('');
 
   // --- Collection Form State ---
@@ -345,6 +346,37 @@ export default function FeesManagement({ subView, onBack }: FeesManagementProps)
     });
 
     setTimeout(() => setSaveStatus(null), 4000);
+    setTimeout(() => window.print(), 300);
+  };
+
+  // 1b. Generate & Print Single 3-Part Bank Voucher
+  const handlePrintSingleVoucher = () => {
+    if (!selectedStudent) return;
+    
+    const structure = feeStructures.find(fs => fs.grade === selectedStudent.grade);
+    const details = feeHeads.map(h => ({
+      name: h.name,
+      amount: structure?.heads[h.id] || h.defaultAmount
+    })).filter(h => h.amount > 0);
+
+    const total = details.reduce((sum, d) => sum + d.amount, 0);
+
+    const voucher: BulkVoucher = {
+      id: `VCH-${selectedStudent.id}-${Date.now().toString().slice(-4)}`,
+      studentId: selectedStudent.id,
+      studentName: selectedStudent.name,
+      regNo: selectedStudent.regNo,
+      grade: selectedStudent.grade,
+      month: selectedMonth,
+      dueDate: new Date(Date.now() + 86400000 * 10).toISOString().split('T')[0],
+      fineAmount: 100,
+      details,
+      totalAmount: total
+    };
+
+    setPrintVoucher(voucher);
+    setReprintData(null);
+    setAdvanceReceipt(null);
     setTimeout(() => window.print(), 300);
   };
 
@@ -824,14 +856,24 @@ export default function FeesManagement({ subView, onBack }: FeesManagementProps)
                         <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase">PAYABLE SUM TOTAL</span>
                         <h2 className="text-2xl font-black text-slate-900 mt-1">Rs. {calculateTotal().toLocaleString()}</h2>
                       </div>
-                      <button
-                        onClick={handleSaveCollection}
-                        disabled={!selectedStudent}
-                        className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Printer className="w-4 h-4" />
-                        <span>Save & Print Official Receipt</span>
-                      </button>
+                      <div className="flex flex-wrap items-center gap-3 justify-center sm:justify-end">
+                        <button
+                          onClick={handlePrintSingleVoucher}
+                          disabled={!selectedStudent}
+                          className="px-5 py-4 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Print 3-Part Voucher</span>
+                        </button>
+                        <button
+                          onClick={handleSaveCollection}
+                          disabled={!selectedStudent}
+                          className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <Printer className="w-4 h-4" />
+                          <span>Save & Print Official Receipt</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1702,9 +1744,9 @@ export default function FeesManagement({ subView, onBack }: FeesManagementProps)
         )}
 
         {/* ==================== 3. PRINTABLE BANK BULK VOUCHERS (3-PART LAYOUT) ==================== */}
-        {subView === 'vouchers' && bulkVoucherList.length > 0 && (
+        {((subView === 'vouchers' && bulkVoucherList.length > 0) || printVoucher) && (
           <div className="space-y-16">
-            {bulkVoucherList.map((v, index) => (
+            {(printVoucher ? [printVoucher] : bulkVoucherList).map((v, index) => (
               <div key={v.id} className="page-break grid grid-cols-3 gap-6 p-6 border-4 border-slate-900 font-sans text-black select-none text-[10px] leading-tight">
                 
                 {/* PART 1: BANK COPY */}

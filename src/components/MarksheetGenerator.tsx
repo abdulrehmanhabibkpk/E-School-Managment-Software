@@ -675,8 +675,8 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
             <span>Back to Reports</span>
           </button>
           <div>
-            <h2 className="text-xl font-bold text-amber-950 font-sans">Mark Sheet Generator System</h2>
-            <p className="text-[10px] text-slate-500">Generate and print official detailed student result mark sheets</p>
+            <h2 className="text-xl font-bold text-amber-950 font-sans">DMC / Mark Sheet Generator System</h2>
+            <p className="text-[10px] text-slate-500">Generate and print official detailed student result mark sheets (DMC)</p>
           </div>
         </div>
       </div>

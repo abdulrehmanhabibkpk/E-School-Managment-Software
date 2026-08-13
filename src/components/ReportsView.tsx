@@ -43,7 +43,7 @@ export default function ReportsView({ onBack }: ReportsViewProps) {
   const [activeReport, setActiveReport] = useState<string | null>(null);
 
   const reports = [
-    { id: 'marksheet', title: 'Marksheet Generator', icon: FileText, color: 'bg-sky-500' },
+    { id: 'marksheet', title: 'DMC / Marksheet Generator', icon: FileText, color: 'bg-sky-500' },
     { id: 'result', title: 'Consolidated Result', icon: Printer, color: 'bg-blue-500' },
     { id: 'student_att', title: 'Student Attendance', icon: ClipboardList, color: 'bg-indigo-500' },
     { id: 'staff_att', title: 'Staff Attendance', icon: ShieldCheck, color: 'bg-slate-700' },

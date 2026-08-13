@@ -12,6 +12,8 @@ import SecurityGate from './components/SecurityGate';
 import { LandingView } from './components/assan_school_portal/LandingView';
 import { LoginView } from './components/assan_school_portal/LoginView';
 import { AppProvider } from './context/AppContext';
+import { ApolloProvider } from '@apollo/client';
+import { getApolloClient } from './lib/apolloClient';
 import { startRealTimeSync, stopRealTimeSync, pullGlobalData } from './syncService';
 import { logActivity } from './utils/logger';
 import { sanitizeLocalStorage } from './lib/dataSanitizer';
@@ -70,27 +72,29 @@ export default function App() {
   }, []);
 
   return (
-    <AppProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/accounts/login" element={<Navigate to="/" replace />} />
-          <Route path="/admission-form" element={<PublicAdmissionForm />} />
-          <Route path="/portal" element={<LandingRoute />} />
-          <Route path="/landing" element={<LandingRoute />} />
-          <Route path="/website" element={<LandingRoute />} />
-          <Route path="/accounts/*" element={<LandingRoute />} />
-          <Route 
-            path="/dashboard/*" 
-            element={<Dashboard onLogout={handleLogout} />} 
-          />
-          {/* Landing Page Website */}
-          <Route path="/" element={<LandingRoute />} />
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AppProvider>
+    <ApolloProvider client={getApolloClient()}>
+      <AppProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/login" element={<Navigate to="/" replace />} />
+            <Route path="/accounts/login" element={<Navigate to="/" replace />} />
+            <Route path="/admission-form" element={<PublicAdmissionForm />} />
+            <Route path="/portal" element={<LandingRoute />} />
+            <Route path="/landing" element={<LandingRoute />} />
+            <Route path="/website" element={<LandingRoute />} />
+            <Route path="/accounts/*" element={<LandingRoute />} />
+            <Route 
+              path="/dashboard/*" 
+              element={<Dashboard onLogout={handleLogout} />} 
+            />
+            {/* Landing Page Website */}
+            <Route path="/" element={<LandingRoute />} />
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AppProvider>
+    </ApolloProvider>
   );
 }
 

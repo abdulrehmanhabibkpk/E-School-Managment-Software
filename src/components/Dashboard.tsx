@@ -50,6 +50,8 @@ import {
   Tag,
   Layers,
   Briefcase,
+  Database,
+  Video,
 } from "lucide-react";
 import {
   useNavigate,
@@ -95,6 +97,7 @@ import Notepad from "./Notepad";
 import SuperAdminPanel from "./SuperAdminPanel";
 import DailyLessons from "./DailyLessons";
 import DiaryManagement from "./DiaryManagement";
+import ExternalServicesDemo from "./ExternalServicesDemo";
 import GuardiansDirectory from "./GuardiansDirectory";
 import LeaveRequests from "./LeaveRequests";
 import BulkOperations from "./BulkOperations";
@@ -109,7 +112,6 @@ import {
   Images,
   Wand2,
   Eye,
-  Video,
   BarChart3,
 } from "lucide-react";
 import {
@@ -816,6 +818,13 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       icon: Video,
       label: "Diary",
       subLabel: "Student Log",
+    },
+    {
+      id: "external_services",
+      path: "/dashboard/external",
+      icon: Database,
+      label: "External APIs",
+      subLabel: "Supabase & Apollo",
     },
     {
       id: "manual",
@@ -2284,6 +2293,10 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route
             path="/diary"
             element={<DiaryManagement onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/external"
+            element={<ExternalServicesDemo />}
           />
           <Route
             path="/grade"
