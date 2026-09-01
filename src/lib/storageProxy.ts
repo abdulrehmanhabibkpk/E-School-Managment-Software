@@ -1,6 +1,6 @@
-const originalGetItem = localStorage.getItem.bind(localStorage);
-const originalSetItem = localStorage.setItem.bind(localStorage);
-const originalRemoveItem = localStorage.removeItem.bind(localStorage);
+export const originalGetItem = localStorage.getItem.bind(localStorage);
+export const originalSetItem = localStorage.setItem.bind(localStorage);
+export const originalRemoveItem = localStorage.removeItem.bind(localStorage);
 
 const GLOBAL_KEYS = [
   'active_school_id',
@@ -28,21 +28,21 @@ export function initStorageProxy() {
 
   localStorage.setItem = (key: string, value: string) => {
     const activeSchoolId = originalGetItem('active_school_id');
+    let targetKey = key;
     if (activeSchoolId && !GLOBAL_KEYS.includes(key)) {
-      originalSetItem(`${activeSchoolId}_${key}`, value);
-    } else {
-      originalSetItem(key, value);
+      targetKey = `${activeSchoolId}_${key}`;
     }
-    window.dispatchEvent(new Event('storage_updated'));
+    originalSetItem(targetKey, value);
+    window.dispatchEvent(new CustomEvent('storage_updated', { detail: { key, value, targetKey } }));
   };
 
   localStorage.removeItem = (key: string) => {
     const activeSchoolId = originalGetItem('active_school_id');
+    let targetKey = key;
     if (activeSchoolId && !GLOBAL_KEYS.includes(key)) {
-      originalRemoveItem(`${activeSchoolId}_${key}`);
-    } else {
-      originalRemoveItem(key);
+      targetKey = `${activeSchoolId}_${key}`;
     }
-    window.dispatchEvent(new Event('storage_updated'));
+    originalRemoveItem(targetKey);
+    window.dispatchEvent(new CustomEvent('storage_updated', { detail: { key, targetKey, isRemoval: true } }));
   };
 }

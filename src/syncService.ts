@@ -11,6 +11,7 @@ import {
   handleFirestoreError,
   onAuthStateChanged
 } from './firebase';
+import { originalSetItem } from './lib/storageProxy';
 
 // List of all keys we sync between localStorage and Firestore
 const SYNC_KEYS = [
@@ -67,7 +68,14 @@ const SYNC_KEYS = [
 export async function updateCentralKey(key: string, value: any): Promise<boolean> {
   // Always update local storage first for instant UI response
   const valString = typeof value === 'string' ? value : JSON.stringify(value);
-  localStorage.setItem(key, valString);
+  
+  // Use originalSetItem to avoid recursion if we are wrapping
+  if (originalSetItem) {
+    originalSetItem.call(localStorage, key, valString);
+  } else {
+    localStorage.setItem(key, valString);
+  }
+  
   window.dispatchEvent(new Event('storage_updated'));
 
   // Sync to Firestore if signed in
@@ -82,11 +90,16 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
         }
       }
 
-      const docRef = doc(db, 'state', key);
+      // Multi-tenancy check
+      const schoolId = localStorage.getItem('active_school_id');
+      const docPath = schoolId ? `schools/${schoolId}/state/${key}` : `state/${key}`;
+      const docRef = doc(db, docPath);
+
       await setDoc(docRef, {
         key: key,
         data: rawData,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        schoolId: schoolId || 'global'
       });
     } catch (error) {
       handleFirestoreError(error, OperationType.WRITE, `state/${key}`);
@@ -101,16 +114,32 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
 export async function pullGlobalData(): Promise<void> {
   if (auth.currentUser) {
     try {
-      const colRef = collection(db, 'state');
-      const querySnapshot = await getDocs(colRef);
-      querySnapshot.forEach((docSnap) => {
+      // 1. Pull global state
+      const globalColRef = collection(db, 'state');
+      const globalSnapshot = await getDocs(globalColRef);
+      globalSnapshot.forEach((docSnap) => {
         const docData = docSnap.data();
         if (docData && docData.key && docData.data !== undefined) {
           const key = docData.key;
           const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
-          localStorage.setItem(key, valString);
+          originalSetItem.call(localStorage, key, valString);
         }
       });
+
+      // 2. Pull school-specific state
+      const schoolId = localStorage.getItem('active_school_id');
+      if (schoolId) {
+        const schoolColRef = collection(db, `schools/${schoolId}/state`);
+        const schoolSnapshot = await getDocs(schoolColRef);
+        schoolSnapshot.forEach((docSnap) => {
+          const docData = docSnap.data();
+          if (docData && docData.key && docData.data !== undefined) {
+            const key = docData.key;
+            const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
+            originalSetItem.call(localStorage, key, valString);
+          }
+        });
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, 'state');
     }
@@ -119,31 +148,27 @@ export async function pullGlobalData(): Promise<void> {
   window.dispatchEvent(new Event('storage_updated'));
 }
 
-let unsubscribeSync: (() => void) | null = null;
+let unsubscribeSync: (() => void)[] = [];
 
 /**
  * Start real-time listeners.
  */
 export function startRealTimeSync() {
-  if (unsubscribeSync) {
-    unsubscribeSync();
-    unsubscribeSync = null;
-  }
+  stopRealTimeSync();
 
   if (auth.currentUser) {
-    const colRef = collection(db, 'state');
-    unsubscribeSync = onSnapshot(colRef, (snapshot) => {
+    // 1. Global listener
+    const globalColRef = collection(db, 'state');
+    const unsubGlobal = onSnapshot(globalColRef, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === 'added' || change.type === 'modified') {
           const docData = change.doc.data();
           if (docData && docData.key && docData.data !== undefined) {
             const key = docData.key;
             const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
-            
-            // Check current local state to prevent infinite loops of local events
             const currentLocal = localStorage.getItem(key);
             if (currentLocal !== valString) {
-              localStorage.setItem(key, valString);
+              originalSetItem(key, valString);
               window.dispatchEvent(new Event('storage_updated'));
             }
           }
@@ -152,9 +177,48 @@ export function startRealTimeSync() {
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, 'state');
     });
+    unsubscribeSync.push(unsubGlobal);
+
+    // 2. School-specific listener
+    const schoolId = localStorage.getItem('active_school_id');
+    if (schoolId) {
+      const schoolColRef = collection(db, `schools/${schoolId}/state`);
+      const unsubSchool = onSnapshot(schoolColRef, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === 'added' || change.type === 'modified') {
+            const docData = change.doc.data();
+            if (docData && docData.key && docData.data !== undefined) {
+              const key = docData.key;
+              const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
+              const currentLocal = localStorage.getItem(key);
+              if (currentLocal !== valString) {
+                originalSetItem(key, valString);
+                window.dispatchEvent(new Event('storage_updated'));
+              }
+            }
+          }
+        });
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, `schools/${schoolId}/state`);
+      });
+      unsubscribeSync.push(unsubSchool);
+    }
+    
+    // Set up event listener for local changes to push to Cloud
+    const handleLocalUpdate = (e: any) => {
+      const { key, value, isRemoval } = e.detail || {};
+      if (key && SYNC_KEYS.includes(key) && !isRemoval) {
+        if (auth.currentUser) {
+          updateCentralKey(key, value).catch(err => {
+            console.error(`Deferred sync error for key ${key}:`, err);
+          });
+        }
+      }
+    };
+    window.addEventListener('storage_updated', handleLocalUpdate);
+    unsubscribeSync.push(() => window.removeEventListener('storage_updated', handleLocalUpdate));
+
     console.log('Real-time sync listeners active.');
-  } else {
-    console.log('Real-time sync skipped (not authenticated).');
   }
 }
 
@@ -162,31 +226,9 @@ export function startRealTimeSync() {
  * Stop all active real-time listeners.
  */
 export function stopRealTimeSync() {
-  if (unsubscribeSync) {
-    unsubscribeSync();
-    unsubscribeSync = null;
-    console.log('Stopped active sync listeners.');
-  }
+  unsubscribeSync.forEach(unsub => unsub());
+  unsubscribeSync = [];
 }
-
-/**
- * Monkey-patch localStorage.setItem to dispatch events locally.
- */
-const originalSetItem = localStorage.setItem;
-localStorage.setItem = function(key: string, value: string): void {
-  // Write locally
-  originalSetItem.call(localStorage, key, value);
-  
-  if (SYNC_KEYS.includes(key)) {
-    window.dispatchEvent(new Event('storage_updated'));
-    // Trigger async push to Firestore
-    if (auth.currentUser) {
-      updateCentralKey(key, value).catch(err => {
-        console.error(`Deferred sync error for key ${key}:`, err);
-      });
-    }
-  }
-};
 
 /**
  * Perform manual sync fallback pushing all local state keys to firestore.

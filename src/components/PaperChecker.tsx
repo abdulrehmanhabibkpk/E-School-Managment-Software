@@ -16,6 +16,7 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
   
   const [marks, setMarks] = useState<number | null>(null);
   const [comments, setComments] = useState('');
+  const [activePageIdx, setActivePageIdx] = useState(0);
 
   useEffect(() => {
     // Load darjas and books
@@ -40,12 +41,19 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
       setCurrentIndex(0);
       setMarks(null);
       setComments('');
+      setActivePageIdx(0);
     } else {
       setPapers([]);
     }
   }, [selectedDarja, selectedBook]);
 
+  useEffect(() => {
+    setActivePageIdx(0);
+  }, [currentIndex]);
+
   const currentPaper = papers[currentIndex];
+  const pages = currentPaper && currentPaper.paperPath ? currentPaper.paperPath.split(',').filter(Boolean) : [];
+  const currentPagePath = pages[activePageIdx] || '';
 
   const handleSubmit = () => {
     if (marks === null) {
@@ -142,18 +150,39 @@ export default function PaperChecker({ onBack }: PaperCheckerProps) {
             <div className="flex-1 bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden flex flex-col">
               <div className="bg-slate-800 text-white p-3 text-center text-sm font-bold flex justify-between items-center">
                 <span>Paper {currentIndex + 1} of {papers.length}</span>
+                {pages.length > 1 && (
+                  <div className="flex items-center gap-3 bg-slate-950 px-3 py-1 rounded-full text-xs">
+                    <button
+                      type="button"
+                      disabled={activePageIdx === 0}
+                      onClick={() => setActivePageIdx(prev => Math.max(0, prev - 1))}
+                      className="text-white disabled:text-slate-600 hover:text-blue-400 transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span>Page {activePageIdx + 1} of {pages.length}</span>
+                    <button
+                      type="button"
+                      disabled={activePageIdx === pages.length - 1}
+                      onClick={() => setActivePageIdx(prev => Math.min(pages.length - 1, prev + 1))}
+                      className="text-white disabled:text-slate-600 hover:text-blue-400 transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
                 <span className="bg-red-500/20 text-red-200 px-3 py-1 rounded-full text-xs">Anonymous</span>
               </div>
               <div className="flex-1 bg-slate-100 overflow-auto flex items-center justify-center p-4">
-                {currentPaper.paperPath && currentPaper.paperPath.endsWith('.pdf') ? (
+                {currentPagePath && currentPagePath.endsWith('.pdf') ? (
                   <iframe 
-                    src={getPaperSrc(currentPaper.paperPath)} 
+                    src={getPaperSrc(currentPagePath)} 
                     className="w-full h-full rounded-lg border border-slate-300"
                     title="Paper PDF"
                   />
                 ) : (
                   <img 
-                    src={getPaperSrc(currentPaper.paperPath)} 
+                    src={getPaperSrc(currentPagePath)} 
                     alt="Paper" 
                     className="max-w-full max-h-full object-contain rounded-lg shadow-md"
                     onError={(e) => {

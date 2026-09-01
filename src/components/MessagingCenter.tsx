@@ -3,7 +3,7 @@ import {
   Send, MessageSquare, ShieldCheck, Wifi, WifiOff, 
   History, Clock, Bell, UserCheck, ArrowRight, ExternalLink,
   Search, User, BookOpen, Plus, Trash2, X, Check, FileText, Smartphone,
-  Zap, Info, CheckCircle
+  Zap, Info, CheckCircle, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { syncToServer } from '../syncService';

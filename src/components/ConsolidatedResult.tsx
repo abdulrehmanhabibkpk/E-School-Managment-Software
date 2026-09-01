@@ -179,6 +179,9 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
 
     const allStudentsList = Array.from(studentMap.values());
 
+    // Load Grade Settings
+    const savedGradeSettings = JSON.parse(localStorage.getItem('gradeSettings') || '[]');
+
     const records = allStudentsList.map((stItem: any) => {
       const student = stItem.studentObj;
       let studentResultsArray: any[] = [];
@@ -236,7 +239,13 @@ const ConsolidatedResult: React.FC<ConsolidatedResultProps> = ({ onBack }) => {
         } else if (isFail) {
           status = 'Compartment';
         } else {
-          status = 'Pass';
+          if (savedGradeSettings.length > 0) {
+            const sorted = [...savedGradeSettings].sort((a: any, b: any) => b.minPercentage - a.minPercentage);
+            const matched = sorted.find((s: any) => percentage >= s.minPercentage);
+            status = matched ? (matched.grade || matched.quality) : 'Pass';
+          } else {
+            status = 'Pass';
+          }
         }
       }
 

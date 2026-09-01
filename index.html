@@ -10,6 +10,23 @@
     <style>
       body { font-family: 'Plus Jakarta Sans', sans-serif; }
     </style>
+    <script>
+      // Protection against libraries trying to overwrite fetch which is read-only in some environments
+      (function() {
+        try {
+          var _fetch = window.fetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() { return _fetch; },
+            set: function(v) { 
+              console.warn('Attempted to overwrite window.fetch. Ignoring to prevent crash.');
+            },
+            configurable: true
+          });
+        } catch (e) {
+          console.error('Failed to apply fetch protection:', e);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

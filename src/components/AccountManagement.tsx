@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldCheck, UserCircle, Users, Check, Save, Trash2 } from 'lucide-react';
-import { syncToServer } from '../syncService';
+import { syncToServer, updateCentralKey } from '../syncService';
 import VoiceInput from './VoiceInput';
 import { generateNumericId } from '../lib/idUtils';
+import { db, collection, addDoc, setDoc, doc } from '../firebase';
 
 export default function AccountManagement() {
   const [activeTab, setActiveTab] = useState<'permissions' | 'maker'>('maker');
@@ -181,16 +182,32 @@ export default function AccountManagement() {
       return;
     }
 
-    const updatedUsers = [...currentUsers, { 
+    const schoolId = localStorage.getItem('active_school_id') || 'school_' + generateNumericId();
+    const madrassaName = newUser.madrassaName || localStorage.getItem('currentSchoolName') || 'Assan School';
+
+    const userData = { 
       id: generateNumericId(), 
       ...newUser, 
-      email: newUser.email || newUser.username, 
+      email: newUser.email || (newUser.username.includes('@') ? newUser.username : `${newUser.username}@school.com`), 
       status: 'accepted', 
-      paymentStatus: 'paid' 
-    }];
+      paymentStatus: 'paid',
+      schoolId: schoolId,
+      madrassaName: madrassaName,
+      companyId: schoolId,
+      companyName: madrassaName
+    };
+
+    const updatedUsers = [...currentUsers, userData];
     
     setUsers(updatedUsers);
     localStorage.setItem('users', JSON.stringify(updatedUsers));
+
+    // Save specifically to Firestore 'users' collection as well for login lookup
+    try {
+      await setDoc(doc(db, 'users', userData.id.toString()), userData);
+    } catch (e) {
+      console.error("Error saving user to Firestore:", e);
+    }
     
     setNewUser({ username: '', email: '', password: '', role: 'Teacher', madrassaName: '', whatsapp: '' });
     

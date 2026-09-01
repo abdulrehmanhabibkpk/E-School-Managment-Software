@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "StateDocument": {
+      "title": "State Document",
+      "description": "A synchronized piece of application state.",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string", "description": "The local storage key name." },
+        "data": { "type": "any", "description": "The serialized data for this key." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["key", "data", "updatedAt"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about an application user.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "staff", "student", "parent"] },
+        "schoolId": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "state/{key}": {
+      "schema": "StateDocument",
+      "description": "Collection of synchronized application states."
+    },
+    "users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profile information."
+    }
+  }
+}

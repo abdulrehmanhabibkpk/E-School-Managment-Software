@@ -457,35 +457,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <p className="text-[11px] text-slate-500 font-bold">Sign in to access your ERP management dashboard.</p>
             </div>
 
-            {/* Demo Credentials Quick Login Card */}
-            <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black uppercase text-emerald-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> Demo Credentials
-                </span>
-                <span className="text-[10px] bg-emerald-200/90 text-emerald-950 font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  One-Click Fill
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => { setUsername('admin'); setPassword('123'); setError(''); }}
-                  className="p-2 bg-white hover:bg-emerald-100/60 border border-emerald-200 rounded-xl text-left transition shadow-xs cursor-pointer group"
-                >
-                  <span className="font-extrabold text-slate-800 block group-hover:text-emerald-700">School Admin</span>
-                  <span className="font-mono text-[10px] text-emerald-700 font-bold block">admin / 123</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setUsername('abdulrehmanhabib.com@gmail.com'); setPassword('6242842'); setError(''); }}
-                  className="p-2 bg-white hover:bg-amber-100/60 border border-amber-200 rounded-xl text-left transition shadow-xs cursor-pointer group"
-                >
-                  <span className="font-extrabold text-slate-800 block group-hover:text-amber-700">Super Admin</span>
-                  <span className="font-mono text-[10px] text-amber-700 font-bold block">abdulrehman... / 6242842</span>
-                </button>
-              </div>
-            </div>
+            {/* Demo Credentials Quick Login Card - REMOVED */}
 
             {error && (
               <div className="bg-rose-50 border border-rose-100 rounded-xl p-3 flex items-start space-x-2 text-[11px] font-semibold text-rose-600">

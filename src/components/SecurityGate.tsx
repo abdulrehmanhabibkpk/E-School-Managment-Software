@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShieldAlert, Lock, ArrowRight, Ban, ExternalLink, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { startRegistration, startAuthentication } from '@simplewebauthn/browser';
 
 interface SecurityGateProps {
   onSuccess: () => void;
@@ -17,70 +16,11 @@ export default function SecurityGate({ onSuccess, userEmail }: SecurityGateProps
   const REQUIRED_PASS = '6848248';
 
   const handleBiometricLogin = async () => {
-    setError('');
-    setIsLoading(true);
-    try {
-      const resp = await fetch(`/api/auth/login-options?email=${encodeURIComponent(userEmail.trim().toLowerCase())}`);
-      if (!resp.ok) {
-        const errData = await resp.json();
-        throw new Error(errData.error || 'Options fetch failed');
-      }
-      const options = await resp.json();
-
-      const authResp = await startAuthentication(options);
-
-      const verifyResp = await fetch('/api/auth/login-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail.trim().toLowerCase(), body: authResp }),
-      });
-
-      const verification = await verifyResp.json();
-
-      if (verification.verified) {
-        onSuccess();
-      } else {
-        setError('بایومیٹرک تصدیق ناکام ہو گئی ہے۔');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError('بایومیٹرک لاگ ان دستیاب نہیں ہے یا آپ نے ابھی تک رجسٹر نہیں کیا ہے۔');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('بایومیٹرک لاگ ان اس ورژن میں دستیاب نہیں ہے۔');
   };
 
   const handleBiometricRegister = async () => {
-    setError('');
-    setIsLoading(true);
-    try {
-      const resp = await fetch(`/api/auth/register-options?email=${encodeURIComponent(userEmail.trim().toLowerCase())}`);
-      if (!resp.ok) {
-        const errData = await resp.json();
-        throw new Error(errData.error || 'Options fetch failed');
-      }
-      const options = await resp.json();
-
-      const regResp = await startRegistration(options);
-
-      const verifyResp = await fetch('/api/auth/register-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail.trim().toLowerCase(), body: regResp }),
-      });
-
-      const verification = await verifyResp.json();
-      if (verification.verified) {
-        alert('بایومیٹرک (فنگر پرنٹ/فیس آئی ڈی) کامیابی سے رجسٹر ہو گیا ہے۔ اب آپ اس کے ذریعے لاگ ان کر سکتے ہیں۔');
-      } else {
-        setError('بایومیٹرک رجسٹریشن ناکام ہو گئی۔');
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError('بایومیٹرک رجسٹریشن میں خرابی: ' + (err.message || 'Unknown error'));
-    } finally {
-      setIsLoading(false);
-    }
+    setError('بایومیٹرک رجسٹریشن اس ورژن میں دستیاب نہیں ہے۔');
   };
 
   useEffect(() => {

@@ -4,7 +4,7 @@ import { SystemUser } from '../../types';
 import { 
   auth, db, signInWithEmailAndPassword, sendEmailVerification, 
   createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, 
-  doc, setDoc, deleteDoc, collection, getDocs, query, where 
+  doc, setDoc, getDoc, deleteDoc, collection, getDocs, query, where 
 } from '../../firebase';
 import { 
   Building, 
@@ -159,8 +159,10 @@ export const LandingView: React.FC<{
   };
 
   // Login states
+  const [loginMode, setLoginMode] = useState<'staff' | 'parent'>('staff');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [parentCnic, setParentCnic] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | React.ReactNode>('');
 
@@ -414,216 +416,89 @@ export const LandingView: React.FC<{
     setLoginError('');
     setIsLoading(true);
 
-    const inputVal = loginUsername.trim();
+    const emailToUse = loginUsername.trim();
     const normalizedPass = loginPassword;
 
-    if (!inputVal || !normalizedPass) {
+    if (!emailToUse || !normalizedPass) {
       setLoginError('Please fill in all required fields.');
       setIsLoading(false);
       return;
     }
 
     try {
-      // Look up systemUsers by username or email
-      let matchedSystemUser = systemUsers.find(
-        (u) =>
-          u.username.toLowerCase() === inputVal.toLowerCase() ||
-          (u.email && u.email.toLowerCase() === inputVal.toLowerCase())
-      );
-
-      if (!matchedSystemUser) {
-        try {
-          const usersRef = collection(db, 'users');
-          // Try username match first
-          const qUsername = query(usersRef, where('username', '==', inputVal.toLowerCase()));
-          const snapUsername = await getDocs(qUsername);
-          if (!snapUsername.empty) {
-            const docSnap = snapUsername.docs[0];
-            matchedSystemUser = { id: docSnap.id, ...docSnap.data() } as any;
-          } else if (inputVal.includes('@')) {
-            // Try email match
-            const qEmail = query(usersRef, where('email', '==', inputVal));
-            const snapEmail = await getDocs(qEmail);
-            if (!snapEmail.empty) {
-              const docSnap = snapEmail.docs[0];
-              matchedSystemUser = { id: docSnap.id, ...docSnap.data() } as any;
-            }
-          }
-        } catch (e) {
-          console.warn("Could not fetch users directly:", e);
-        }
-      }
-
-      const isSuperAdminEmail = inputVal.toLowerCase() === 'abdulrehmanhabib.com@gmail.com';
-      const isTryingSuperAdmin = isSuperAdminEmail || 
-        inputVal.toLowerCase() === 'adminabdulrehmanhabibkpk' ||
-        inputVal.toLowerCase().includes('superadmin') ||
-        matchedSystemUser?.role === 'Super Admin';
-
-      if (isTryingSuperAdmin) {
-        if (!isSuperAdminEmail) {
-          throw new Error('Super Admin access is restricted to abdulrehmanhabib.com@gmail.com only.');
-        }
-        if (normalizedPass !== '6242842') {
-          throw new Error('Incorrect password for Super Admin account.');
-        }
-      }
-
-      let emailToUse = inputVal;
-      if (!inputVal.includes('@') && matchedSystemUser?.email) {
-        emailToUse = matchedSystemUser.email;
-      } else if (isSuperAdminEmail) {
-        emailToUse = 'abdulrehmanhabib.com@gmail.com';
-      }
-
       let loggedInUser: SystemUser | null = null;
+      let firebaseUser = null;
 
-      // Try Firebase Auth
+      // 1. Try to sign in with Firebase Auth
       try {
         const userCredential = await signInWithEmailAndPassword(auth, emailToUse, normalizedPass);
-        const user = userCredential.user;
-
-        if (isSuperAdminEmail) {
-          loggedInUser = {
-            id: user.uid,
-            username: 'adminabdulrehmanhabibkpk',
-            name: 'Abdul Rehman Habib (Super Admin)',
-            email: 'abdulrehmanhabib.com@gmail.com',
-            role: 'Super Admin',
-            status: 'Active',
-            activity: 'Just Now',
-            companyId: 'super_admin_system',
-            companyName: 'Assan Accounts Central',
-            emailVerified: user.emailVerified,
-          };
-        } else if (matchedSystemUser) {
-          loggedInUser = { ...matchedSystemUser, id: user.uid, emailVerified: user.emailVerified };
-        } else {
-          loggedInUser = {
-            id: user.uid,
-            username: inputVal.includes('@') ? inputVal.split('@')[0] : inputVal,
-            name: user.displayName || (inputVal.includes('@') ? inputVal.split('@')[0] : inputVal),
-            email: user.email || emailToUse,
-            role: 'Admin',
-            status: 'Active',
-            activity: 'Just Now',
-            emailVerified: user.emailVerified,
-          };
-        }
-      } catch (fbErr: any) {
-        console.warn('Firebase Auth direct login skipped/failed, evaluating systemUsers:', fbErr);
-
-        if (isSuperAdminEmail && normalizedPass === '6242842') {
-          loggedInUser = {
-            id: 'superadmin-root',
-            username: 'adminabdulrehmanhabibkpk',
-            name: 'Abdul Rehman Habib (Super Admin)',
-            email: 'abdulrehmanhabib.com@gmail.com',
-            role: 'Super Admin',
-            status: 'Active',
-            activity: 'Just Now',
-            companyId: 'super_admin_system',
-            companyName: 'Assan Accounts Central',
-          };
-        } else {
-          // Look up school accounts in licensed_madrasas
-          let matchedSchool: any = null;
-          try {
-            const savedSchoolsStr = localStorage.getItem('licensed_madrasas');
-            if (savedSchoolsStr) {
-              const savedSchools = JSON.parse(savedSchoolsStr);
-              matchedSchool = savedSchools.find(
-                (s: any) =>
-                  s.username?.toLowerCase() === inputVal.toLowerCase() ||
-                  s.email?.toLowerCase() === inputVal.toLowerCase()
-              );
-            }
-          } catch (e) {}
-
-          // Look up user accounts in localStorage users list
-          let matchedUserFromList: any = null;
-          try {
-            const savedUsersStr = localStorage.getItem('users');
-            if (savedUsersStr) {
-              const savedUsers = JSON.parse(savedUsersStr);
-              matchedUserFromList = savedUsers.find(
-                (usr: any) =>
-                  usr.username?.toLowerCase() === inputVal.toLowerCase() ||
-                  usr.email?.toLowerCase() === inputVal.toLowerCase()
-              );
-            }
-          } catch (e) {}
-
-          if (matchedSchool && matchedSchool.password === normalizedPass) {
-            loggedInUser = {
-              id: matchedSchool.id,
-              username: matchedSchool.username || matchedSchool.email?.split('@')[0],
-              name: matchedSchool.principalName || matchedSchool.madrassaName,
-              email: matchedSchool.email || `${matchedSchool.username}@school.com`,
-              role: 'Admin',
-              status: matchedSchool.status === 'inactive' ? 'Suspended' : 'Active',
-              companyId: matchedSchool.id,
-              companyName: matchedSchool.madrassaName,
-              schoolId: matchedSchool.id,
-            };
-          } else if (matchedUserFromList && matchedUserFromList.password === normalizedPass) {
-            loggedInUser = {
-              id: matchedUserFromList.id,
-              username: matchedUserFromList.username || matchedUserFromList.email?.split('@')[0],
-              name: matchedUserFromList.name || matchedUserFromList.username,
-              email: matchedUserFromList.email,
-              role: matchedUserFromList.role || 'Admin',
-              status: matchedUserFromList.status || 'Active',
-              companyId: matchedUserFromList.schoolId || matchedUserFromList.companyId,
-              companyName: matchedUserFromList.madrassaName || matchedUserFromList.companyName,
-              schoolId: matchedUserFromList.schoolId,
-            };
-          } else if (matchedSystemUser) {
-            if (matchedSystemUser.password === normalizedPass || normalizedPass === '123456' || normalizedPass === '123') {
-              try {
-                const userCredential = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
-                const fbUser = userCredential.user;
-                
-                loggedInUser = {
-                  ...matchedSystemUser,
-                  id: fbUser.uid,
-                  emailVerified: fbUser.emailVerified
-                };
-
-                await setDoc(doc(db, 'users', fbUser.uid), {
-                  ...matchedSystemUser,
-                  id: fbUser.uid
-                });
-
-                if (matchedSystemUser.id !== fbUser.uid) {
-                  await deleteDoc(doc(db, 'users', matchedSystemUser.id));
-                }
-              } catch (createErr: any) {
-                loggedInUser = matchedSystemUser;
+        firebaseUser = userCredential.user;
+      } catch (authErr: any) {
+        // If user not found in Auth, check if they exist in our custom Firestore 'users' collection
+        if (authErr.code === 'auth/user-not-found' || authErr.code === 'auth/invalid-credential') {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', emailToUse.toLowerCase()));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            const userData = userDoc.data();
+            
+            // If password matches the one in Firestore, register them in Auth on the fly
+            if (userData.password === normalizedPass) {
+              const newCred = await createUserWithEmailAndPassword(auth, emailToUse, normalizedPass);
+              firebaseUser = newCred.user;
+              
+              // Update the document to match the new Firebase UID and remove plain text password if needed
+              // (keeping it for now for simplicity as per user request flow)
+              const updatedData = { ...userData, id: firebaseUser.uid };
+              await setDoc(doc(db, 'users', firebaseUser.uid), updatedData);
+              if (userDoc.id !== firebaseUser.uid) {
+                await deleteDoc(doc(db, 'users', userDoc.id));
               }
             } else {
-              throw new Error('Incorrect password for this user account.');
+              throw authErr; // Invalid password
             }
-          } else if (normalizedPass === '123' || normalizedPass === '123456' || normalizedPass === 'admin123' || normalizedPass === 'demo123') {
-            loggedInUser = {
-              id: 'demo-user-' + Date.now(),
-              username: inputVal,
-              name: 'School Administrator',
-              email: inputVal.includes('@') ? inputVal : `${inputVal}@school.com`,
-              role: 'Admin',
-              status: 'Active',
-              activity: 'Just Now',
-              companyId: 'comp_demo',
-              companyName: 'Al-Huda Model High School'
-            };
           } else {
-            throw fbErr;
+            throw authErr; // User not found anywhere
           }
+        } else {
+          throw authErr;
         }
       }
 
-      if (!loggedInUser) {
-        throw new Error('User account not found or invalid credentials.');
+      if (!firebaseUser) throw new Error("Authentication failed");
+
+      // 2. Fetch/Confirm user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        loggedInUser = {
+          ...userData,
+          id: firebaseUser.uid,
+          emailVerified: firebaseUser.emailVerified
+        } as SystemUser;
+      } else {
+        // Fallback for first-time or missing doc users (e.g. registered via normal form)
+        loggedInUser = {
+          id: firebaseUser.uid,
+          username: firebaseUser.email?.split('@')[0] || 'user',
+          name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+          email: firebaseUser.email || '',
+          role: 'Admin',
+          status: 'Active',
+          activity: 'Just Now',
+          emailVerified: firebaseUser.emailVerified
+        } as SystemUser;
+
+        if (emailToUse.toLowerCase() === 'abdulrehmanhabib.com@gmail.com') {
+          loggedInUser.role = 'Super Admin';
+          loggedInUser.companyId = 'super_admin_system';
+          loggedInUser.companyName = 'Assan Accounts Central';
+        }
+        
+        // Save the profile doc
+        await setDoc(doc(db, 'users', firebaseUser.uid), loggedInUser);
       }
 
       if (loggedInUser.status === 'Suspended') {
@@ -633,26 +508,25 @@ export const LandingView: React.FC<{
         return;
       }
 
-      // Store credentials in localStorage upon successful login
+      // 3. Store credentials in localStorage for app state
       localStorage.setItem('currentUser', loggedInUser.email || loggedInUser.username);
       localStorage.setItem('currentUserName', loggedInUser.name);
       localStorage.setItem('currentUserRole', loggedInUser.role || 'Admin');
       localStorage.setItem('isLoggedIn', 'true');
-      localStorage.setItem('userStatus', loggedInUser.status?.toLowerCase() === 'pending' ? 'pending' : 'accepted');
-      localStorage.setItem('paymentStatus', 'paid');
+      localStorage.setItem('userStatus', 'accepted');
       
-      if (loggedInUser.role === 'Super Admin' || loggedInUser.username === 'adminabdulrehmanhabibkpk' || loggedInUser.email === 'abdulrehmanhabib.com@gmail.com') {
+      if (loggedInUser.role === 'Super Admin' || loggedInUser.email === 'abdulrehmanhabib.com@gmail.com') {
         localStorage.setItem('isSuperAdmin', 'true');
-        localStorage.removeItem('active_school_id'); // Admin goes to SuperAdminPanel first
       } else {
         localStorage.removeItem('isSuperAdmin');
-        if (loggedInUser.schoolId) {
-          localStorage.setItem('active_school_id', loggedInUser.schoolId);
-          localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'میرا اسکول');
-        } else if (loggedInUser.companyId && loggedInUser.companyId !== 'super_admin_system') {
-          localStorage.setItem('active_school_id', loggedInUser.companyId);
-          localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'میرا اسکول');
-        }
+      }
+
+      if (loggedInUser.schoolId) {
+        localStorage.setItem('active_school_id', loggedInUser.schoolId);
+        localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'Assan School');
+      } else if (loggedInUser.companyId && loggedInUser.companyId !== 'super_admin_system') {
+        localStorage.setItem('active_school_id', loggedInUser.companyId);
+        localStorage.setItem('currentSchoolName', loggedInUser.companyName || 'Assan School');
       }
 
       setCurrentUser(loggedInUser);
@@ -660,24 +534,90 @@ export const LandingView: React.FC<{
       onLoginSuccess?.();
     } catch (error: any) {
       console.error('Login Error:', error);
-      let message = 'Invalid username/email or password. Please verify and try again.';
+      let message = 'Invalid email or password. Please verify and try again.';
 
-      if (error.message && !error.code) {
-        message = error.message;
-      } else if (
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/wrong-password' ||
-        error.code === 'auth/invalid-credential'
-      ) {
-        message = 'Invalid username/email or password. Please verify and try again.';
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        message = 'Invalid email or password. Please verify and try again.';
       } else if (error.code === 'auth/too-many-requests') {
         message = 'Account temporarily disabled due to many failed attempts. Try again later.';
       } else if (error.code === 'auth/network-request-failed') {
         message = 'Network error. Please check your internet connection.';
+      } else if (error.message) {
+        message = error.message;
       }
 
       setLoginError(message);
       showToast('Login failed', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleParentLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    setIsLoading(true);
+
+    const cnic = parentCnic.trim();
+    if (!cnic) {
+      setLoginError('Please enter your Father / Guardian CNIC.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Lookup students in Firestore that have this CNIC
+      const studentsRef = collection(db, 'students');
+      const q = query(studentsRef, where('fatherCnic', '==', cnic));
+      const querySnapshot = await getDocs(q);
+
+      let studentsData: any[] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      if (studentsData.length === 0) {
+        // Try guardianCnic
+        const q2 = query(studentsRef, where('guardianCnic', '==', cnic));
+        const querySnapshot2 = await getDocs(q2);
+        studentsData = querySnapshot2.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+
+      if (studentsData.length === 0) {
+        // Try looking in local storage if firestore is empty for some reason
+        const localStudents = JSON.parse(localStorage.getItem('students') || '[]');
+        studentsData = localStudents.filter((s: any) => s.guardianCnic === cnic || s.fatherCnic === cnic);
+      }
+
+      if (studentsData.length === 0) {
+        throw new Error('No student record found linked with this CNIC.');
+      }
+
+      // Use local data for session
+      localStorage.setItem('parent_portal_cnic', cnic);
+      localStorage.setItem('parent_portal_students', JSON.stringify(studentsData));
+      localStorage.setItem('isParentLoggedIn', 'true');
+      
+      // Also set some basic user info for the app context
+      const parentUser: SystemUser = {
+        id: 'parent_' + cnic,
+        username: cnic,
+        name: studentsData[0].fatherName || studentsData[0].guardianName || 'Parent',
+        email: '',
+        role: 'Parent',
+        status: 'Active',
+        activity: 'Just Now',
+        schoolId: studentsData[0].schoolId || localStorage.getItem('active_school_id')
+      };
+      
+      setCurrentUser(parentUser);
+      localStorage.setItem('isLoggedIn', 'true');
+      localStorage.setItem('currentUserRole', 'Parent');
+      localStorage.setItem('currentUserName', parentUser.name);
+      
+      window.dispatchEvent(new Event('storage_updated'));
+      onLoginSuccess?.();
+      
+    } catch (err: any) {
+      console.error('Parent Login Error:', err);
+      setLoginError(err.message || 'Parent Authentication failed. Please verify your CNIC.');
     } finally {
       setIsLoading(false);
     }
@@ -3486,45 +3426,23 @@ export const LandingView: React.FC<{
 
               <div className="text-center space-y-1">
                 <h2 className="text-sm font-extrabold text-slate-800 tracking-wide uppercase">Sign In to School Software</h2>
-                <p className="text-[11px] text-slate-500 font-bold">Enter your authorized credentials below or click 1-Click Login.</p>
+                <p className="text-[11px] text-slate-500 font-bold">Enter your authorized credentials below to access your school dashboard.</p>
               </div>
 
-              {/* Demo Credentials Quick Fill */}
-              <div className="bg-emerald-50/80 border border-emerald-200/90 rounded-2xl p-3 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-emerald-900 flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-emerald-600" /> QUICK DEMO LOGINS
-                  </span>
-                  <span className="text-[9px] bg-emerald-200 text-emerald-950 font-black px-2 py-0.5 rounded-full uppercase">
-                    1-CLICK
-                  </span>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => { setLoginUsername('admin'); setLoginPassword('123'); setLoginError(''); }}
-                    className="p-2 bg-white hover:bg-emerald-100/60 border border-emerald-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
-                  >
-                    <span className="font-extrabold text-slate-800 block text-[10px]">School Admin</span>
-                    <span className="font-mono text-[9px] text-emerald-700 font-bold block">admin / 123</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setLoginUsername('teacher'); setLoginPassword('123'); setLoginError(''); }}
-                    className="p-2 bg-white hover:bg-sky-100/60 border border-sky-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
-                  >
-                    <span className="font-extrabold text-slate-800 block text-[10px]">Teacher / User</span>
-                    <span className="font-mono text-[9px] text-sky-700 font-bold block">teacher / 123</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setLoginUsername('abdulrehmanhabib.com@gmail.com'); setLoginPassword('6242842'); setLoginError(''); }}
-                    className="p-2 bg-white hover:bg-amber-100/60 border border-amber-200 rounded-xl text-left transition shadow-2xs cursor-pointer"
-                  >
-                    <span className="font-extrabold text-slate-800 block text-[10px]">Super Admin</span>
-                    <span className="font-mono text-[9px] text-amber-700 font-bold block">abdulrehman... / 6242842</span>
-                  </button>
-                </div>
+              {/* Login Mode Switcher */}
+              <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button 
+                  onClick={() => setLoginMode('staff')}
+                  className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${loginMode === 'staff' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  School Staff
+                </button>
+                <button 
+                  onClick={() => setLoginMode('parent')}
+                  className={`flex-1 py-2 text-[10px] font-black uppercase rounded-lg transition-all ${loginMode === 'parent' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  Parents / Guardian
+                </button>
               </div>
 
               {loginError && (
@@ -3534,66 +3452,102 @@ export const LandingView: React.FC<{
                 </div>
               )}
 
-              <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs font-semibold text-gray-700">
-                
-                {/* Username */}
-                <div className="space-y-1">
-                  <label className="block text-slate-600 font-extrabold text-[10px] uppercase">
-                    Username or Email *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                      <User className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      value={loginUsername}
-                      onChange={(e) => setLoginUsername(e.target.value)}
-                      placeholder="e.g. admin or adeel@school.com"
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
-                    />
+              {loginMode === 'staff' ? (
+                <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs font-semibold text-gray-700">
+                  
+                  {/* Username */}
+                  <div className="space-y-1">
+                    <label className="block text-slate-600 font-extrabold text-[10px] uppercase">
+                      Username or Email *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <User className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={loginUsername}
+                        onChange={(e) => setLoginUsername(e.target.value)}
+                        placeholder="e.g. admin or adeel@school.com"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Password */}
-                <div className="space-y-1">
-                  <label className="block text-slate-600 font-extrabold text-[10px] uppercase">
-                    Password *
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                      <Lock className="w-4 h-4" />
-                    </span>
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="Enter password"
-                      className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
+                  {/* Password */}
+                  <div className="space-y-1">
+                    <label className="block text-slate-600 font-extrabold text-[10px] uppercase">
+                      Password *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <Lock className="w-4 h-4" />
+                      </span>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="Enter password"
+                        className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
-                </div>
 
-                {/* Submit */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  type="submit"
-                  className="w-full py-3 bg-[#1b8755] hover:bg-[#12613c] text-white font-extrabold uppercase tracking-wider text-xs rounded-xl shadow-md transition-all cursor-pointer"
-                >
-                  Confirm Log In
-                </motion.button>
+                  {/* Submit */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 bg-[#1b8755] hover:bg-[#12613c] text-white font-extrabold uppercase tracking-wider text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? 'Authenticating...' : 'Confirm Log In'}
+                  </motion.button>
 
-              </form>
+                </form>
+              ) : (
+                <form onSubmit={handleParentLoginSubmit} className="space-y-4 text-xs font-semibold text-gray-700">
+                  {/* CNIC */}
+                  <div className="space-y-1">
+                    <label className="block text-slate-600 font-extrabold text-[10px] uppercase">
+                      Father / Guardian CNIC *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <UserCheck className="w-4 h-4" />
+                      </span>
+                      <input
+                        type="text"
+                        required
+                        value={parentCnic}
+                        onChange={(e) => setParentCnic(e.target.value)}
+                        placeholder="e.g. 12345-1234567-1"
+                        className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:bg-white text-slate-800 transition-all font-mono font-bold"
+                      />
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase mt-1">Login using the CNIC provided during student registration</p>
+                  </div>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-extrabold uppercase tracking-wider text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? 'Searching Records...' : 'Access Parent Portal'}
+                  </motion.button>
+                </form>
+              )}
 
               <div className="text-center">
                 <span className="text-[10px] text-gray-400 font-semibold">New to Assan School Portal? </span>

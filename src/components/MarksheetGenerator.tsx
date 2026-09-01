@@ -98,6 +98,9 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
       } catch(e) { console.error(e); }
     }
 
+    // Load Grade Settings
+    const savedGradeSettings = JSON.parse(localStorage.getItem('gradeSettings') || '[]');
+
     // Combine student data with results
     const records = classStudents.map((student: any) => {
       let studentResultsArray: any[] = [];
@@ -151,11 +154,17 @@ export default function MarksheetGenerator({ onBack }: MarksheetGeneratorProps) 
           quality = 'Fail';
         } else {
           status = 'Pass';
-          if (percentageNum >= 85) quality = 'Excellent';
-          else if (percentageNum >= 75) quality = 'Very Good';
-          else if (percentageNum >= 60) quality = 'Good';
-          else if (percentageNum >= 45) quality = 'Average';
-          else quality = 'Satisfactory';
+          if (savedGradeSettings.length > 0) {
+            const sorted = [...savedGradeSettings].sort((a: any, b: any) => b.minPercentage - a.minPercentage);
+            const matched = sorted.find((s: any) => percentageNum >= s.minPercentage);
+            quality = matched ? (matched.grade || matched.quality) : 'Satisfactory';
+          } else {
+            if (percentageNum >= 85) quality = 'Excellent';
+            else if (percentageNum >= 75) quality = 'Very Good';
+            else if (percentageNum >= 60) quality = 'Good';
+            else if (percentageNum >= 45) quality = 'Average';
+            else quality = 'Satisfactory';
+          }
         }
       }
 

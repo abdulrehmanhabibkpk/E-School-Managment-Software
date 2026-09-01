@@ -66,6 +66,8 @@ import {
   Check,
   AlertTriangle
 } from "lucide-react";
+import { db, setDoc, doc, collection, getDocs, deleteDoc } from '../firebase';
+import { syncToServer } from '../syncService';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -686,7 +688,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                                   if (!confirm("Are you sure you want to approve this request and create a school?")) return;
                                   
                                   const newSchoolId = "sch_" + Date.now();
-                                  const newSchool = {
+                                  const newSchoolData = {
                                     id: newSchoolId,
                                     name: u.madrassaName,
                                     code: "SCH-" + Math.floor(100 + Math.random() * 900),
@@ -696,25 +698,36 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                                     budget: "₨ 0"
                                   };
                                   
-                                  setSchools(prev => [...prev, newSchool]);
+                                  setSchools(prev => [...prev, newSchoolData]);
                                   
+                                  // Sync school to Firestore
+                                  setDoc(doc(db, 'schools', newSchoolId), newSchoolData).catch(console.error);
+
                                   try {
                                     const localUsersStr = localStorage.getItem('users');
                                     if (localUsersStr) {
                                       const allUsers = JSON.parse(localUsersStr);
                                       const updatedUsers = allUsers.map((usr: any) => {
                                         if (usr.id === u.id || usr.email?.toLowerCase() === u.email?.toLowerCase()) {
-                                          return {
+                                          const acceptedUser = {
                                             ...usr,
                                             status: 'accepted',
                                             schoolId: newSchoolId,
-                                            madrassaName: u.madrassaName
+                                            madrassaName: u.madrassaName,
+                                            companyId: newSchoolId,
+                                            companyName: u.madrassaName
                                           };
+                                          
+                                          // Sync user to Firestore
+                                          setDoc(doc(db, 'users', usr.id.toString()), acceptedUser).catch(console.error);
+                                          
+                                          return acceptedUser;
                                         }
                                         return usr;
                                       });
                                       localStorage.setItem('users', JSON.stringify(updatedUsers));
                                       window.dispatchEvent(new Event('storage_updated'));
+                                      syncToServer();
                                     }
                                   } catch (e) {
                                     console.error("Error updating accepted request user:", e);

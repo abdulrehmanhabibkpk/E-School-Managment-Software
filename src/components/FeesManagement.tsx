@@ -866,6 +866,20 @@ export default function FeesManagement({ subView, onBack }: FeesManagementProps)
                           <span>Print 3-Part Voucher</span>
                         </button>
                         <button
+                          onClick={() => {
+                            setSaveStatus('💳 Initiating Razorpay Secure Gateway... (Simulation)');
+                            setTimeout(() => {
+                              handleSaveCollection();
+                              setSaveStatus('✅ Payment Successful via Razorpay! Transaction ID: pay_92837482');
+                            }, 2000);
+                          }}
+                          disabled={!selectedStudent}
+                          className="px-5 py-4 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Pay via Razorpay</span>
+                        </button>
+                        <button
                           onClick={handleSaveCollection}
                           disabled={!selectedStudent}
                           className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"

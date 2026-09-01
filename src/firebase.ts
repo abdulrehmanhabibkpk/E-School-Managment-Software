@@ -1,61 +1,69 @@
-export const db = {};
-export const auth: any = {
-  currentUser: null
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInWithPopup, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut, 
+  sendEmailVerification, 
+  updateProfile,
+  onAuthStateChanged,
+  GoogleAuthProvider
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  getDocFromServer, 
+  setDoc, 
+  deleteDoc, 
+  collection, 
+  getDocs, 
+  query, 
+  where, 
+  addDoc, 
+  serverTimestamp, 
+  onSnapshot 
+} from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDbpo_iI4HX5OYb8ZC3IpBVnNAkTuYZyxY",
+  authDomain: "limo-school.firebaseapp.com",
+  projectId: "limo-school",
+  storageBucket: "limo-school.firebasestorage.app",
+  messagingSenderId: "255122308299",
+  appId: "1:255122308299:web:70c353b9aff62707cfef4e",
+  measurementId: "G-9X91BFY86S"
 };
 
-export class GoogleAuthProvider {
-  constructor(...args: any[]) {}
-}
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const db = getFirestore(app);
+export const auth = getAuth(app);
+export const storage = getStorage(app);
 
-export const signInWithPopup = async (...args: any[]): Promise<any> => {
-  throw new Error("Google Sign-In is unavailable because Firebase has been deleted.");
-};
-
-export const signInWithEmailAndPassword = async (...args: any[]): Promise<any> => {
-  throw new Error("Sign-In is unavailable because Firebase has been deleted.");
-};
-
-export const createUserWithEmailAndPassword = async (...args: any[]): Promise<any> => {
-  throw new Error("Account creation is unavailable because Firebase has been deleted.");
-};
-
-export const signOut = async (...args: any[]): Promise<any> => {};
-export const sendEmailVerification = async (...args: any[]): Promise<any> => {};
-export const updateProfile = async (...args: any[]): Promise<any> => {};
-
-export const doc = (...args: any[]): any => ({});
-export const getDoc = async (...args: any[]): Promise<any> => ({ 
-  exists: () => false, 
-  data: () => null,
-  empty: true,
-  docs: []
-});
-export const getDocFromServer = async (...args: any[]): Promise<any> => ({ 
-  exists: () => false, 
-  data: () => null,
-  empty: true,
-  docs: []
-});
-export const setDoc = async (...args: any[]): Promise<any> => {};
-export const deleteDoc = async (...args: any[]): Promise<any> => {};
-export const collection = (...args: any[]): any => ({});
-export const getDocs = async (...args: any[]): Promise<any> => ({
-  forEach: (callback: any) => {},
-  empty: true,
-  docs: []
-});
-export const query = (...args: any[]): any => ({});
-export const where = (...args: any[]): any => ({});
-export const addDoc = async (...args: any[]): Promise<any> => ({ id: '1' });
-export const serverTimestamp = (...args: any[]): any => new Date();
-export const onSnapshot = (...args: any[]): any => () => {};
-
-export const onAuthStateChanged = (...args: any[]): any => {
-  const callback = args[1] || args[0];
-  if (typeof callback === 'function') {
-    callback(null);
-  }
-  return () => {};
+export {
+  signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendEmailVerification,
+  updateProfile,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  doc,
+  getDoc,
+  getDocFromServer,
+  setDoc,
+  deleteDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  serverTimestamp,
+  onSnapshot
 };
 
 export enum OperationType {
@@ -75,5 +83,17 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  console.error('Firestore Error: ', error);
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
 }

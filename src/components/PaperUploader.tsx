@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowRight, Upload, Book, User, CheckCircle } from 'lucide-react';
+import { ArrowRight, Upload, Book, User, CheckCircle, X, Eye } from 'lucide-react';
 import { API_BASE_URL, customFetch } from '../config';
 
 interface PaperUploaderProps {
@@ -13,6 +13,7 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [uploadStatus, setUploadStatus] = useState<Record<string, string>>({});
   const [darjas, setDarjas] = useState<string[]>([]);
+  const [allResults, setAllResults] = useState<any[]>([]);
 
   useEffect(() => {
     // Load students - prefer 'students' as it's the standard sync key
@@ -34,6 +35,10 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
     // Load books
     const savedBooks = JSON.parse(localStorage.getItem('books_list') || '[]');
     setBooks(savedBooks);
+
+    // Load results
+    const savedResults = JSON.parse(localStorage.getItem('results') || '[]');
+    setAllResults(savedResults);
   }, []);
 
   // Determine API Base URL
@@ -70,10 +75,19 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
             // Save to local Results pending sync
             const existingResults = JSON.parse(localStorage.getItem('results') || '[]');
             
-            // Check if already uploaded for this student and book, if so update
+            // Check if already uploaded for this student and book, if so update/append
             const existingIdx = existingResults.findIndex((r: any) => 
               r.studentId === selectedStudent.id && r.book === bookName
             );
+            
+            let updatedPath = data.path;
+            if (existingIdx >= 0) {
+              const prevRecord = existingResults[existingIdx];
+              if (prevRecord.paperPath) {
+                // Append new page to existing pages (comma separated list)
+                updatedPath = `${prevRecord.paperPath},${data.path}`;
+              }
+            }
             
             const newRecord = {
               id: existingIdx >= 0 ? existingResults[existingIdx].id : Date.now(),
@@ -81,7 +95,7 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
               studentName: selectedStudent.name,
               darja: selectedStudent.grade || selectedDarja,
               book: bookName,
-              paperPath: data.path,
+              paperPath: updatedPath,
               marks: null,
               comments: '',
               status: 'pending' // pending checking
@@ -94,12 +108,16 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
             }
             
             localStorage.setItem('results', JSON.stringify(existingResults));
+            setAllResults(existingResults);
             
             // Trigger sync
             window.dispatchEvent(new Event('storage_updated'));
             import('../syncService').then(m => m.syncToServer());
             
             setUploadStatus(prev => ({ ...prev, [bookName]: 'success' }));
+            setTimeout(() => {
+              setUploadStatus(prev => ({ ...prev, [bookName]: '' }));
+            }, 2000);
           } else {
             throw new Error(data.error || 'Server error');
           }
@@ -118,6 +136,13 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
 
   const filteredStudents = students.filter(s => s.grade === selectedDarja);
   const studentBooks = books.filter(b => b.grade === selectedDarja);
+
+  const getFullSrc = (path: string) => {
+    if (!path) return '';
+    if (path.startsWith('data:')) return path;
+    if (path.startsWith('http')) return path;
+    return `${getApiUrl()}${path.startsWith('/') ? '' : '/'}${path}`;
+  };
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 font-sans" dir="ltr">
@@ -178,7 +203,7 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
                 {filteredStudents.length === 0 && <p className="text-slate-500 text-sm">No students in this grade.</p>}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-400">
+              <div className="h-48 flex items-center justify-center text-slate-400 font-bold uppercase text-xs tracking-widest">
                 Select Grade First
               </div>
             )}
@@ -190,43 +215,123 @@ export default function PaperUploader({ onBack }: PaperUploaderProps) {
             {selectedStudent ? (
               <div className="space-y-4">
                 <div className="bg-emerald-50 p-3 rounded-lg border border-emerald-100 mb-4">
-                  <p className="text-sm font-bold text-emerald-800">Student: {selectedStudent.name}</p>
+                  <p className="text-xs font-black text-emerald-800 uppercase tracking-widest">Active Student</p>
+                  <p className="text-sm font-bold text-emerald-900 mt-0.5">{selectedStudent.name}</p>
                 </div>
                 
-                {studentBooks.length > 0 ? studentBooks.map(book => (
-                  <div key={book.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 flex flex-col gap-3">
-                    <div className="flex items-center gap-2 font-bold text-slate-700">
-                      <Book className="w-4 h-4 text-blue-500" />
-                      <span>{book.name}</span>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      {uploadStatus[book.name] === 'success' ? (
-                        <div className="flex items-center gap-1 text-emerald-600 text-sm font-bold">
-                          <CheckCircle className="w-4 h-4" /> Uploaded
+                {studentBooks.length > 0 ? studentBooks.map(book => {
+                  const resultRecord = allResults.find(r => r.studentId === selectedStudent.id && r.book === book.name);
+                  const pages = resultRecord && resultRecord.paperPath ? resultRecord.paperPath.split(',').filter(Boolean) : [];
+
+                  return (
+                    <div key={book.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50 flex flex-col gap-3">
+                      <div className="flex items-center justify-between font-bold text-slate-700">
+                        <div className="flex items-center gap-2">
+                          <Book className="w-4 h-4 text-blue-500" />
+                          <span>{book.name}</span>
                         </div>
-                      ) : uploadStatus[book.name] === 'uploading' ? (
-                        <div className="text-blue-600 text-sm font-bold animate-pulse">Uploading...</div>
-                      ) : (
-                        <label className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold cursor-pointer flex items-center gap-2 transition-all shadow-md">
-                          <Upload className="w-4 h-4" />
-                          Upload Paper
-                          <input 
-                            type="file" 
-                            accept="image/*,.pdf" 
-                            className="hidden" 
-                            onChange={(e) => handleFileUpload(e, book.name)}
-                          />
-                        </label>
+                        {pages.length > 0 && (
+                          <span className="bg-blue-100 text-blue-800 text-[10px] px-2 py-0.5 rounded-lg font-black uppercase tracking-wider">
+                            {pages.length} {pages.length === 1 ? 'Page' : 'Pages'}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Display thumbnail previews for each page */}
+                      {pages.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 bg-white p-2 rounded-lg border border-slate-200">
+                          {pages.map((pagePath, pIdx) => (
+                            <div key={pIdx} className="relative group rounded border border-slate-100 overflow-hidden bg-slate-50 aspect-square flex flex-col items-center justify-center p-1">
+                              {pagePath.endsWith('.pdf') ? (
+                                <div className="text-[10px] font-black text-rose-500 uppercase">PDF Paper</div>
+                              ) : (
+                                <img src={getFullSrc(pagePath)} alt={`Page ${pIdx + 1}`} className="w-full h-full object-cover rounded" />
+                              )}
+                              <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[9px] text-center font-bold">
+                                Page {pIdx + 1}
+                              </span>
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-all">
+                                <button
+                                  type="button"
+                                  onClick={() => window.open(getFullSrc(pagePath), '_blank')}
+                                  className="bg-white/90 hover:bg-white text-slate-800 p-1 rounded-full shadow"
+                                  title="View Full"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => {
+                                    const updatedPages = pages.filter((_, i) => i !== pIdx);
+                                    const updatedResults = allResults.map(r => {
+                                      if (r.studentId === selectedStudent.id && r.book === book.name) {
+                                        return {
+                                          ...r,
+                                          paperPath: updatedPages.join(',')
+                                        };
+                                      }
+                                      return r;
+                                    }).filter(r => r.paperPath); // Remove record if no pages left
+                                    
+                                    setAllResults(updatedResults);
+                                    localStorage.setItem('results', JSON.stringify(updatedResults));
+                                    window.dispatchEvent(new Event('storage_updated'));
+                                  }}
+                                  className="bg-rose-500 hover:bg-rose-600 text-white p-1 rounded-full shadow"
+                                  title="Remove Page"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
+                      
+                      <div className="flex items-center justify-between">
+                        {uploadStatus[book.name] === 'uploading' ? (
+                          <div className="text-blue-600 text-sm font-bold animate-pulse flex items-center gap-2">
+                            <span className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                            Uploading...
+                          </div>
+                        ) : (
+                          <div className="flex gap-2 w-full">
+                            <label className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg text-xs font-black uppercase tracking-wider cursor-pointer flex items-center justify-center gap-2 transition-all shadow-md">
+                              <Upload className="w-3.5 h-3.5" />
+                              {pages.length > 0 ? 'Add Another Page' : 'Upload Paper'}
+                              <input 
+                                type="file" 
+                                accept="image/*,.pdf" 
+                                className="hidden" 
+                                onChange={(e) => handleFileUpload(e, book.name)}
+                              />
+                            </label>
+                            {pages.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updatedResults = allResults.filter(r => !(r.studentId === selectedStudent.id && r.book === book.name));
+                                  setAllResults(updatedResults);
+                                  localStorage.setItem('results', JSON.stringify(updatedResults));
+                                  window.dispatchEvent(new Event('storage_updated'));
+                                }}
+                                className="px-2.5 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-600 rounded-lg text-slate-400 transition-all text-xs font-bold"
+                                title="Clear All Pages"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )) : (
+                  );
+                }) : (
                   <p className="text-slate-500 text-sm">No subjects listed for this class.</p>
                 )}
               </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-slate-400">
+              <div className="h-48 flex items-center justify-center text-slate-400 font-bold uppercase text-xs tracking-widest">
                 Select Student First
               </div>
             )}

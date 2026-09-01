@@ -35,6 +35,7 @@ const menuItems = [
   { id: 'academics', label: 'Academics', icon: BookOpen },
   { id: 'transport', label: 'Transport', icon: Bus },
   { id: 'library', label: 'Library', icon: Library },
+  { id: 'parents', label: 'Parents', icon: Users },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
 

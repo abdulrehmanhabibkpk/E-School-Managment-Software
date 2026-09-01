@@ -55,6 +55,8 @@ import {
   Bus,
   Package,
   Home,
+  Sparkles,
+  CalendarDays,
 } from "lucide-react";
 import {
   useNavigate,
@@ -100,7 +102,6 @@ import Notepad from "./Notepad";
 import SuperAdminPanel from "./SuperAdminPanel";
 import DailyLessons from "./DailyLessons";
 import DiaryManagement from "./DiaryManagement";
-import ExternalServicesDemo from "./ExternalServicesDemo";
 import GuardiansDirectory from "./GuardiansDirectory";
 import LeaveRequests from "./LeaveRequests";
 import BulkOperations from "./BulkOperations";
@@ -109,11 +110,13 @@ import TeachingManagement from "./TeachingManagement";
 import InventoryManagement from "./InventoryManagement";
 import TransportManagement from "./TransportManagement";
 import ParentPortal from "./ParentPortal";
+import TimetableManagement from "./TimetableManagement";
+import StudyMaterialModule from "./StudyMaterialModule";
+import AIAssistantModule from "./AIAssistantModule";
 import {
   ChevronDown,
   ChevronUp,
   Heart,
-  CalendarDays,
   Sliders,
   Images,
   Wand2,
@@ -840,11 +843,39 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       subLabel: "Routes & Fleet",
     },
     {
+      id: "guardians",
+      path: "/dashboard/guardians",
+      icon: Heart,
+      label: "Parents",
+      subLabel: "Communication",
+    },
+    {
       id: "parent_portal",
       path: "/dashboard/parent-portal",
       icon: Home,
       label: "Parent Portal",
       subLabel: "Child View",
+    },
+    {
+      id: "timetable",
+      path: "/dashboard/timetable",
+      icon: CalendarDays,
+      label: "Timetable",
+      subLabel: "Class Schedule",
+    },
+    {
+      id: "study_material",
+      path: "/dashboard/study-material",
+      icon: BookOpen,
+      label: "Study Material",
+      subLabel: "Notes & PDFs",
+    },
+    {
+      id: "ai_assistant",
+      path: "/dashboard/ai-assistant",
+      icon: Sparkles,
+      label: "AI Assistant",
+      subLabel: "Smart Tools",
     },
     {
       id: "external_services",
@@ -1067,12 +1098,12 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       color: "bg-indigo-600",
     },
     {
-      id: "relatives",
+      id: "guardians",
       path: "/dashboard/guardians",
       icon: Heart,
-      title: "Guardians",
-      subtitle: "Family Info",
-      color: "bg-indigo-600",
+      title: "Parents Hub",
+      subtitle: "Chat & Management",
+      color: "bg-rose-500",
     },
     {
       id: "attendance_qr",
@@ -1129,6 +1160,30 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
       title: "Parent Portal",
       subtitle: "Student View",
       color: "bg-slate-900",
+    },
+    {
+      id: "timetable",
+      path: "/dashboard/timetable",
+      icon: CalendarDays,
+      title: "Timetable",
+      subtitle: "Class Schedule",
+      color: "bg-indigo-600",
+    },
+    {
+      id: "study_material",
+      path: "/dashboard/study-material",
+      icon: BookOpen,
+      title: "Resources",
+      subtitle: "Study Materials",
+      color: "bg-emerald-600",
+    },
+    {
+      id: "ai_assistant",
+      path: "/dashboard/ai-assistant",
+      icon: Sparkles,
+      title: "AI Magic",
+      subtitle: "Smart Assistant",
+      color: "bg-indigo-600",
     },
     {
       id: "scholarship",
@@ -2346,10 +2401,6 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
             element={<DiaryManagement onBack={() => navigate("/dashboard")} />}
           />
           <Route
-            path="/external"
-            element={<ExternalServicesDemo />}
-          />
-          <Route
             path="/inventory"
             element={<InventoryManagement onBack={() => navigate("/dashboard")} />}
           />
@@ -2360,6 +2411,18 @@ export default function Dashboard({ onLogout }: { onLogout: () => void }) {
           <Route
             path="/parent-portal"
             element={<ParentPortal onLogout={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/timetable"
+            element={<TimetableManagement onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/study-material"
+            element={<StudyMaterialModule onBack={() => navigate("/dashboard")} />}
+          />
+          <Route
+            path="/ai-assistant"
+            element={<AIAssistantModule onBack={() => navigate("/dashboard")} />}
           />
           <Route
             path="/grade"

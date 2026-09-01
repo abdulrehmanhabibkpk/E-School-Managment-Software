@@ -1,0 +1,57 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Master catch-all deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation for User Profile
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['email', 'role']) &&
+             data.email is string &&
+             data.role in ['admin', 'staff', 'student', 'parent', 'Super Admin', 'Admin', 'Teacher', 'Parent', 'Student'];
+    }
+
+    // Validation for State Document
+    function isValidStateDocument(data) {
+      return data.keys().hasAll(['key', 'data', 'updatedAt']) &&
+             data.key is string &&
+             data.updatedAt is string;
+    }
+
+    // User Profile Rules
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      allow create, update: if isOwner(userId) && isValidUserProfile(request.resource.data);
+      allow delete: if false; // Users cannot delete their own profiles normally
+    }
+
+    // State Synchronization Rules
+    match /state/{key} {
+      allow read, write: if isSignedIn() && isValidId(key);
+    }
+
+    // Parent Chats Rules
+    match /parent_chats/{chatId} {
+      allow read, write: if true;
+    }
+  }
+}
