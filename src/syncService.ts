@@ -59,7 +59,12 @@ const SYNC_KEYS = [
   'attendanceRecords',
   'zk_attendance_data',
   'urdu_notes',
-  'diary_entries'
+  'diary_entries',
+  'mms_schools',
+  'mms_parents',
+  'mms_students',
+  'mms_teachers',
+  'mms_finances'
 ];
 
 /**

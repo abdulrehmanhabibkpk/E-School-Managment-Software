@@ -124,8 +124,7 @@ export default function ParentPortal({ onLogout }: { onLogout: () => void }) {
     const messagesRef = collection(db, 'parent_chats');
     const q = query(
       messagesRef, 
-      where('studentId', '==', selectedStudent.id.toString()),
-      orderBy('timestamp', 'asc')
+      where('studentId', '==', selectedStudent.id.toString())
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -134,21 +133,15 @@ export default function ParentPortal({ onLogout }: { onLogout: () => void }) {
         ...doc.data()
       })) as Message[];
       
-      setMessages(msgs);
+      const sorted = [...msgs].sort((a, b) => {
+        const timeA = a.timestamp?.toMillis ? a.timestamp.toMillis() : (a.timestamp ? new Date(a.timestamp).getTime() : 0);
+        const timeB = b.timestamp?.toMillis ? b.timestamp.toMillis() : (b.timestamp ? new Date(b.timestamp).getTime() : 0);
+        return timeA - timeB;
+      });
+
+      setMessages(sorted);
     }, (err) => {
       console.error('Firestore messages error:', err);
-      // Fallback for missing index: try query without orderBy if it fails
-      if (err.message?.includes('index')) {
-        const fallbackQ = query(messagesRef, where('studentId', '==', selectedStudent.id.toString()));
-        onSnapshot(fallbackQ, (fallbackSnap) => {
-          const fallbackMsgs = fallbackSnap.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          })) as Message[];
-          const sorted = [...fallbackMsgs].sort((a, b) => (a.timestamp?.toMillis?.() || 0) - (b.timestamp?.toMillis?.() || 0));
-          setMessages(sorted);
-        });
-      }
     });
 
     return () => unsubscribe();

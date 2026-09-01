@@ -66,6 +66,8 @@ import {
   Check,
   AlertTriangle
 } from "lucide-react";
+import { db, setDoc, doc, collection, getDocs, deleteDoc } from '../../firebase';
+import { updateCentralKey } from '../../syncService';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -160,14 +162,70 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [newStudent, setNewStudent] = useState({ name: "", schoolId: "sch_1", grade: "Class 1", section: "A", parentId: "", pendingFee: 0 });
   const [feeForm, setFeeForm] = useState({ studentId: "", amount: "", category: "Tuition Fee", date: new Date().toISOString().split("T")[0] });
 
-  // Sync state to local storage
+  // Listen for pending requests and real-time synchronized corporate data from local storage
   useEffect(() => {
-    localStorage.setItem("mms_schools", JSON.stringify(schools));
-    localStorage.setItem("mms_parents", JSON.stringify(parents));
-    localStorage.setItem("mms_students", JSON.stringify(students));
-    localStorage.setItem("mms_teachers", JSON.stringify(teachers));
-    localStorage.setItem("mms_finances", JSON.stringify(finances));
-  }, [schools, parents, students, teachers, finances]);
+    const loadSyncedMmsData = () => {
+      try {
+        const savedSchools = localStorage.getItem("mms_schools");
+        if (savedSchools) {
+          const parsed = JSON.parse(savedSchools);
+          if (JSON.stringify(parsed) !== JSON.stringify(schools)) {
+            setSchools(parsed);
+          }
+        }
+        const savedParents = localStorage.getItem("mms_parents");
+        if (savedParents) {
+          const parsed = JSON.parse(savedParents);
+          if (JSON.stringify(parsed) !== JSON.stringify(parents)) {
+            setParents(parsed);
+          }
+        }
+        const savedStudents = localStorage.getItem("mms_students");
+        if (savedStudents) {
+          const parsed = JSON.parse(savedStudents);
+          if (JSON.stringify(parsed) !== JSON.stringify(students)) {
+            setStudents(parsed);
+          }
+        }
+        const savedFinances = localStorage.getItem("mms_finances");
+        if (savedFinances) {
+          const parsed = JSON.parse(savedFinances);
+          if (JSON.stringify(parsed) !== JSON.stringify(finances)) {
+            setFinances(parsed);
+          }
+        }
+      } catch (e) {
+        console.error("Error reading synced corporate data:", e);
+      }
+    };
+    loadSyncedMmsData();
+
+    window.addEventListener('storage_updated', loadSyncedMmsData);
+    return () => {
+      window.removeEventListener('storage_updated', loadSyncedMmsData);
+    };
+  }, [schools, parents, students, finances]);
+
+  // Sync state to local storage and Firestore
+  useEffect(() => {
+    updateCentralKey("mms_schools", schools);
+  }, [schools]);
+
+  useEffect(() => {
+    updateCentralKey("mms_parents", parents);
+  }, [parents]);
+
+  useEffect(() => {
+    updateCentralKey("mms_students", students);
+  }, [students]);
+
+  useEffect(() => {
+    updateCentralKey("mms_teachers", teachers);
+  }, [teachers]);
+
+  useEffect(() => {
+    updateCentralKey("mms_finances", finances);
+  }, [finances]);
 
   const addLog = (action: string, module: string) => {
     const newLog = {
@@ -400,7 +458,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     <div className={`min-h-screen flex font-sans antialiased transition-colors ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
       {/* Sidebar */}
-      <aside className={`w-72 border-r flex flex-col fixed inset-y-0 z-50 lg:relative transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`w-72 border-r flex flex-col h-screen lg:h-screen lg:sticky lg:top-0 z-50 transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className={`p-6 border-b flex items-center justify-between ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
@@ -431,7 +489,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           </select>
         </div>
 
-        {/* Categorized Navigation List */}
+        {/* Categorized Navigation List - Core Management Only */}
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
           <NavGroup title="Core Management">
             <SidebarNavButton icon={LayoutDashboard} label={t.overview} active={activeTab === "overview"} onClick={() => setActiveTab("overview")} darkMode={darkMode} />
@@ -439,29 +497,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
             <SidebarNavButton icon={HeartHandshake} label={t.parents} active={activeTab === "parents"} onClick={() => setActiveTab("parents")} badge={parents.length} darkMode={darkMode} />
             <SidebarNavButton icon={GraduationCap} label={t.students} active={activeTab === "students"} onClick={() => setActiveTab("students")} badge={filteredStudents.length} darkMode={darkMode} />
             <SidebarNavButton icon={Users} label={t.teachers} active={activeTab === "teachers"} onClick={() => setActiveTab("teachers")} badge={filteredTeachers.length} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Academics & Learning">
-            <SidebarNavButton icon={Award} label={t.exams} active={activeTab === "exams"} onClick={() => setActiveTab("exams")} darkMode={darkMode} />
-            <SidebarNavButton icon={BookOpen} label={t.lms} active={activeTab === "lms"} onClick={() => setActiveTab("lms")} darkMode={darkMode} />
-            <SidebarNavButton icon={Library} label={t.library} active={activeTab === "library"} onClick={() => setActiveTab("library")} badge={books.length} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Finance & Operations">
             <SidebarNavButton icon={CreditCard} label={t.finance} active={activeTab === "finance"} onClick={() => setActiveTab("finance")} darkMode={darkMode} />
-            <SidebarNavButton icon={Bus} label={t.fleet} active={activeTab === "fleet"} onClick={() => setActiveTab("fleet")} badge={buses.length} darkMode={darkMode} />
-            <SidebarNavButton icon={Home} label={t.hostel} active={activeTab === "hostel"} onClick={() => setActiveTab("hostel")} darkMode={darkMode} />
-            <SidebarNavButton icon={Utensils} label={t.cafeteria} active={activeTab === "cafeteria"} onClick={() => setActiveTab("cafeteria")} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Support & Intelligence">
-            <SidebarNavButton icon={Sparkles} label={t.aiRisk} active={activeTab === "aiRisk"} onClick={() => setActiveTab("aiRisk")} badge="AI Live" darkMode={darkMode} />
-            <SidebarNavButton icon={LifeBuoy} label={t.tickets} active={activeTab === "tickets"} onClick={() => setActiveTab("tickets")} badge={tickets.length} darkMode={darkMode} />
-            <SidebarNavButton icon={Stethoscope} label={t.health} active={activeTab === "health"} onClick={() => setActiveTab("health")} darkMode={darkMode} />
-            <SidebarNavButton icon={FileCheck} label={t.docs} active={activeTab === "docs"} onClick={() => setActiveTab("docs")} darkMode={darkMode} />
-            <SidebarNavButton icon={Send} label={t.gateway} active={activeTab === "gateway"} onClick={() => setActiveTab("gateway")} darkMode={darkMode} />
-            <SidebarNavButton icon={ShieldCheck} label={t.audit} active={activeTab === "audit"} onClick={() => setActiveTab("audit")} darkMode={darkMode} />
-            <SidebarNavButton icon={Lock} label={t.roles} active={activeTab === "roles"} onClick={() => setActiveTab("roles")} darkMode={darkMode} />
             <SidebarNavButton icon={Settings} label={t.settings} active={activeTab === "settings"} onClick={() => setActiveTab("settings")} darkMode={darkMode} />
           </NavGroup>
         </nav>

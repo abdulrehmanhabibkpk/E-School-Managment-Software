@@ -67,7 +67,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import { db, setDoc, doc, collection, getDocs, deleteDoc } from '../firebase';
-import { syncToServer } from '../syncService';
+import { syncToServer, updateCentralKey } from '../syncService';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -83,7 +83,7 @@ import {
   Cell
 } from "recharts";
 
-// Mock Database Initial Seeds
+// Mock Database Initial Seeds - Default to Empty Real Data State
 const INITIAL_SCHOOLS: any[] = [];
 const INITIAL_PARENTS: any[] = [];
 const INITIAL_STUDENTS: any[] = [];
@@ -106,11 +106,92 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [darkMode, setDarkMode] = useState<boolean>(false);
   const [isSidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
-  // Core App States
-  const [schools, setSchools] = useState(() => {
+  // Helper to load or build real registered school
+  const loadRealRegisteredSchool = () => {
+    let jamiaName = "Modern School Academy";
+    let phone = "0319-5702823";
+    let code = "SCH-001";
+    let principal = "Principal / Administrator";
+
+    try {
+      const sysStr = localStorage.getItem("system_settings");
+      if (sysStr) {
+        const sys = JSON.parse(sysStr);
+        if (sys.jamiaName) jamiaName = sys.jamiaName;
+        if (sys.contactNumber) phone = sys.contactNumber;
+        if (sys.registrationPrefix) code = `${sys.registrationPrefix}001`;
+      }
+    } catch (e) {}
+
+    let realStudentsCount = 0;
+    try {
+      const stdStr = localStorage.getItem("students") || localStorage.getItem("studentList");
+      if (stdStr) {
+        const stdArr = JSON.parse(stdStr);
+        if (Array.isArray(stdArr)) realStudentsCount = stdArr.length;
+      }
+    } catch (e) {}
+
+    let realTeachersCount = 0;
+    try {
+      const stfStr = localStorage.getItem("staff") || localStorage.getItem("users");
+      if (stfStr) {
+        const stfArr = JSON.parse(stfStr);
+        if (Array.isArray(stfArr)) realTeachersCount = stfArr.length;
+      }
+    } catch (e) {}
+
+    const defaultRegisteredSchool = {
+      id: "sch_1",
+      name: jamiaName,
+      code: code,
+      type: "Registered Main Campus",
+      city: "Pakistan",
+      principal: principal,
+      phone: phone,
+      email: "info@assanaccounts.com",
+      studentsCount: realStudentsCount,
+      teachersCount: realTeachersCount,
+      monthlyFee: 15000,
+      paymentStatus: "PAID",
+      dueMonth: "September 2026",
+      lastPaidDate: new Date().toISOString().split("T")[0],
+      lastPaidAmount: 15000,
+      packagePlan: "Enterprise",
+      enabledFeatures: [
+        "exams", "lms", "library", "fleet", "hostel",
+        "cafeteria", "health", "docs", "gateway", "aiRisk", "tickets"
+      ]
+    };
+
     const saved = localStorage.getItem("mms_schools");
-    return saved ? JSON.parse(saved) : INITIAL_SCHOOLS;
-  });
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Sync real student and teacher counts onto the registered school
+          return parsed.map((s: any) => {
+            if (s.id === "sch_1") {
+              return {
+                ...s,
+                name: s.name || jamiaName,
+                studentsCount: realStudentsCount,
+                teachersCount: realTeachersCount
+              };
+            }
+            return s;
+          });
+        }
+      } catch (e) {}
+    }
+
+    localStorage.setItem("mms_schools", JSON.stringify([defaultRegisteredSchool]));
+    updateCentralKey("mms_schools", [defaultRegisteredSchool]);
+    return [defaultRegisteredSchool];
+  };
+
+  // Core App States
+  const [schools, setSchools] = useState(() => loadRealRegisteredSchool());
   const [parents, setParents] = useState(() => {
     const saved = localStorage.getItem("mms_parents");
     return saved ? JSON.parse(saved) : INITIAL_PARENTS;
@@ -139,26 +220,63 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     { id: "l_3", action: "Verified active SMS/WhatsApp Gateway credentials", user: "System", time: "09:15 AM", module: "Gateway" }
   ]);
 
+  // Package Plans & Optional Features Definition
+  const ALL_FEATURES = [
+    { key: "exams", label: "Exams & Report Cards", icon: Award },
+    { key: "lms", label: "LMS & Online Learning", icon: BookOpen },
+    { key: "library", label: "Library & ISBN System", icon: Library },
+    { key: "fleet", label: "Bus Fleet & GPS Tracking", icon: Bus },
+    { key: "hostel", label: "Hostels & Dormitories", icon: Home },
+    { key: "cafeteria", label: "Cafeteria RFID Wallet", icon: Utensils },
+    { key: "health", label: "Medical & Health Vault", icon: Stethoscope },
+    { key: "docs", label: "Digital Document Vault", icon: FileCheck },
+    { key: "gateway", label: "SMS & WhatsApp Gateway", icon: Send },
+    { key: "aiRisk", label: "AI Predictive Attrition", icon: Sparkles },
+    { key: "tickets", label: "Helpdesk & Grievance", icon: LifeBuoy }
+  ];
+
+  const PACKAGE_PRESETS: Record<string, string[]> = {
+    Basic: ["exams", "docs", "tickets"],
+    Standard: ["exams", "lms", "library", "fleet", "docs", "tickets", "gateway"],
+    Enterprise: ["exams", "lms", "library", "fleet", "hostel", "cafeteria", "health", "docs", "gateway", "aiRisk", "tickets"]
+  };
+
   const [activeTab, setActiveTab] = useState<string>("overview");
   const [selectedSchool, setSelectedSchool] = useState<string>("all");
+  const [financeSchoolFilter, setFinanceSchoolFilter] = useState<string>("all");
+  const [financeStatusFilter, setFinanceStatusFilter] = useState<string>("all");
 
   // Modal Triggers
   const [showAddSchoolModal, setShowAddSchoolModal] = useState<boolean>(false);
-  const [showAddParentModal, setShowAddParentModal] = useState<boolean>(false);
-  const [showAddStudentModal, setShowAddStudentModal] = useState<boolean>(false);
-  const [showCollectFeeModal, setShowCollectFeeModal] = useState<boolean>(false);
+  const [showPayMonthlyModal, setShowPayMonthlyModal] = useState<boolean>(false);
   const [showCertModal, setShowCertModal] = useState<any>(null);
+  const [editingCampusFeatures, setEditingCampusFeatures] = useState<any>(null);
 
   // Form Field States
-  const [newSchool, setNewSchool] = useState({ name: "", code: "", type: "Primary & Secondary", city: "" });
-  const [newParent, setNewParent] = useState({ name: "", phone: "", email: "", cnic: "", address: "" });
-  const [newStudent, setNewStudent] = useState({ name: "", schoolId: "sch_1", grade: "Class 1", section: "A", parentId: "", pendingFee: 0 });
-  const [feeForm, setFeeForm] = useState({ studentId: "", amount: "", category: "Tuition Fee", date: new Date().toISOString().split("T")[0] });
+  const [newSchool, setNewSchool] = useState({
+    name: "",
+    code: "",
+    type: "Primary & Secondary",
+    city: "Pakistan",
+    principal: "",
+    phone: "",
+    packagePlan: "Enterprise",
+    enabledFeatures: PACKAGE_PRESETS.Enterprise
+  });
+
+  const [monthlyPaymentForm, setMonthlyPaymentForm] = useState({
+    schoolId: "",
+    amount: "",
+    forMonth: "September 2026",
+    paymentMethod: "Bank Transfer",
+    referenceId: "",
+    notes: ""
+  });
 
   // Users / Requests State
   const [users, setUsers] = useState<any[]>([]);
 
-  // Listen for pending requests from local storage
+  // Listen for pending requests and real-time synchronized corporate data from local storage
   useEffect(() => {
     const loadPendingUsers = () => {
       try {
@@ -171,18 +289,73 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       } catch(e) {}
     };
     loadPendingUsers();
-    window.addEventListener('storage_updated', loadPendingUsers);
-    return () => window.removeEventListener('storage_updated', loadPendingUsers);
-  }, []);
 
-  // Sync state to local storage
+    const loadSyncedMmsData = () => {
+      try {
+        const savedSchools = localStorage.getItem("mms_schools");
+        if (savedSchools) {
+          const parsed = JSON.parse(savedSchools);
+          if (JSON.stringify(parsed) !== JSON.stringify(schools)) {
+            setSchools(parsed);
+          }
+        }
+        const savedParents = localStorage.getItem("mms_parents");
+        if (savedParents) {
+          const parsed = JSON.parse(savedParents);
+          if (JSON.stringify(parsed) !== JSON.stringify(parents)) {
+            setParents(parsed);
+          }
+        }
+        const savedStudents = localStorage.getItem("mms_students");
+        if (savedStudents) {
+          const parsed = JSON.parse(savedStudents);
+          if (JSON.stringify(parsed) !== JSON.stringify(students)) {
+            setStudents(parsed);
+          }
+        }
+        const savedFinances = localStorage.getItem("mms_finances");
+        if (savedFinances) {
+          const parsed = JSON.parse(savedFinances);
+          if (JSON.stringify(parsed) !== JSON.stringify(finances)) {
+            setFinances(parsed);
+          }
+        }
+      } catch (e) {
+        console.error("Error reading synced corporate data:", e);
+      }
+    };
+    loadSyncedMmsData();
+
+    window.addEventListener('storage_updated', () => {
+      loadPendingUsers();
+      loadSyncedMmsData();
+    });
+    return () => {
+      window.removeEventListener('storage_updated', loadPendingUsers);
+      window.removeEventListener('storage_updated', loadSyncedMmsData);
+    };
+  }, [schools, parents, students, finances]);
+
+  // Sync state to local storage and Firestore
   useEffect(() => {
-    localStorage.setItem("mms_schools", JSON.stringify(schools));
-    localStorage.setItem("mms_parents", JSON.stringify(parents));
-    localStorage.setItem("mms_students", JSON.stringify(students));
-    localStorage.setItem("mms_teachers", JSON.stringify(teachers));
-    localStorage.setItem("mms_finances", JSON.stringify(finances));
-  }, [schools, parents, students, teachers, finances]);
+    updateCentralKey("mms_schools", schools);
+  }, [schools]);
+
+  useEffect(() => {
+    updateCentralKey("mms_parents", parents);
+  }, [parents]);
+
+  useEffect(() => {
+    updateCentralKey("mms_students", students);
+  }, [students]);
+
+  useEffect(() => {
+    updateCentralKey("mms_teachers", teachers);
+  }, [teachers]);
+
+  useEffect(() => {
+    updateCentralKey("mms_finances", finances);
+  }, [finances]);
 
   const addLog = (action: string, module: string) => {
     const newLog = {
@@ -231,117 +404,166 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       code: newSchool.code || "SCH-" + Math.floor(100 + Math.random() * 900),
       type: newSchool.type,
       city: newSchool.city || "Pakistan",
+      principal: newSchool.principal || "Principal Officer",
+      phone: newSchool.phone || "0300-0000000",
+      packagePlan: newSchool.packagePlan || "Enterprise",
+      enabledFeatures: newSchool.enabledFeatures || PACKAGE_PRESETS[newSchool.packagePlan] || PACKAGE_PRESETS.Enterprise,
       totalStudents: 0,
       budget: "₨ 3.0M"
     };
     setSchools([...schools, created]);
-    addLog(`Registered new institution: ${created.name}`, "Institutions");
+    addLog(`Registered new institution branch: ${created.name} (${created.packagePlan} Package)`, "Institutions");
     setShowAddSchoolModal(false);
-    setNewSchool({ name: "", code: "", type: "Primary & Secondary", city: "" });
+    setNewSchool({
+      name: "",
+      code: "",
+      type: "Primary & Secondary",
+      city: "Pakistan",
+      principal: "",
+      phone: "",
+      packagePlan: "Enterprise",
+      enabledFeatures: PACKAGE_PRESETS.Enterprise
+    });
   };
 
-  const handleCreateParent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newParent.name || !newParent.phone) return;
-    const created = {
-      id: "p_" + Date.now(),
-      ...newParent,
-      children: [],
-      status: "active",
-      totalDue: 0
-    };
-    setParents([...parents, created]);
-    addLog(`Added parent profile for ${created.name}`, "Parents");
-    setShowAddParentModal(false);
-    setNewParent({ name: "", phone: "", email: "", cnic: "", address: "" });
+  const handleToggleCampusFeature = (campusId: string, featureKey: string) => {
+    setSchools((prev: any[]) =>
+      prev.map((s) => {
+        if (s.id !== campusId) return s;
+        const currentFeatures: string[] = s.enabledFeatures || PACKAGE_PRESETS[s.packagePlan] || PACKAGE_PRESETS.Enterprise;
+        const exists = currentFeatures.includes(featureKey);
+        const updatedFeatures = exists
+          ? currentFeatures.filter((f) => f !== featureKey)
+          : [...currentFeatures, featureKey];
+        return {
+          ...s,
+          packagePlan: "Custom",
+          enabledFeatures: updatedFeatures
+        };
+      })
+    );
+    addLog(`Updated feature access for campus ${campusId}`, "SaaS Control");
   };
 
-  const handleCreateStudent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newStudent.name) return;
-    const created = {
-      id: "std_" + Date.now(),
-      schoolId: newStudent.schoolId,
-      name: newStudent.name,
-      rollNo: "STD-" + Math.floor(1000 + Math.random() * 9000),
-      grade: newStudent.grade,
-      section: newStudent.section,
-      parentId: newStudent.parentId,
-      feeStatus: Number(newStudent.pendingFee) > 0 ? "Pending" : "Paid",
-      pendingFee: Number(newStudent.pendingFee) || 0,
-      attendance: "100%",
-      riskLevel: "Low",
-      rfidBalance: 1000
-    };
-    
-    setStudents([...students, created]);
+  const handleChangeCampusPackage = (campusId: string, plan: string) => {
+    const preset = PACKAGE_PRESETS[plan] || PACKAGE_PRESETS.Enterprise;
+    setSchools((prev: any[]) =>
+      prev.map((s) => {
+        if (s.id !== campusId) return s;
+        return {
+          ...s,
+          packagePlan: plan,
+          enabledFeatures: preset
+        };
+      })
+    );
+    addLog(`Changed campus ${campusId} package plan to ${plan}`, "SaaS Control");
+  };
 
-    if (newStudent.parentId) {
-      setParents(parents.map((p: any) => {
-        if (p.id === newStudent.parentId) {
-          return {
-            ...p,
-            children: [...p.children, created.id],
-            totalDue: p.totalDue + created.pendingFee
-          };
-        }
-        return p;
-      }));
+  const handleDeleteCampus = (campusId: string, name: string) => {
+    if (window.confirm(`Are you sure you want to remove ${name}? This will delete all branch records.`)) {
+      setSchools((prev: any[]) => prev.filter((s) => s.id !== campusId));
+      if (selectedSchool === campusId) setSelectedSchool("all");
+      addLog(`Deleted campus branch: ${name}`, "Institutions");
     }
-
-    addLog(`Enrolled student ${created.name} in grade ${created.grade}`, "Students");
-    setShowAddStudentModal(false);
-    setNewStudent({ name: "", schoolId: "sch_1", grade: "Class 1", section: "A", parentId: "", pendingFee: 0 });
   };
 
-  const handleCollectFee = (e: React.FormEvent) => {
+  const handleRecordMonthlyPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!feeForm.studentId || !feeForm.amount) return;
+    if (!monthlyPaymentForm.schoolId || !monthlyPaymentForm.amount) return;
 
-    const std = students.find((s: any) => s.id === feeForm.studentId);
-    const amountPaid = Number(feeForm.amount);
+    const targetSchool = schools.find((s: any) => s.id === monthlyPaymentForm.schoolId);
+    const schoolName = targetSchool ? targetSchool.name : "School";
 
-    const newTrans = {
-      id: "fn_" + Date.now(),
-      schoolId: std ? std.schoolId : "sch_1",
-      title: `Fee Collected from ${std ? std.name : 'Student'}`,
-      amount: amountPaid,
-      type: "income",
-      category: feeForm.category,
-      date: feeForm.date
-    };
-
-    setFinances([newTrans, ...finances]);
-
-    if (std) {
-      setStudents(students.map((s: any) => {
-        if (s.id === std.id) {
-          const rem = Math.max(0, s.pendingFee - amountPaid);
-          return {
-            ...s,
-            pendingFee: rem,
-            feeStatus: rem === 0 ? "Paid" : "Partial"
-          };
-        }
-        return s;
-      }));
-
-      if (std.parentId) {
-        setParents(parents.map((p: any) => {
-          if (p.id === std.parentId) {
-            return {
-              ...p,
-              totalDue: Math.max(0, p.totalDue - amountPaid)
-            };
-          }
-          return p;
-        }));
+    const updatedSchools = schools.map((s: any) => {
+      if (s.id === monthlyPaymentForm.schoolId) {
+        return {
+          ...s,
+          paymentStatus: "PAID",
+          lastPaidDate: new Date().toISOString().split("T")[0],
+          lastPaidAmount: Number(monthlyPaymentForm.amount),
+          dueMonth: monthlyPaymentForm.forMonth || "September 2026"
+        };
       }
-    }
+      return s;
+    });
 
-    addLog(`Collected fee ₨ ${amountPaid.toLocaleString()} for ${std ? std.name : 'Student'}`, "Finance");
-    setShowCollectFeeModal(false);
-    setFeeForm({ studentId: "", amount: "", category: "Tuition Fee", date: new Date().toISOString().split("T")[0] });
+    setSchools(updatedSchools);
+    updateCentralKey("mms_schools", updatedSchools);
+
+    const newRecord = {
+      id: "fin_" + Date.now(),
+      schoolId: monthlyPaymentForm.schoolId,
+      schoolName,
+      title: `Monthly Subscription Fee from ${schoolName}`,
+      type: "income",
+      category: "SaaS Subscription Collection",
+      amount: Number(monthlyPaymentForm.amount),
+      date: new Date().toISOString().split("T")[0],
+      paymentMethod: monthlyPaymentForm.paymentMethod,
+      referenceId: monthlyPaymentForm.referenceId || "REF-" + Math.floor(1000 + Math.random() * 9000),
+      notes: monthlyPaymentForm.notes || `Monthly fee collected for ${monthlyPaymentForm.forMonth}`,
+      status: "Paid"
+    };
+
+    setFinances((prev: any[]) => [newRecord, ...prev]);
+    updateCentralKey("mms_finances", [newRecord, ...finances]);
+
+    addLog(`Recorded monthly payment of ₨ ${Number(monthlyPaymentForm.amount).toLocaleString()} for ${schoolName} (${monthlyPaymentForm.forMonth})`, "SaaS Billing");
+
+    setShowPayMonthlyModal(false);
+    setMonthlyPaymentForm({
+      schoolId: "",
+      amount: "",
+      forMonth: "September 2026",
+      paymentMethod: "Bank Transfer",
+      referenceId: "",
+      notes: ""
+    });
+    alert(`✅ Monthly subscription payment for ${schoolName} successfully recorded as PAID!`);
+  };
+
+  const handleSendWhatsAppReminder = (school: any) => {
+    const phoneRaw = school.phone || "03000000000";
+    let cleanPhone = phoneRaw.replace(/\D/g, "");
+    if (cleanPhone.startsWith("0")) {
+      cleanPhone = "92" + cleanPhone.slice(1);
+    } else if (!cleanPhone.startsWith("92")) {
+      cleanPhone = "92" + cleanPhone;
+    }
+    const monthText = school.dueMonth || "September 2026";
+    const feeRate = school.monthlyFee || (school.packagePlan === "Enterprise" ? 15000 : school.packagePlan === "Standard" ? 10000 : 5000);
+    
+    const message = `السلام علیکم ${school.principal || "Principal"},\n\nThis is an automated subscription alert from *Multi-Campus Corporate Suite*.\n\nYour monthly software subscription fee for *${school.name}* (${monthText}) is pending.\n\n💵 *Amount Due:* ₨ ${feeRate.toLocaleString()}\n📦 *Package Plan:* ${school.packagePlan || "Enterprise"}\n\nPlease settle your invoice at your earliest convenience to keep your campus cloud portal active.\n\nThank you!`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedMessage}`;
+    window.open(waUrl, "_blank");
+    addLog(`Dispatched WhatsApp subscription reminder to ${school.name} (${phoneRaw})`, "Alerts");
+  };
+
+  const handleSendIdAlertNotification = (school: any) => {
+    const feeRate = school.monthlyFee || (school.packagePlan === "Enterprise" ? 15000 : school.packagePlan === "Standard" ? 10000 : 5000);
+    const alertMessage = `⚠️ URGENT SAAS NOTICE: Subscription fee of ₨ ${feeRate.toLocaleString()} for ${school.name} (${school.dueMonth || 'September 2026'}) is overdue. Please pay to avoid portal suspension.`;
+
+    try {
+      const existingAlertsStr = localStorage.getItem("mms_school_alerts") || "[]";
+      const existingAlerts = JSON.parse(existingAlertsStr);
+      const newAlert = {
+        id: "alt_" + Date.now(),
+        schoolId: school.id,
+        schoolName: school.name,
+        message: alertMessage,
+        date: new Date().toLocaleString(),
+        type: "subscription_due"
+      };
+      const updatedAlerts = [newAlert, ...existingAlerts];
+      localStorage.setItem("mms_school_alerts", JSON.stringify(updatedAlerts));
+      updateCentralKey("mms_school_alerts", updatedAlerts);
+    } catch (e) {}
+
+    addLog(`Broadcasted In-App ID Alert Notice to School ID: ${school.id} (${school.name})`, "In-App Notice");
+    alert(`🔔 In-App Notification alert broadcasted successfully to ${school.name}! The school admin will see a bold warning header upon login.`);
   };
 
   const toggleParentStatus = (parentId: string) => {
@@ -417,7 +639,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     <div className={`min-h-screen flex font-sans antialiased transition-colors ${darkMode ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-800'}`}>
       
       {/* Sidebar */}
-      <aside className={`w-72 border-r flex flex-col fixed inset-y-0 z-50 lg:relative transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+      <aside className={`w-72 border-r flex flex-col h-screen lg:h-screen lg:sticky lg:top-0 z-50 transition-all duration-300 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'} ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
         <div className={`p-6 border-b flex items-center justify-between ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-blue-500/20">
@@ -448,38 +670,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           </select>
         </div>
 
-        {/* Categorized Navigation List */}
+        {/* Categorized Navigation List - Core SaaS Management */}
         <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar">
           <NavGroup title="Core Management">
             <SidebarNavButton icon={LayoutDashboard} label={t.overview} active={activeTab === "overview"} onClick={() => setActiveTab("overview")} darkMode={darkMode} />
             <SidebarNavButton icon={ShieldAlert} label={t.requests} active={activeTab === "requests"} onClick={() => setActiveTab("requests")} badge={users.length} darkMode={darkMode} />
             <SidebarNavButton icon={Building2} label={t.schools} active={activeTab === "schools"} onClick={() => setActiveTab("schools")} badge={schools.length} darkMode={darkMode} />
-            <SidebarNavButton icon={HeartHandshake} label={t.parents} active={activeTab === "parents"} onClick={() => setActiveTab("parents")} badge={parents.length} darkMode={darkMode} />
-            <SidebarNavButton icon={GraduationCap} label={t.students} active={activeTab === "students"} onClick={() => setActiveTab("students")} badge={filteredStudents.length} darkMode={darkMode} />
-            <SidebarNavButton icon={Users} label={t.teachers} active={activeTab === "teachers"} onClick={() => setActiveTab("teachers")} badge={filteredTeachers.length} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Academics & Learning">
-            <SidebarNavButton icon={Award} label={t.exams} active={activeTab === "exams"} onClick={() => setActiveTab("exams")} darkMode={darkMode} />
-            <SidebarNavButton icon={BookOpen} label={t.lms} active={activeTab === "lms"} onClick={() => setActiveTab("lms")} darkMode={darkMode} />
-            <SidebarNavButton icon={Library} label={t.library} active={activeTab === "library"} onClick={() => setActiveTab("library")} badge={books.length} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Finance & Operations">
             <SidebarNavButton icon={CreditCard} label={t.finance} active={activeTab === "finance"} onClick={() => setActiveTab("finance")} darkMode={darkMode} />
-            <SidebarNavButton icon={Bus} label={t.fleet} active={activeTab === "fleet"} onClick={() => setActiveTab("fleet")} badge={buses.length} darkMode={darkMode} />
-            <SidebarNavButton icon={Home} label={t.hostel} active={activeTab === "hostel"} onClick={() => setActiveTab("hostel")} darkMode={darkMode} />
-            <SidebarNavButton icon={Utensils} label={t.cafeteria} active={activeTab === "cafeteria"} onClick={() => setActiveTab("cafeteria")} darkMode={darkMode} />
-          </NavGroup>
-
-          <NavGroup title="Support & Intelligence">
-            <SidebarNavButton icon={Sparkles} label={t.aiRisk} active={activeTab === "aiRisk"} onClick={() => setActiveTab("aiRisk")} badge="AI Live" darkMode={darkMode} />
-            <SidebarNavButton icon={LifeBuoy} label={t.tickets} active={activeTab === "tickets"} onClick={() => setActiveTab("tickets")} badge={tickets.length} darkMode={darkMode} />
-            <SidebarNavButton icon={Stethoscope} label={t.health} active={activeTab === "health"} onClick={() => setActiveTab("health")} darkMode={darkMode} />
-            <SidebarNavButton icon={FileCheck} label={t.docs} active={activeTab === "docs"} onClick={() => setActiveTab("docs")} darkMode={darkMode} />
-            <SidebarNavButton icon={Send} label={t.gateway} active={activeTab === "gateway"} onClick={() => setActiveTab("gateway")} darkMode={darkMode} />
-            <SidebarNavButton icon={ShieldCheck} label={t.audit} active={activeTab === "audit"} onClick={() => setActiveTab("audit")} darkMode={darkMode} />
-            <SidebarNavButton icon={Lock} label={t.roles} active={activeTab === "roles"} onClick={() => setActiveTab("roles")} darkMode={darkMode} />
             <SidebarNavButton icon={Settings} label={t.settings} active={activeTab === "settings"} onClick={() => setActiveTab("settings")} darkMode={darkMode} />
           </NavGroup>
         </nav>
@@ -546,13 +743,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
             <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-1"></div>
 
-            <button onClick={() => setShowCollectFeeModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+            <button onClick={() => setShowPayMonthlyModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
               <DollarSign className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.collectFee}</span>
+              <span className="hidden sm:inline">Pay Monthly Dues</span>
             </button>
-            <button onClick={() => setShowAddStudentModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
+            <button onClick={() => setShowAddSchoolModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all active:scale-95">
               <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">{t.addStudent}</span>
+              <span className="hidden sm:inline">Register Campus</span>
             </button>
           </div>
         </header>
@@ -1173,167 +1370,338 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
           {activeTab === "schools" && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black">{t.schools}</h2>
-                  <p className="text-xs text-slate-400">Manage separate campuses and institutional branches.</p>
+                  <p className="text-xs text-slate-400">Manage multi-school network, monthly subscription fees, feature access, and automated billing alerts.</p>
                 </div>
-                <button onClick={() => setShowAddSchoolModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Register Campus</button>
+                <div className="flex gap-2">
+                  <button onClick={() => setShowPayMonthlyModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    <span>Pay Monthly Fee</span>
+                  </button>
+                  <button onClick={() => setShowAddSchoolModal(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    <span>Register New Campus</span>
+                  </button>
+                </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {schools.map((sch: any) => (
-                  <div key={sch.id} className={`p-6 rounded-3xl border flex flex-col justify-between ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <div>
-                      <span className="px-2.5 py-1 bg-blue-500/10 text-blue-500 rounded-full font-black text-[10px]">{sch.code}</span>
-                      <h3 className="text-lg font-bold mt-2">{sch.name}</h3>
-                      <p className="text-xs text-slate-400">{sch.type} - {sch.city}</p>
-                      <p className="text-xs font-bold text-emerald-500 mt-4">Budget: {sch.budget}</p>
-                    </div>
-                    <button 
-                      onClick={() => {
-                        localStorage.setItem('active_school_id', sch.id);
-                        localStorage.setItem('currentSchoolName', sch.name);
-                        window.dispatchEvent(new Event('storage_updated'));
-                        window.location.reload();
-                      }}
-                      className="mt-4 w-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Eye className="w-4 h-4" /> Open Software Panel
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {activeTab === "parents" && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-black">{t.parents}</h2>
-                  <p className="text-xs text-slate-400">Manage parents, CNIC, and portal permissions.</p>
+              {schools.length === 0 ? (
+                <div className={`p-12 text-center rounded-3xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <Building2 className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                  <h3 className="text-base font-bold">No Campuses Registered Yet</h3>
+                  <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">Click "+ Register New Campus" above to add your first educational branch with full package and feature setup.</p>
+                  <button onClick={() => setShowAddSchoolModal(true)} className="mt-4 bg-blue-600 text-white font-bold px-6 py-2.5 rounded-xl text-xs">
+                    Register First Campus
+                  </button>
                 </div>
-                <button onClick={() => setShowAddParentModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Add Parent</button>
-              </div>
-              <div className={`rounded-3xl border overflow-hidden ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className={`border-b ${darkMode ? 'bg-slate-800/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                      <th className="p-4 pl-6">Parent Name</th>
-                      <th className="p-4">Contact</th>
-                      <th className="p-4">CNIC</th>
-                      <th className="p-4">Total Due</th>
-                      <th className="p-4 pr-6 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {parents.map((p: any) => (
-                      <tr key={p.id}>
-                        <td className="p-4 pl-6 font-bold">{p.name}</td>
-                        <td className="p-4">{p.phone}</td>
-                        <td className="p-4 font-mono">{p.cnic}</td>
-                        <td className="p-4 font-bold text-amber-500">₨ {p.totalDue.toLocaleString()}</td>
-                        <td className="p-4 pr-6 text-right">
-                          <button onClick={() => toggleParentStatus(p.id)} className="p-1.5 rounded-lg border border-red-500/20 text-red-500 hover:bg-red-500/10"><ShieldBan className="w-4 h-4" /></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {schools.map((sch: any) => {
+                    const enabledFeats: string[] = sch.enabledFeatures || PACKAGE_PRESETS[sch.packagePlan] || PACKAGE_PRESETS.Enterprise;
+                    const isPaid = sch.paymentStatus === "PAID";
+                    const feeRate = sch.monthlyFee || (sch.packagePlan === "Enterprise" ? 15000 : sch.packagePlan === "Standard" ? 10000 : 5000);
 
-          {activeTab === "students" && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-black">{t.students}</h2>
-                  <p className="text-xs text-slate-400">Enrolled student master roll list.</p>
-                </div>
-                <button onClick={() => setShowAddStudentModal(true)} className="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Register Student</button>
-              </div>
-              <div className={`rounded-3xl border overflow-hidden ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className={`border-b ${darkMode ? 'bg-slate-800/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                      <th className="p-4 pl-6">Student Name</th>
-                      <th className="p-4">Roll No</th>
-                      <th className="p-4">Grade</th>
-                      <th className="p-4">Attendance</th>
-                      <th className="p-4 pr-6 text-right">Pending Fee</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredStudents.map((std: any) => (
-                      <tr key={std.id}>
-                        <td className="p-4 pl-6 font-bold">{std.name}</td>
-                        <td className="p-4 font-mono text-blue-500">{std.rollNo}</td>
-                        <td className="p-4">{std.grade} ({std.section})</td>
-                        <td className="p-4 font-bold text-emerald-500">{std.attendance}</td>
-                        <td className="p-4 pr-6 text-right font-bold text-amber-500">₨ {std.pendingFee.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                    return (
+                      <div key={sch.id} className={`p-6 rounded-3xl border flex flex-col justify-between transition-all hover:shadow-lg ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="px-2.5 py-1 bg-blue-500/10 text-blue-500 rounded-full font-black text-[10px]">{sch.code}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`px-2.5 py-1 rounded-full font-black text-[10px] ${
+                                isPaid ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                              }`}>
+                                {isPaid ? '🟢 PAID' : '🔴 UNPAID'}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                sch.packagePlan === 'Enterprise' ? 'bg-indigo-500/10 text-indigo-500' :
+                                sch.packagePlan === 'Standard' ? 'bg-emerald-500/10 text-emerald-500' :
+                                sch.packagePlan === 'Basic' ? 'bg-amber-500/10 text-amber-500' : 'bg-purple-500/10 text-purple-500'
+                              }`}>
+                                {sch.packagePlan || 'Enterprise'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <h3 className="text-lg font-black mt-2">{sch.name}</h3>
+                          <p className="text-xs text-slate-400 mt-0.5">{sch.type} • {sch.city || 'Pakistan'}</p>
+                          
+                          <div className="mt-4 space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs">
+                            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                              <span>Monthly Subscription Fee:</span>
+                              <strong className="text-emerald-600 dark:text-emerald-400 font-black">₨ {feeRate.toLocaleString()} / mo</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                              <span>Principal:</span>
+                              <strong className="text-slate-800 dark:text-slate-200">{sch.principal || 'Principal Officer'}</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                              <span>Contact:</span>
+                              <strong className="text-slate-800 dark:text-slate-200">{sch.phone || '0300-0000000'}</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-500 dark:text-slate-400">
+                              <span>Active Features:</span>
+                              <strong className="text-blue-500 font-bold">{enabledFeats.length} / {ALL_FEATURES.length} Modules Enabled</strong>
+                            </div>
+                          </div>
+                        </div>
 
-          {activeTab === "teachers" && (
-            <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl font-black">{t.teachers}</h2>
-                  <p className="text-xs text-slate-400">Faculty profiles and HR monthly payroll.</p>
+                        <div className="mt-5 space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                          {/* Payment & Alert Quick Controls */}
+                          {!isPaid && (
+                            <div className="grid grid-cols-2 gap-1.5 mb-2">
+                              <button 
+                                onClick={() => handleSendWhatsAppReminder(sch)}
+                                className="bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1"
+                                title="Send WhatsApp Payment Alert"
+                              >
+                                💬 WhatsApp
+                              </button>
+                              <button 
+                                onClick={() => handleSendIdAlertNotification(sch)}
+                                className="bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 dark:text-amber-400 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1"
+                                title="Send In-App ID Alert"
+                              >
+                                🔔 ID Alert
+                              </button>
+                            </div>
+                          )}
+
+                          <button 
+                            onClick={() => {
+                              setMonthlyPaymentForm({
+                                schoolId: sch.id,
+                                amount: feeRate.toString(),
+                                forMonth: sch.dueMonth || "September 2026",
+                                paymentMethod: "Bank Transfer",
+                                referenceId: "",
+                                notes: ""
+                              });
+                              setShowPayMonthlyModal(true);
+                            }}
+                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                          >
+                            <DollarSign className="w-4 h-4" /> 💳 Pay Monthly Subscription
+                          </button>
+
+                          <button 
+                            onClick={() => setEditingCampusFeatures(sch)}
+                            className="w-full bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2"
+                          >
+                            <Settings className="w-4 h-4" /> ⚙️ Package & Feature Toggles
+                          </button>
+
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                localStorage.setItem('active_school_id', sch.id);
+                                localStorage.setItem('currentSchoolName', sch.name);
+                                window.dispatchEvent(new Event('storage_updated'));
+                                window.location.reload();
+                              }}
+                              className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
+                            >
+                              <Eye className="w-4 h-4" /> Open Panel
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteCampus(sch.id, sch.name)}
+                              className="px-3 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold transition-all"
+                              title="Delete Campus"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {filteredTeachers.map((tch: any) => (
-                  <div key={tch.id} className={`p-6 rounded-3xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                    <h3 className="text-base font-bold">{tch.name}</h3>
-                    <p className="text-xs text-blue-500 font-bold">{tch.subject}</p>
-                    <p className="text-xs text-slate-400 mt-2">{tch.email}</p>
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between">
-                      <span className="text-xs text-slate-400">Salary</span>
-                      <span className="text-xs font-black">₨ {tch.salary.toLocaleString()}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
           )}
 
           {activeTab === "finance" && (
             <div className="space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-black">{t.finance}</h2>
-                  <p className="text-xs text-slate-400">Ledger, tuition fee collection, and operational disburse.</p>
+                  <h2 className="text-xl font-black">Ledger & SaaS Fee Management</h2>
+                  <p className="text-xs text-slate-400">Track monthly software subscription dues from all network schools, identify pending payments, and dispatch reminders.</p>
                 </div>
-                <button onClick={() => setShowCollectFeeModal(true)} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold">+ Record Fee</button>
+                <button onClick={() => setShowPayMonthlyModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 shadow-md shadow-emerald-500/20">
+                  <DollarSign className="w-4 h-4" />
+                  <span>Record Monthly Payment</span>
+                </button>
               </div>
+
+              {/* Finance Summary KPI Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">TOTAL MONTHLY REVENUE</span>
+                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                    ₨ {schools.reduce((acc: number, s: any) => {
+                      const fee = s.monthlyFee || (s.packagePlan === "Enterprise" ? 15000 : s.packagePlan === "Standard" ? 10000 : 5000);
+                      return s.paymentStatus === "PAID" ? acc + fee : acc;
+                    }, 0).toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">Collected for current billing cycle</p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">PAID CAMPUSES</span>
+                  <p className="text-2xl font-black text-blue-600 dark:text-blue-400">
+                    {schools.filter((s: any) => s.paymentStatus === "PAID").length} / {schools.length}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">Schools up to date with subscription</p>
+                </div>
+
+                <div className={`p-5 rounded-2xl border ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">UNPAID / OVERDUE DUES</span>
+                  <p className="text-2xl font-black text-rose-600 dark:text-rose-400">
+                    ₨ {schools.reduce((acc: number, s: any) => {
+                      const fee = s.monthlyFee || (s.packagePlan === "Enterprise" ? 15000 : s.packagePlan === "Standard" ? 10000 : 5000);
+                      return s.paymentStatus !== "PAID" ? acc + fee : acc;
+                    }, 0).toLocaleString()}
+                  </p>
+                  <p className="text-[11px] text-slate-400 mt-1">Pending from {schools.filter((s: any) => s.paymentStatus !== "PAID").length} school(s)</p>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className={`p-4 rounded-2xl border flex flex-col md:flex-row items-center justify-between gap-4 ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                  <div className="w-full sm:w-64">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Filter School</label>
+                    <select 
+                      value={financeSchoolFilter}
+                      onChange={(e) => setFinanceSchoolFilter(e.target.value)}
+                      className={`w-full p-2.5 rounded-xl border text-xs font-bold outline-none cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                    >
+                      <option value="all">🌐 All Schools ({schools.length})</option>
+                      {schools.map((s: any) => (
+                        <option key={s.id} value={s.id}>🏫 {s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="w-full sm:w-48">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Payment Status</label>
+                    <select 
+                      value={financeStatusFilter}
+                      onChange={(e) => setFinanceStatusFilter(e.target.value)}
+                      className={`w-full p-2.5 rounded-xl border text-xs font-bold outline-none cursor-pointer ${darkMode ? 'bg-slate-800 border-slate-700 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-800'}`}
+                    >
+                      <option value="all">Filter Status: All</option>
+                      <option value="PAID">🟢 PAID Only</option>
+                      <option value="UNPAID">🔴 UNPAID / Pending Only</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="text-xs text-slate-400 font-bold">
+                  Showing {schools.filter((s: any) => {
+                    const matchSchool = financeSchoolFilter === "all" || s.id === financeSchoolFilter;
+                    const isPaid = s.paymentStatus === "PAID";
+                    const matchStatus = financeStatusFilter === "all" || (financeStatusFilter === "PAID" ? isPaid : !isPaid);
+                    return matchSchool && matchStatus;
+                  }).length} School Records
+                </div>
+              </div>
+
+              {/* Master School Billing Ledger Table */}
               <div className={`rounded-3xl border overflow-hidden ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className={`border-b ${darkMode ? 'bg-slate-800/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
-                      <th className="p-4 pl-6">Title</th>
-                      <th className="p-4">Category</th>
-                      <th className="p-4">Type</th>
-                      <th className="p-4 pr-6 text-right">Amount</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {filteredFinances.map((f: any) => (
-                      <tr key={f.id}>
-                        <td className="p-4 pl-6 font-bold">{f.title}</td>
-                        <td className="p-4">{f.category}</td>
-                        <td className="p-4"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${f.type === 'income' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>{f.type.toUpperCase()}</span></td>
-                        <td className="p-4 pr-6 text-right font-black">₨ {Number(f.amount).toLocaleString()}</td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className={`border-b ${darkMode ? 'bg-slate-800/50 border-slate-800 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-500'}`}>
+                        <th className="p-4 pl-6 font-bold uppercase tracking-wider text-[10px]">School / Campus</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Package Plan</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Monthly Fee</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Status</th>
+                        <th className="p-4 font-bold uppercase tracking-wider text-[10px]">Last Paid Date</th>
+                        <th className="p-4 pr-6 text-right font-bold uppercase tracking-wider text-[10px]">Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {schools
+                        .filter((s: any) => {
+                          const matchSchool = financeSchoolFilter === "all" || s.id === financeSchoolFilter;
+                          const isPaid = s.paymentStatus === "PAID";
+                          const matchStatus = financeStatusFilter === "all" || (financeStatusFilter === "PAID" ? isPaid : !isPaid);
+                          return matchSchool && matchStatus;
+                        })
+                        .map((s: any) => {
+                          const isPaid = s.paymentStatus === "PAID";
+                          const feeRate = s.monthlyFee || (s.packagePlan === "Enterprise" ? 15000 : s.packagePlan === "Standard" ? 10000 : 5000);
+
+                          return (
+                            <tr key={s.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                              <td className="p-4 pl-6">
+                                <p className="font-black text-slate-900 dark:text-slate-100">{s.name}</p>
+                                <p className="text-[10px] font-mono text-slate-400">{s.code} • {s.principal || 'Principal'}</p>
+                              </td>
+                              <td className="p-4 font-bold">
+                                <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[10px]">
+                                  📦 {s.packagePlan || 'Enterprise'}
+                                </span>
+                              </td>
+                              <td className="p-4 font-black text-emerald-600 dark:text-emerald-400">
+                                ₨ {feeRate.toLocaleString()}
+                              </td>
+                              <td className="p-4">
+                                <span className={`px-2.5 py-1 rounded-full font-black text-[10px] ${
+                                  isPaid ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                                }`}>
+                                  {isPaid ? '🟢 PAID' : '🔴 UNPAID'}
+                                </span>
+                              </td>
+                              <td className="p-4 text-slate-400 font-medium">
+                                {s.lastPaidDate ? `${s.lastPaidDate} (${s.dueMonth || 'Sep 2026'})` : 'No Recent Record'}
+                              </td>
+                              <td className="p-4 pr-6 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {!isPaid && (
+                                    <>
+                                      <button 
+                                        onClick={() => handleSendWhatsAppReminder(s)}
+                                        className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white text-emerald-600 dark:text-emerald-400 rounded-lg text-[11px] font-bold transition-all"
+                                        title="WhatsApp Reminder"
+                                      >
+                                        💬 WhatsApp
+                                      </button>
+                                      <button 
+                                        onClick={() => handleSendIdAlertNotification(s)}
+                                        className="px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 dark:text-amber-400 rounded-lg text-[11px] font-bold transition-all"
+                                        title="Send In-App Notice"
+                                      >
+                                        🔔 ID Alert
+                                      </button>
+                                    </>
+                                  )}
+                                  <button 
+                                    onClick={() => {
+                                      setMonthlyPaymentForm({
+                                        schoolId: s.id,
+                                        amount: feeRate.toString(),
+                                        forMonth: s.dueMonth || "September 2026",
+                                        paymentMethod: "Bank Transfer",
+                                        referenceId: "",
+                                        notes: ""
+                                      });
+                                      setShowPayMonthlyModal(true);
+                                    }}
+                                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all"
+                                  >
+                                    💳 Pay Dues
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1386,49 +1754,296 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
       {/* Register Campus Branch Modal */}
       {showAddSchoolModal && (
-        <ModalWrapper title="Register Campus Branch" onClose={() => setShowAddSchoolModal(false)} darkMode={darkMode}>
+        <ModalWrapper title="Register Campus Branch (Full Setup)" onClose={() => setShowAddSchoolModal(false)} darkMode={darkMode}>
           <form onSubmit={handleCreateSchool} className="space-y-4">
-            <input type="text" required placeholder="Campus Name" value={newSchool.name} onChange={e => setNewSchool({ ...newSchool, name: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <input type="text" placeholder="Branch Code (e.g. SUU-04)" value={newSchool.code} onChange={e => setNewSchool({ ...newSchool, code: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">Save Branch</button>
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Campus Name *</label>
+              <input type="text" required placeholder="e.g. Al-Siraj Campus Abbottabad" value={newSchool.name} onChange={e => setNewSchool({ ...newSchool, name: e.target.value })} className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Branch Code</label>
+                <input type="text" placeholder="e.g. SCH-101" value={newSchool.code} onChange={e => setNewSchool({ ...newSchool, code: e.target.value })} className={`w-full p-3 rounded-xl border text-xs font-mono outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">City / Location</label>
+                <input type="text" placeholder="e.g. Abbottabad" value={newSchool.city} onChange={e => setNewSchool({ ...newSchool, city: e.target.value })} className={`w-full p-3 rounded-xl border text-xs outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Principal Name</label>
+                <input type="text" placeholder="e.g. Prof. Ahmed Raza" value={newSchool.principal} onChange={e => setNewSchool({ ...newSchool, principal: e.target.value })} className={`w-full p-3 rounded-xl border text-xs outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Contact Phone</label>
+                <input type="text" placeholder="e.g. 0300-1234567" value={newSchool.phone} onChange={e => setNewSchool({ ...newSchool, phone: e.target.value })} className={`w-full p-3 rounded-xl border text-xs outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Subscription Package</label>
+              <select 
+                value={newSchool.packagePlan} 
+                onChange={e => {
+                  const plan = e.target.value;
+                  setNewSchool({
+                    ...newSchool,
+                    packagePlan: plan,
+                    enabledFeatures: PACKAGE_PRESETS[plan] || PACKAGE_PRESETS.Enterprise
+                  });
+                }}
+                className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
+              >
+                <option value="Enterprise">📦 Enterprise Package (All Features Unlocked)</option>
+                <option value="Standard">📦 Standard Package (Core + LMS + Library + Bus Fleet)</option>
+                <option value="Basic">📦 Basic Package (Core + Exams + Documents)</option>
+                <option value="Custom">⚙️ Custom Selection</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Enable / Disable Campus Modules</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-2 border rounded-xl dark:border-slate-800">
+                {ALL_FEATURES.map((f) => {
+                  const isEnabled = newSchool.enabledFeatures.includes(f.key);
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => {
+                        const updated = isEnabled 
+                          ? newSchool.enabledFeatures.filter(k => k !== f.key)
+                          : [...newSchool.enabledFeatures, f.key];
+                        setNewSchool({ ...newSchool, packagePlan: "Custom", enabledFeatures: updated });
+                      }}
+                      className={`flex items-center justify-between p-2 rounded-lg text-xs font-bold transition-all text-left ${
+                        isEnabled 
+                          ? "bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
+                          : "bg-slate-100 dark:bg-slate-800 border border-transparent text-slate-400"
+                      }`}
+                    >
+                      <span>{f.label}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${isEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-300 dark:bg-slate-700 text-slate-600'}`}>
+                        {isEnabled ? 'ON' : 'OFF'}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-xs shadow-md shadow-blue-500/20">
+              Save Campus & Activate Setup
+            </button>
           </form>
         </ModalWrapper>
       )}
 
-      {/* Add Parent Account Modal */}
-      {showAddParentModal && (
-        <ModalWrapper title="Add Parent Account" onClose={() => setShowAddParentModal(false)} darkMode={darkMode}>
-          <form onSubmit={handleCreateParent} className="space-y-4">
-            <input type="text" required placeholder="Guardian Full Name" value={newParent.name} onChange={e => setNewParent({ ...newParent, name: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <input type="text" required placeholder="Mobile / WhatsApp" value={newParent.phone} onChange={e => setNewParent({ ...newParent, phone: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">Create Parent</button>
-          </form>
+      {/* Campus Package & Feature Toggles Modal */}
+      {editingCampusFeatures && (
+        <ModalWrapper 
+          title={`Package & Feature Control: ${editingCampusFeatures.name}`} 
+          onClose={() => setEditingCampusFeatures(null)} 
+          darkMode={darkMode}
+        >
+          <div className="space-y-5">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select Subscription Package</label>
+              <div className="grid grid-cols-3 gap-2">
+                {["Basic", "Standard", "Enterprise"].map((plan) => {
+                  const isCurrent = editingCampusFeatures.packagePlan === plan;
+                  return (
+                    <button
+                      key={plan}
+                      onClick={() => {
+                        handleChangeCampusPackage(editingCampusFeatures.id, plan);
+                        setEditingCampusFeatures({
+                          ...editingCampusFeatures,
+                          packagePlan: plan,
+                          enabledFeatures: PACKAGE_PRESETS[plan]
+                        });
+                      }}
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                        isCurrent 
+                          ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200"
+                      }`}
+                    >
+                      {plan}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Individual Feature Toggles</label>
+                <span className="text-[10px] font-bold text-blue-500">Toggle ON to Show / OFF to Hide</span>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {ALL_FEATURES.map((f) => {
+                  const currentFeatures: string[] = editingCampusFeatures.enabledFeatures || PACKAGE_PRESETS[editingCampusFeatures.packagePlan] || PACKAGE_PRESETS.Enterprise;
+                  const isEnabled = currentFeatures.includes(f.key);
+                  return (
+                    <div 
+                      key={f.key} 
+                      className={`flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                        darkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                          isEnabled ? 'bg-emerald-500/20 text-emerald-500' : 'bg-slate-200 dark:bg-slate-700 text-slate-400'
+                        }`}>
+                          {isEnabled ? '✓' : '✕'}
+                        </div>
+                        <div>
+                          <p className="text-xs font-bold">{f.label}</p>
+                          <p className="text-[10px] text-slate-400">{isEnabled ? 'Visible on Campus Dashboard' : 'Hidden & Disabled for Campus'}</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          handleToggleCampusFeature(editingCampusFeatures.id, f.key);
+                          const updated = isEnabled 
+                            ? currentFeatures.filter(k => k !== f.key)
+                            : [...currentFeatures, f.key];
+                          setEditingCampusFeatures({
+                            ...editingCampusFeatures,
+                            packagePlan: "Custom",
+                            enabledFeatures: updated
+                          });
+                        }}
+                        className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${
+                          isEnabled
+                            ? "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/20"
+                            : "bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white"
+                        }`}
+                      >
+                        {isEnabled ? 'ENABLED' : 'DISABLED'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setEditingCampusFeatures(null)}
+              className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs shadow-md shadow-blue-500/20"
+            >
+              Done / Close Settings
+            </button>
+          </div>
         </ModalWrapper>
       )}
 
-      {/* Enroll Student Modal */}
-      {showAddStudentModal && (
-        <ModalWrapper title="Enroll New Student" onClose={() => setShowAddStudentModal(false)} darkMode={darkMode}>
-          <form onSubmit={handleCreateStudent} className="space-y-4">
-            <input type="text" required placeholder="Student Full Name" value={newStudent.name} onChange={e => setNewStudent({ ...newStudent, name: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <select value={newStudent.schoolId} onChange={e => setNewStudent({ ...newStudent, schoolId: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-              {schools.map((sch: any) => <option key={sch.id} value={sch.id}>{sch.name}</option>)}
-            </select>
-            <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl text-xs">Complete Enrollment</button>
-          </form>
-        </ModalWrapper>
-      )}
+      {/* Pay Monthly SaaS Dues Modal */}
+      {showPayMonthlyModal && (
+        <ModalWrapper 
+          title="💳 Pay Monthly Software Subscription Dues" 
+          onClose={() => setShowPayMonthlyModal(false)} 
+          darkMode={darkMode}
+        >
+          <form onSubmit={handleRecordMonthlyPayment} className="space-y-4">
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Select Campus / School *</label>
+              <select 
+                required 
+                value={monthlyPaymentForm.schoolId} 
+                onChange={e => {
+                  const sch = schools.find((s: any) => s.id === e.target.value);
+                  const defaultAmt = sch ? (sch.monthlyFee || (sch.packagePlan === 'Enterprise' ? 15000 : sch.packagePlan === 'Standard' ? 10000 : 5000)) : "";
+                  setMonthlyPaymentForm({ 
+                    ...monthlyPaymentForm, 
+                    schoolId: e.target.value, 
+                    amount: defaultAmt.toString() 
+                  });
+                }} 
+                className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
+              >
+                <option value="">-- Choose Campus Branch --</option>
+                {schools.map((s: any) => (
+                  <option key={s.id} value={s.id}>
+                    🏫 {s.name} ({s.code}) - {s.paymentStatus === 'PAID' ? '🟢 Paid' : '🔴 Unpaid'}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-      {/* Record Fee Payment Modal */}
-      {showCollectFeeModal && (
-        <ModalWrapper title="Record Fee Payment" onClose={() => setShowCollectFeeModal(false)} darkMode={darkMode}>
-          <form onSubmit={handleCollectFee} className="space-y-4">
-            <select required value={feeForm.studentId} onChange={e => { const std = students.find((s: any) => s.id === e.target.value); setFeeForm({ ...feeForm, studentId: e.target.value, amount: std ? std.pendingFee.toString() : "" }); }} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-              <option value="">-- Choose Student --</option>
-              {students.map((s: any) => <option key={s.id} value={s.id}>{s.name} ({s.rollNo}) - Due: ₨ {s.pendingFee}</option>)}
-            </select>
-            <input type="number" required placeholder="Amount Paid (PKR)" value={feeForm.amount} onChange={e => setFeeForm({ ...feeForm, amount: e.target.value })} className={`w-full p-3 rounded-xl border text-xs ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} />
-            <button type="submit" className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-xs">Confirm Payment & Issue Receipt</button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Amount Paid (₨) *</label>
+                <input 
+                  type="number" 
+                  required 
+                  placeholder="e.g. 15000" 
+                  value={monthlyPaymentForm.amount} 
+                  onChange={e => setMonthlyPaymentForm({ ...monthlyPaymentForm, amount: e.target.value })} 
+                  className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Billing Month *</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="e.g. September 2026" 
+                  value={monthlyPaymentForm.forMonth} 
+                  onChange={e => setMonthlyPaymentForm({ ...monthlyPaymentForm, forMonth: e.target.value })} 
+                  className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Payment Method</label>
+                <select 
+                  value={monthlyPaymentForm.paymentMethod} 
+                  onChange={e => setMonthlyPaymentForm({ ...monthlyPaymentForm, paymentMethod: e.target.value })}
+                  className={`w-full p-3 rounded-xl border text-xs font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}
+                >
+                  <option value="Bank Transfer">🏦 Bank Online Transfer</option>
+                  <option value="JazzCash / EasyPaisa">📱 JazzCash / EasyPaisa</option>
+                  <option value="Cash">💵 Cash Deposit</option>
+                  <option value="Cheque">📜 Cheque</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Reference ID / Trx ID</label>
+                <input 
+                  type="text" 
+                  placeholder="e.g. TRX-998812" 
+                  value={monthlyPaymentForm.referenceId} 
+                  onChange={e => setMonthlyPaymentForm({ ...monthlyPaymentForm, referenceId: e.target.value })} 
+                  className={`w-full p-3 rounded-xl border text-xs font-mono outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">Notes / Remarks</label>
+              <textarea 
+                rows={2}
+                placeholder="Optional payment comments..." 
+                value={monthlyPaymentForm.notes} 
+                onChange={e => setMonthlyPaymentForm({ ...monthlyPaymentForm, notes: e.target.value })} 
+                className={`w-full p-3 rounded-xl border text-xs outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+              />
+            </div>
+
+            <button type="submit" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-3 rounded-xl text-xs shadow-md shadow-emerald-500/20 transition-all">
+              ✅ Record Monthly Payment & Update Campus Status to PAID
+            </button>
           </form>
         </ModalWrapper>
       )}
