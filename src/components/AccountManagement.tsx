@@ -328,7 +328,7 @@ export default function AccountManagement() {
                 <input 
                   type="text" 
                   value={newUser.madrassaName}
-                  placeholder="e.g. Jamia Arabia Siraj-ul-Uloom"
+                  placeholder="e.g. Modern School Academy"
                   onChange={(e) => setNewUser({...newUser, madrassaName: e.target.value})}
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" 
                 />

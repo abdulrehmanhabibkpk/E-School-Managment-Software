@@ -166,12 +166,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   useEffect(() => {
     const loadSyncedMmsData = () => {
       try {
-        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Siraj-ul-Uloom Arabic University Mansehra", "Apex Model School", "Oasis Girls College"];
+        const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
         const savedSchools = localStorage.getItem("mms_schools");
         if (savedSchools) {
           const parsed = JSON.parse(savedSchools);
           if (Array.isArray(parsed)) {
-            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name));
+            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name) && !dummyCodes.includes(s.code) && !dummyCodes.includes(s.registrationPrefix));
             setSchools(prev => JSON.stringify(prev) === JSON.stringify(clean) ? prev : clean);
           }
         }
@@ -199,16 +200,27 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     // Firestore real-time listener for "schools" collection (e.g. comp_1)
     const unsubSchools = onSnapshot(collection(db, "schools"), (snapshot) => {
       if (!snapshot.empty) {
-        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Siraj-ul-Uloom Arabic University Mansehra", "Apex Model School", "Oasis Girls College"];
+        const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
+        let defaultSchoolName = "limo school";
+        try {
+          const sysStr = localStorage.getItem("system_settings");
+          if (sysStr) {
+            const sys = JSON.parse(sysStr);
+            if (sys.jamiaName) defaultSchoolName = sys.jamiaName;
+          }
+        } catch (e) {}
+
         const firestoreList: any[] = [];
         snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data() || {};
-          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? "Modern School Academy" : `Campus ${docSnap.id}`);
-          if (!dummyNames.includes(name)) {
+          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? defaultSchoolName : `Campus ${docSnap.id}`);
+          const code = data.code || docSnap.id.toUpperCase();
+          if (!dummyNames.includes(name) && !dummyCodes.includes(code)) {
             firestoreList.push({
               id: docSnap.id,
               name,
-              code: data.code || docSnap.id.toUpperCase(),
+              code: code,
               type: data.type || "Registered Campus",
               city: data.city || "Pakistan",
               principal: data.principal || data.contactPerson || "Principal / Administrator",
@@ -234,8 +246,10 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           setSchools(prev => JSON.stringify(prev) === JSON.stringify(firestoreList) ? prev : firestoreList);
         }
       }
-    }, (error) => {
-      console.warn("Firestore schools listener:", error);
+    }, (error: any) => {
+      if (error?.code !== 'resource-exhausted') {
+        console.warn("Firestore schools listener:", error?.message || error);
+      }
     });
 
     window.addEventListener('storage_updated', loadSyncedMmsData);

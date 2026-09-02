@@ -57,13 +57,55 @@ export function sanitizeLocalStorage() {
       if (changed) {
         console.warn(`Sanitized ${key}: Fixed duplicates or missing IDs.`);
         localStorage.setItem(key, JSON.stringify(cleanedData));
-        // We don't trigger storage_updated here to avoid loops, 
-        // but App.tsx will continue once it finishes.
       }
     } catch (e) {
       console.error(`Failed to sanitize key "${key}":`, e);
     }
   });
+
+  // Purge any dummy mock schools from localStorage mms_schools
+  try {
+    const dummySchoolNames = [
+      "Siraj-ul-Uloom Academy",
+      "Siraj-ul-Uloom Arabic University Mansehra",
+      "Apex Model School",
+      "Oasis Girls College"
+    ];
+    const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
+    
+    // Get real current school name from system_settings if configured
+    let currentJamiaName = "";
+    try {
+      const sysStr = localStorage.getItem("system_settings");
+      if (sysStr) {
+        const sys = JSON.parse(sysStr);
+        if (sys.jamiaName) currentJamiaName = sys.jamiaName;
+      }
+    } catch (e) {}
+
+    const savedSchools = localStorage.getItem("mms_schools");
+    if (savedSchools) {
+      const parsed = JSON.parse(savedSchools);
+      if (Array.isArray(parsed)) {
+        const filtered = parsed.filter((s: any) => {
+          if (!s || !s.name) return false;
+          if (dummySchoolNames.includes(s.name) || dummyCodes.includes(s.code) || dummyCodes.includes(s.registrationPrefix)) {
+            return false;
+          }
+          // If the school is "Modern School Academy" but the user's real school is configured as something else (e.g. "limo school")
+          if (currentJamiaName && currentJamiaName !== "Modern School Academy" && s.name === "Modern School Academy") {
+            return false;
+          }
+          return true;
+        });
+
+        if (filtered.length !== parsed.length) {
+          localStorage.setItem("mms_schools", JSON.stringify(filtered));
+          totalFixed += (parsed.length - filtered.length);
+        }
+      }
+    }
+  } catch (e) {}
 
   if (totalFixed > 0) {
     console.log(`Sanitization complete. Fixed ${totalFixed} items.`);

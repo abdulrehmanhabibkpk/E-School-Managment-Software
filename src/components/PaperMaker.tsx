@@ -131,15 +131,10 @@ export default function PaperMaker({ onBack }: PaperMakerProps) {
 
   const [systemSettings] = useState(() => {
     const saved = localStorage.getItem('system_settings');
-    const defaultName = 'Siraj-ul-Uloom Arabic University Mansehra';
     const parsed = saved ? JSON.parse(saved) : {
-      jamiaName: defaultName,
+      jamiaName: 'limo school',
       monogram: ''
     };
-    if (!parsed.jamiaName || parsed.jamiaName.match(/[\u0600-\u06FF]/)) {
-        parsed.jamiaName = defaultName;
-        localStorage.setItem('system_settings', JSON.stringify(parsed));
-    }
     return parsed;
   });
 

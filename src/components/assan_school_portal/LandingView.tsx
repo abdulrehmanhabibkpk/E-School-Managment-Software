@@ -85,169 +85,145 @@ export const LandingView: React.FC<{
   const [hasSearchedResult, setHasSearchedResult] = useState(false);
   const [currentResultData, setCurrentResultData] = useState<any>(null);
 
-  // Sync real schools, classes, and exam terms from Firebase Firestore + LocalStorage
+  // Sync real schools, classes, and exam terms from LocalStorage + Firebase Firestore
   React.useEffect(() => {
     let isMounted = true;
 
-    const loadRealPortalData = async () => {
+    const loadPortalData = async () => {
       let schools: any[] = [];
       let classesSet = new Set<string>();
       let examsSet = new Set<string>();
 
+      const DUMMY_NAMES = [
+        "Siraj-ul-Uloom Academy",
+        "Siraj-ul-Uloom Arabic University Mansehra",
+        "Apex Model School",
+        "Oasis Girls College"
+      ];
+      const DUMMY_CODES = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
+
+      // 1. First sync immediately from LocalStorage for instant UI and zero latency
       try {
-        // 1. System settings & default school from Firestore & LocalStorage
         let sys: any = {};
         try {
-          const sysDoc = await getDoc(doc(db, 'state', 'system_settings'));
-          if (sysDoc.exists() && sysDoc.data()?.data) sys = sysDoc.data().data;
+          const sysStr = localStorage.getItem("system_settings");
+          if (sysStr) sys = JSON.parse(sysStr);
         } catch (e) {}
-        if (!sys.registrationPrefix) {
-          try {
-            const sysStr = localStorage.getItem("system_settings");
-            if (sysStr) sys = JSON.parse(sysStr);
-          } catch (e) {}
-        }
-        const sysPrefix = sys.registrationPrefix || "MSA-01511";
-        const sysName = sys.jamiaName || "Modern School Academy";
+        const sysPrefix = sys.registrationPrefix || "MSA-";
+        const sysName = sys.jamiaName || "limo school";
         schools.push({ id: "main_sys", name: sysName, prefix: sysPrefix, code: sysPrefix });
 
-        // 2. Fetch schools from Firestore 'schools' collection
-        try {
-          const schoolsSnap = await getDocs(collection(db, 'schools'));
-          schoolsSnap.forEach((d) => {
-            const data = d.data();
-            const code = data.code || data.registrationPrefix || d.id;
-            const name = data.name || data.schoolName || 'Registered School';
-            if (!schools.some(s => s.id === d.id || s.prefix === code)) {
-              schools.push({ id: d.id, name, prefix: code, code });
-            }
-          });
-        } catch (e) {}
-
-        // 3. Fetch schools from Firestore 'state/mms_schools' & localStorage
-        try {
-          const mmsDoc = await getDoc(doc(db, 'state', 'mms_schools'));
-          if (mmsDoc.exists() && Array.isArray(mmsDoc.data()?.data)) {
-            mmsDoc.data().data.forEach((s: any) => {
-              const code = s.code || s.registrationPrefix || s.id;
-              if (!schools.some(item => item.id === s.id || item.prefix === code)) {
-                schools.push({ id: s.id || code, name: s.name, prefix: code, code });
-              }
-            });
-          }
-        } catch (e) {}
-
-        try {
-          const mmsStr = localStorage.getItem("mms_schools");
-          if (mmsStr) {
+        const mmsStr = localStorage.getItem("mms_schools");
+        if (mmsStr) {
+          try {
             const mms = JSON.parse(mmsStr);
             if (Array.isArray(mms)) {
               mms.forEach((s: any) => {
-                const code = s.code || s.registrationPrefix || s.id;
-                if (!schools.some(item => item.id === s.id || item.prefix === code)) {
+                if (!s || !s.name) return;
+                if (DUMMY_NAMES.includes(s.name) || DUMMY_CODES.includes(s.code) || DUMMY_CODES.includes(s.prefix) || DUMMY_CODES.includes(s.registrationPrefix)) return;
+                if (s.name === sysName || (sysName !== "Modern School Academy" && s.name === "Modern School Academy")) return;
+                const code = s.code || s.registrationPrefix || s.prefix || s.id;
+                if (!schools.some(item => item.id === s.id || item.prefix === code || item.name === s.name)) {
                   schools.push({ id: s.id || code, name: s.name, prefix: code, code });
                 }
               });
             }
-          }
-        } catch (e) {}
+          } catch (e) {}
+        }
 
-        // 4. Fetch classes from Firestore & LocalStorage
-        try {
-          const gDoc1 = await getDoc(doc(db, 'state', 'grades_list'));
-          if (gDoc1.exists() && Array.isArray(gDoc1.data()?.data)) {
-            gDoc1.data().data.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
+        const gradesStr = localStorage.getItem("grades_list") || localStorage.getItem("grades");
+        if (gradesStr) {
+          const arr = JSON.parse(gradesStr);
+          if (Array.isArray(arr)) {
+            arr.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
           }
-          const gDoc2 = await getDoc(doc(db, 'state', 'grades'));
-          if (gDoc2.exists() && Array.isArray(gDoc2.data()?.data)) {
-            gDoc2.data().data.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
-          }
-        } catch (e) {}
+        }
 
-        try {
-          const gradesStr = localStorage.getItem("grades_list") || localStorage.getItem("grades");
-          if (gradesStr) {
-            const arr = JSON.parse(gradesStr);
-            if (Array.isArray(arr)) {
-              arr.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
-            }
+        const examsStr = localStorage.getItem("exams");
+        if (examsStr) {
+          const arr = JSON.parse(examsStr);
+          if (Array.isArray(arr)) {
+            arr.forEach((ex: any) => examsSet.add(typeof ex === 'string' ? ex : (ex?.title || ex?.name)));
           }
-        } catch (e) {}
+        }
 
-        // 5. Fetch exams from Firestore & LocalStorage
-        try {
-          const exDoc = await getDoc(doc(db, 'state', 'exams'));
-          if (exDoc.exists() && Array.isArray(exDoc.data()?.data)) {
-            exDoc.data().data.forEach((ex: any) => examsSet.add(typeof ex === 'string' ? ex : (ex?.title || ex?.name)));
-          }
-        } catch (e) {}
-
-        try {
-          const examsStr = localStorage.getItem("exams");
-          if (examsStr) {
-            const arr = JSON.parse(examsStr);
-            if (Array.isArray(arr)) {
-              arr.forEach((ex: any) => examsSet.add(typeof ex === 'string' ? ex : (ex?.title || ex?.name)));
-            }
-          }
-        } catch (e) {}
-
-        // 6. Fetch results batches from Firestore & LocalStorage to discover published classes & exams
-        try {
-          const resDoc = await getDoc(doc(db, 'state', 'all_exam_results'));
-          if (resDoc.exists() && Array.isArray(resDoc.data()?.data)) {
-            resDoc.data().data.forEach((r: any) => {
+        const resultsStr = localStorage.getItem("all_exam_results");
+        if (resultsStr) {
+          const arr = JSON.parse(resultsStr);
+          if (Array.isArray(arr)) {
+            arr.forEach((r: any) => {
               if (r?.className) classesSet.add(r.className);
               if (r?.examType) examsSet.add(r.examType);
             });
           }
-        } catch (e) {}
+        }
+      } catch (e) {}
 
-        try {
-          const resultsStr = localStorage.getItem("all_exam_results");
-          if (resultsStr) {
-            const arr = JSON.parse(resultsStr);
-            if (Array.isArray(arr)) {
-              arr.forEach((r: any) => {
-                if (r?.className) classesSet.add(r.className);
-                if (r?.examType) examsSet.add(r.examType);
-              });
-            }
-          }
-        } catch (e) {}
+      // Apply initial LocalStorage data
+      if (isMounted) {
+        setSchoolsList(schools);
+        if (schools.length > 0) {
+          setResultSearchSchool(schools[0].prefix);
+        }
+        const classList = Array.from(classesSet).filter(Boolean);
+        if (classList.length > 0) {
+          setAvailableClasses(classList);
+          setResultSearchClass(prev => (prev && classList.includes(prev)) ? prev : classList[0]);
+        } else {
+          setAvailableClasses(["Class 10 (Matric)", "Class 9 (Matric)", "Class 8", "Class 7", "Class 6", "Class 5"]);
+        }
 
-        if (isMounted) {
-          setSchoolsList(schools);
-          if (schools.length > 0 && !resultSearchSchool) {
-            setResultSearchSchool(schools[0].prefix);
-          }
+        const examList = Array.from(examsSet).filter(Boolean);
+        if (examList.length > 0) {
+          setAvailableExams(examList);
+          setResultSearchExam(prev => (prev && examList.includes(prev)) ? prev : examList[0]);
+        } else {
+          setAvailableExams(["Annual Examination 2026", "First Term Exam 2026", "Mid Term Exam 2026"]);
+        }
+      }
 
-          const classList = Array.from(classesSet).filter(Boolean);
-          if (classList.length > 0) {
-            setAvailableClasses(classList);
-            setResultSearchClass(prev => (prev && classList.includes(prev)) ? prev : classList[0]);
-          } else {
-            setAvailableClasses(["Class 10 (Matric)", "Class 9 (Matric)", "Class 8", "Class 7", "Class 6", "Class 5"]);
-            setResultSearchClass("Class 10 (Matric)");
-          }
-
-          const examList = Array.from(examsSet).filter(Boolean);
-          if (examList.length > 0) {
-            setAvailableExams(examList);
-            setResultSearchExam(prev => (prev && examList.includes(prev)) ? prev : examList[0]);
-          } else {
-            setAvailableExams(["Annual Examination 2026", "First Term Exam 2026", "Mid Term Exam 2026"]);
-            setResultSearchExam("Annual Examination 2026");
+      // 2. Fetch fresh Firestore updates in background safely without blocking
+      try {
+        let currentSysName = schools[0]?.name || "limo school";
+        const sysDoc = await getDoc(doc(db, 'state', 'system_settings'));
+        if (sysDoc.exists() && sysDoc.data()?.data) {
+          const cloudSys = sysDoc.data().data;
+          const cloudPrefix = cloudSys.registrationPrefix || "MSA-";
+          const cloudName = cloudSys.jamiaName || "limo school";
+          currentSysName = cloudName;
+          if (schools.length > 0 && schools[0].id === 'main_sys') {
+            schools[0].name = cloudName;
+            schools[0].prefix = cloudPrefix;
+            schools[0].code = cloudPrefix;
           }
         }
-      } catch (err) {
-        console.error("Error syncing Firestore portal data:", err);
+
+        const mmsDoc = await getDoc(doc(db, 'state', 'mms_schools'));
+        if (mmsDoc.exists() && Array.isArray(mmsDoc.data()?.data)) {
+          mmsDoc.data().data.forEach((s: any) => {
+            if (!s || !s.name) return;
+            if (DUMMY_NAMES.includes(s.name) || DUMMY_CODES.includes(s.code) || DUMMY_CODES.includes(s.prefix) || DUMMY_CODES.includes(s.registrationPrefix)) return;
+            if (s.name === currentSysName || (currentSysName !== "Modern School Academy" && s.name === "Modern School Academy")) return;
+            const code = s.code || s.registrationPrefix || s.prefix || s.id;
+            if (!schools.some(item => item.id === s.id || item.prefix === code || item.name === s.name)) {
+              schools.push({ id: s.id || code, name: s.name, prefix: code, code });
+            }
+          });
+        }
+
+        if (isMounted && schools.length > 0) {
+          setSchoolsList([...schools]);
+        }
+      } catch (err: any) {
+        if (err?.code !== 'resource-exhausted') {
+          console.warn("Background portal data sync notice:", err?.message || err);
+        }
       }
     };
 
-    loadRealPortalData();
+    loadPortalData();
     return () => { isMounted = false; };
-  }, [activeTab]);
+  }, []);
 
   const handleSearchResult = async (rollToSearch?: string, classToSearch?: string, examToSearch?: string, schoolToSearch?: string) => {
     const targetRoll = (rollToSearch !== undefined ? rollToSearch : resultRollNoInput).trim();

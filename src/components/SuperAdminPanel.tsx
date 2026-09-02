@@ -108,9 +108,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   // Helper to load or build real registered school
   const loadRealRegisteredSchool = () => {
-    let jamiaName = "Modern School Academy";
+    let jamiaName = "limo school";
     let phone = "0319-5702823";
-    let code = "SCH-001";
+    let code = "MSA-001";
     let principal = "Principal / Administrator";
 
     try {
@@ -164,14 +164,20 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       ]
     };
 
-    const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+    const dummyNames = ["Siraj-ul-Uloom Academy", "Siraj-ul-Uloom Arabic University Mansehra", "Apex Model School", "Oasis Girls College"];
+    const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
     const saved = localStorage.getItem("mms_schools");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
           // Filter out legacy dummy mock schools
-          const filtered = parsed.filter((s: any) => !dummyNames.includes(s.name));
+          const filtered = parsed.filter((s: any) => {
+            if (!s || !s.name) return false;
+            if (dummyNames.includes(s.name) || dummyCodes.includes(s.code) || dummyCodes.includes(s.registrationPrefix)) return false;
+            if (jamiaName !== "Modern School Academy" && s.name === "Modern School Academy") return false;
+            return true;
+          });
           if (filtered.length > 0) {
             const synced = filtered.map((s: any) => {
               if (s.id === "sch_1" || s.id === "comp_1") {
@@ -304,12 +310,13 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
     const loadSyncedMmsData = () => {
       try {
-        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Siraj-ul-Uloom Arabic University Mansehra", "Apex Model School", "Oasis Girls College"];
+        const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
         const savedSchools = localStorage.getItem("mms_schools");
         if (savedSchools) {
           const parsed = JSON.parse(savedSchools);
           if (Array.isArray(parsed)) {
-            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name));
+            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name) && !dummyCodes.includes(s.code) && !dummyCodes.includes(s.registrationPrefix));
             setSchools(prev => JSON.stringify(prev) === JSON.stringify(clean) ? prev : clean);
           }
         }
@@ -347,16 +354,27 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     // Firestore real-time listener for "schools" collection (e.g. comp_1, comp_2)
     const unsubSchools = onSnapshot(collection(db, "schools"), (snapshot) => {
       if (!snapshot.empty) {
-        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Siraj-ul-Uloom Arabic University Mansehra", "Apex Model School", "Oasis Girls College"];
+        const dummyCodes = ["SUU-01", "AMH-02", "OGA-03", "MSA-015111"];
+        let defaultSchoolName = "limo school";
+        try {
+          const sysStr = localStorage.getItem("system_settings");
+          if (sysStr) {
+            const sys = JSON.parse(sysStr);
+            if (sys.jamiaName) defaultSchoolName = sys.jamiaName;
+          }
+        } catch (e) {}
+
         const firestoreList: any[] = [];
         snapshot.docs.forEach((docSnap) => {
           const data = docSnap.data() || {};
-          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? "Modern School Academy" : `Campus ${docSnap.id}`);
-          if (!dummyNames.includes(name)) {
+          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? defaultSchoolName : `Campus ${docSnap.id}`);
+          const code = data.code || docSnap.id.toUpperCase();
+          if (!dummyNames.includes(name) && !dummyCodes.includes(code)) {
             firestoreList.push({
               id: docSnap.id,
               name,
-              code: data.code || docSnap.id.toUpperCase(),
+              code: code,
               type: data.type || "Registered Campus",
               city: data.city || "Pakistan",
               principal: data.principal || data.contactPerson || "Principal / Administrator",
@@ -384,8 +402,10 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           setSchools(prev => JSON.stringify(prev) === JSON.stringify(firestoreList) ? prev : firestoreList);
         }
       }
-    }, (error) => {
-      console.warn("Firestore schools listener:", error);
+    }, (error: any) => {
+      if (error?.code !== 'resource-exhausted') {
+        console.warn("Firestore schools listener:", error?.message || error);
+      }
     });
 
     // Firestore real-time listener for global state/students & state/mms_students
@@ -396,7 +416,11 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           setStudents(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
-    }, (err) => console.warn("Firestore mms_students listener error:", err));
+    }, (err: any) => {
+      if (err?.code !== 'resource-exhausted') {
+        console.warn("Firestore mms_students listener:", err?.message || err);
+      }
+    });
 
     // Firestore real-time listener for global state/mms_teachers & state/staff
     const unsubTeachers = onSnapshot(doc(db, "state", "mms_teachers"), (docSnap) => {
@@ -406,7 +430,11 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
           setTeachers(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
         }
       }
-    }, (err) => console.warn("Firestore mms_teachers listener error:", err));
+    }, (err: any) => {
+      if (err?.code !== 'resource-exhausted') {
+        console.warn("Firestore mms_teachers listener:", err?.message || err);
+      }
+    });
 
     window.addEventListener('storage_updated', handleStorageUpdate);
     return () => {

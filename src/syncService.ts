@@ -64,10 +64,46 @@ const SYNC_KEYS = [
   'mms_parents',
   'mms_students',
   'mms_teachers',
-  'mms_finances'
+  'mms_finances',
+  'mms_school_alerts',
+  'school_projects',
+  'school_project_tasks',
+  'study_materials',
+  'school_timetables',
+  'transport_fuel',
+  'transport_routes',
+  'teaching_exams',
+  'teaching_online_classes',
+  'teaching_timetable',
+  'staff_attendance',
+  'attendance_records',
+  'qr_manual_attendance_logs',
+  'message_logs',
+  'marksheet_jamia_seal',
+  'marksheet_mohtamim_sig',
+  'marksheet_nazim_sig'
 ];
 
 const writeDebounceTimers: Record<string, any> = {};
+
+let isQuotaExceeded = false;
+let quotaResetTimeout: any = null;
+
+function markQuotaExceeded() {
+  if (!isQuotaExceeded) {
+    isQuotaExceeded = true;
+    console.warn('[Firebase Sync] Quota limit reached on Spark tier. Pausing live Firestore sync; all operations running safely offline in LocalStorage.');
+    stopRealTimeSync();
+    if (quotaResetTimeout) clearTimeout(quotaResetTimeout);
+    // Auto-retry live sync after 10 minutes
+    quotaResetTimeout = setTimeout(() => {
+      isQuotaExceeded = false;
+      if (auth.currentUser) {
+        startRealTimeSync();
+      }
+    }, 10 * 60 * 1000);
+  }
+}
 
 /**
  * Update a specific key in local storage and write to Firestore.
@@ -85,8 +121,8 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
   
   window.dispatchEvent(new Event('storage_updated'));
 
-  // Sync to Firestore if signed in (debounced to avoid burning quota)
-  if (auth.currentUser) {
+  // Sync to Firestore if signed in and quota is not currently exhausted
+  if (auth.currentUser && !isQuotaExceeded) {
     if (writeDebounceTimers[key]) {
       clearTimeout(writeDebounceTimers[key]);
     }
@@ -114,10 +150,13 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
           updatedAt: new Date().toISOString(),
           schoolId: schoolId || 'global'
         });
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota exceeded')) {
+          markQuotaExceeded();
+        }
         handleFirestoreError(error, OperationType.WRITE, `state/${key}`);
       }
-    }, 1500);
+    }, 2000);
   }
   return true;
 }
@@ -126,7 +165,7 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
  * Pull all data from Firestore to local storage.
  */
 export async function pullGlobalData(): Promise<void> {
-  if (auth.currentUser) {
+  if (auth.currentUser && !isQuotaExceeded) {
     try {
       // 1. Pull global state
       const globalColRef = collection(db, 'state');
@@ -162,7 +201,10 @@ export async function pullGlobalData(): Promise<void> {
           }
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota exceeded')) {
+        markQuotaExceeded();
+      }
       handleFirestoreError(error, OperationType.LIST, 'state');
     }
   }
@@ -177,6 +219,7 @@ let unsubscribeSync: (() => void)[] = [];
  */
 export function startRealTimeSync() {
   stopRealTimeSync();
+  if (isQuotaExceeded) return;
 
   if (auth.currentUser) {
     try {
@@ -202,7 +245,11 @@ export function startRealTimeSync() {
           }
         });
       }, (error) => {
-        console.warn('[Firebase Listener Warning]: Global sync limit reached or offline:', error?.message || error);
+        if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota exceeded')) {
+          markQuotaExceeded();
+        } else {
+          console.warn('[Firebase Listener Warning]: Global sync limit reached or offline:', error?.message || error);
+        }
       });
       unsubscribeSync.push(unsubGlobal);
 
@@ -230,7 +277,11 @@ export function startRealTimeSync() {
             }
           });
         }, (error) => {
-          console.warn('[Firebase Listener Warning]: School sync limit reached or offline:', error?.message || error);
+          if (error?.code === 'resource-exhausted' || error?.message?.includes('Quota exceeded')) {
+            markQuotaExceeded();
+          } else {
+            console.warn('[Firebase Listener Warning]: School sync limit reached or offline:', error?.message || error);
+          }
         });
         unsubscribeSync.push(unsubSchool);
       }
@@ -242,7 +293,7 @@ export function startRealTimeSync() {
     const handleLocalUpdate = (e: any) => {
       const { key, value, isRemoval } = e.detail || {};
       if (key && SYNC_KEYS.includes(key) && !isRemoval) {
-        if (auth.currentUser) {
+        if (auth.currentUser && !isQuotaExceeded) {
           updateCentralKey(key, value).catch(err => {
             console.warn(`Deferred sync error for key ${key}:`, err?.message || err);
           });
