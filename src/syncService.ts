@@ -67,6 +67,8 @@ const SYNC_KEYS = [
   'mms_finances'
 ];
 
+const writeDebounceTimers: Record<string, any> = {};
+
 /**
  * Update a specific key in local storage and write to Firestore.
  */
@@ -83,32 +85,39 @@ export async function updateCentralKey(key: string, value: any): Promise<boolean
   
   window.dispatchEvent(new Event('storage_updated'));
 
-  // Sync to Firestore if signed in
+  // Sync to Firestore if signed in (debounced to avoid burning quota)
   if (auth.currentUser) {
-    try {
-      let rawData = value;
-      if (typeof value === 'string') {
-        try {
-          rawData = JSON.parse(value);
-        } catch (e) {
-          // If not a valid JSON string, keep as string
-        }
-      }
-
-      // Multi-tenancy check
-      const schoolId = localStorage.getItem('active_school_id');
-      const docPath = schoolId ? `schools/${schoolId}/state/${key}` : `state/${key}`;
-      const docRef = doc(db, docPath);
-
-      await setDoc(docRef, {
-        key: key,
-        data: rawData,
-        updatedAt: new Date().toISOString(),
-        schoolId: schoolId || 'global'
-      });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.WRITE, `state/${key}`);
+    if (writeDebounceTimers[key]) {
+      clearTimeout(writeDebounceTimers[key]);
     }
+
+    writeDebounceTimers[key] = setTimeout(async () => {
+      delete writeDebounceTimers[key];
+      try {
+        let rawData = value;
+        if (typeof value === 'string') {
+          try {
+            rawData = JSON.parse(value);
+          } catch (e) {
+            // If not a valid JSON string, keep as string
+          }
+        }
+
+        // Multi-tenancy check
+        const schoolId = localStorage.getItem('active_school_id');
+        const docPath = schoolId ? `schools/${schoolId}/state/${key}` : `state/${key}`;
+        const docRef = doc(db, docPath);
+
+        await setDoc(docRef, {
+          key: key,
+          data: rawData,
+          updatedAt: new Date().toISOString(),
+          schoolId: schoolId || 'global'
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, `state/${key}`);
+      }
+    }, 1500);
   }
   return true;
 }
@@ -127,7 +136,11 @@ export async function pullGlobalData(): Promise<void> {
         if (docData && docData.key && docData.data !== undefined) {
           const key = docData.key;
           const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
-          originalSetItem.call(localStorage, key, valString);
+          if (originalSetItem) {
+            originalSetItem.call(localStorage, key, valString);
+          } else {
+            localStorage.setItem(key, valString);
+          }
         }
       });
 
@@ -141,7 +154,11 @@ export async function pullGlobalData(): Promise<void> {
           if (docData && docData.key && docData.data !== undefined) {
             const key = docData.key;
             const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
-            originalSetItem.call(localStorage, key, valString);
+            if (originalSetItem) {
+              originalSetItem.call(localStorage, key, valString);
+            } else {
+              localStorage.setItem(key, valString);
+            }
           }
         });
       }
@@ -162,33 +179,10 @@ export function startRealTimeSync() {
   stopRealTimeSync();
 
   if (auth.currentUser) {
-    // 1. Global listener
-    const globalColRef = collection(db, 'state');
-    const unsubGlobal = onSnapshot(globalColRef, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added' || change.type === 'modified') {
-          const docData = change.doc.data();
-          if (docData && docData.key && docData.data !== undefined) {
-            const key = docData.key;
-            const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
-            const currentLocal = localStorage.getItem(key);
-            if (currentLocal !== valString) {
-              originalSetItem(key, valString);
-              window.dispatchEvent(new Event('storage_updated'));
-            }
-          }
-        }
-      });
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'state');
-    });
-    unsubscribeSync.push(unsubGlobal);
-
-    // 2. School-specific listener
-    const schoolId = localStorage.getItem('active_school_id');
-    if (schoolId) {
-      const schoolColRef = collection(db, `schools/${schoolId}/state`);
-      const unsubSchool = onSnapshot(schoolColRef, (snapshot) => {
+    try {
+      // 1. Global listener
+      const globalColRef = collection(db, 'state');
+      const unsubGlobal = onSnapshot(globalColRef, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
           if (change.type === 'added' || change.type === 'modified') {
             const docData = change.doc.data();
@@ -197,16 +191,51 @@ export function startRealTimeSync() {
               const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
               const currentLocal = localStorage.getItem(key);
               if (currentLocal !== valString) {
-                originalSetItem(key, valString);
+                if (originalSetItem) {
+                  originalSetItem.call(localStorage, key, valString);
+                } else {
+                  localStorage.setItem(key, valString);
+                }
                 window.dispatchEvent(new Event('storage_updated'));
               }
             }
           }
         });
       }, (error) => {
-        handleFirestoreError(error, OperationType.GET, `schools/${schoolId}/state`);
+        console.warn('[Firebase Listener Warning]: Global sync limit reached or offline:', error?.message || error);
       });
-      unsubscribeSync.push(unsubSchool);
+      unsubscribeSync.push(unsubGlobal);
+
+      // 2. School-specific listener
+      const schoolId = localStorage.getItem('active_school_id');
+      if (schoolId) {
+        const schoolColRef = collection(db, `schools/${schoolId}/state`);
+        const unsubSchool = onSnapshot(schoolColRef, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const docData = change.doc.data();
+              if (docData && docData.key && docData.data !== undefined) {
+                const key = docData.key;
+                const valString = typeof docData.data === 'string' ? docData.data : JSON.stringify(docData.data);
+                const currentLocal = localStorage.getItem(key);
+                if (currentLocal !== valString) {
+                  if (originalSetItem) {
+                    originalSetItem.call(localStorage, key, valString);
+                  } else {
+                    localStorage.setItem(key, valString);
+                  }
+                  window.dispatchEvent(new Event('storage_updated'));
+                }
+              }
+            }
+          });
+        }, (error) => {
+          console.warn('[Firebase Listener Warning]: School sync limit reached or offline:', error?.message || error);
+        });
+        unsubscribeSync.push(unsubSchool);
+      }
+    } catch (err) {
+      console.warn("Could not attach Firestore real-time listeners:", err);
     }
     
     // Set up event listener for local changes to push to Cloud
@@ -215,7 +244,7 @@ export function startRealTimeSync() {
       if (key && SYNC_KEYS.includes(key) && !isRemoval) {
         if (auth.currentUser) {
           updateCentralKey(key, value).catch(err => {
-            console.error(`Deferred sync error for key ${key}:`, err);
+            console.warn(`Deferred sync error for key ${key}:`, err?.message || err);
           });
         }
       }

@@ -115,21 +115,16 @@ export default function TeachingManagement({ subView, onBack }: TeachingManageme
     const loadedStaff = localStorage.getItem('staff');
     if (loadedStaff) {
       try {
-        setStaff(JSON.parse(loadedStaff));
+        const parsed = JSON.parse(loadedStaff);
+        const dummyNames = ["Mr. Ahmed Khan", "Mr. Bilal Hassan", "Ms. Fatima Zahra", "Mr. Imran Ali", "Ms. Sana Malik"];
+        const cleanStaff = Array.isArray(parsed) ? parsed.filter((s: any) => !dummyNames.includes(s.name) && s.phone !== '---') : [];
+        setStaff(cleanStaff);
       } catch (e) {
         console.error(e);
+        setStaff([]);
       }
     } else {
-      // Fallbacks
-      const defaultStaff = [
-        { id: 'S-001', employeeId: 'S-001', name: 'Mr. Ahmed Khan', phone: '03001234567' },
-        { id: 'S-002', employeeId: 'S-002', name: 'Mr. Bilal Hassan', phone: '03007654321' },
-        { id: 'S-003', employeeId: 'S-003', name: 'Ms. Fatima Zahra', phone: '03009988776' },
-        { id: 'S-004', employeeId: 'S-004', name: 'Mr. Imran Ali', phone: '03112233445' },
-        { id: 'S-005', employeeId: 'S-005', name: 'Ms. Sana Malik', phone: '03225566778' }
-      ];
-      setStaff(defaultStaff);
-      localStorage.setItem('staff', JSON.stringify(defaultStaff));
+      setStaff([]);
     }
 
     // 2. Load Attendance Logs

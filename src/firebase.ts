@@ -83,8 +83,11 @@ export interface FirestoreErrorInfo {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errMsg = error instanceof Error ? error.message : String(error);
+  const errCode = (error as any)?.code || '';
+
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errMsg,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -94,6 +97,17 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
     operationType,
     path
   };
+
+  if (
+    errCode === 'resource-exhausted' || 
+    errCode === 'unavailable' || 
+    errMsg.includes('Quota exceeded') || 
+    errMsg.includes('resource-exhausted') ||
+    errMsg.includes('backoff')
+  ) {
+    console.warn(`[Firebase ${operationType.toUpperCase()}] Quota limit or network issue on ${path || 'path'}: Operating in offline local storage mode.`);
+    return;
+  }
+
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
 }

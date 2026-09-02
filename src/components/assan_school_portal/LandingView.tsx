@@ -73,89 +73,374 @@ export const LandingView: React.FC<{
   const [solutionsDropdownOpen, setSolutionsDropdownOpen] = useState(false);
 
   // Online Result Search States
-  const [resultSearchClass, setResultSearchClass] = useState('Class 10 (Matric)');
-  const [resultSearchExam, setResultSearchExam] = useState('Annual Examination 2026');
-  const [resultRollNoInput, setResultRollNoInput] = useState('101');
+  const [schoolsList, setSchoolsList] = useState<any[]>([]);
+  const [resultSearchSchool, setResultSearchSchool] = useState<string>('MSA-01511');
+  const [customSchoolPrefix, setCustomSchoolPrefix] = useState('');
+  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+  const [availableExams, setAvailableExams] = useState<string[]>([]);
+  const [resultSearchClass, setResultSearchClass] = useState<string>('All Classes');
+  const [resultSearchExam, setResultSearchExam] = useState<string>('All Exams');
+  const [resultRollNoInput, setResultRollNoInput] = useState('');
   const [isSearchingResult, setIsSearchingResult] = useState(false);
   const [hasSearchedResult, setHasSearchedResult] = useState(false);
   const [currentResultData, setCurrentResultData] = useState<any>(null);
 
-  const handleSearchResult = (rollToSearch?: string, classToSearch?: string, examToSearch?: string) => {
-    const targetRoll = (rollToSearch !== undefined ? rollToSearch : resultRollNoInput).trim() || '101';
+  // Sync real schools, classes, and exam terms from Firebase Firestore + LocalStorage
+  React.useEffect(() => {
+    let isMounted = true;
+
+    const loadRealPortalData = async () => {
+      let schools: any[] = [];
+      let classesSet = new Set<string>();
+      let examsSet = new Set<string>();
+
+      try {
+        // 1. System settings & default school from Firestore & LocalStorage
+        let sys: any = {};
+        try {
+          const sysDoc = await getDoc(doc(db, 'state', 'system_settings'));
+          if (sysDoc.exists() && sysDoc.data()?.data) sys = sysDoc.data().data;
+        } catch (e) {}
+        if (!sys.registrationPrefix) {
+          try {
+            const sysStr = localStorage.getItem("system_settings");
+            if (sysStr) sys = JSON.parse(sysStr);
+          } catch (e) {}
+        }
+        const sysPrefix = sys.registrationPrefix || "MSA-01511";
+        const sysName = sys.jamiaName || "Modern School Academy";
+        schools.push({ id: "main_sys", name: sysName, prefix: sysPrefix, code: sysPrefix });
+
+        // 2. Fetch schools from Firestore 'schools' collection
+        try {
+          const schoolsSnap = await getDocs(collection(db, 'schools'));
+          schoolsSnap.forEach((d) => {
+            const data = d.data();
+            const code = data.code || data.registrationPrefix || d.id;
+            const name = data.name || data.schoolName || 'Registered School';
+            if (!schools.some(s => s.id === d.id || s.prefix === code)) {
+              schools.push({ id: d.id, name, prefix: code, code });
+            }
+          });
+        } catch (e) {}
+
+        // 3. Fetch schools from Firestore 'state/mms_schools' & localStorage
+        try {
+          const mmsDoc = await getDoc(doc(db, 'state', 'mms_schools'));
+          if (mmsDoc.exists() && Array.isArray(mmsDoc.data()?.data)) {
+            mmsDoc.data().data.forEach((s: any) => {
+              const code = s.code || s.registrationPrefix || s.id;
+              if (!schools.some(item => item.id === s.id || item.prefix === code)) {
+                schools.push({ id: s.id || code, name: s.name, prefix: code, code });
+              }
+            });
+          }
+        } catch (e) {}
+
+        try {
+          const mmsStr = localStorage.getItem("mms_schools");
+          if (mmsStr) {
+            const mms = JSON.parse(mmsStr);
+            if (Array.isArray(mms)) {
+              mms.forEach((s: any) => {
+                const code = s.code || s.registrationPrefix || s.id;
+                if (!schools.some(item => item.id === s.id || item.prefix === code)) {
+                  schools.push({ id: s.id || code, name: s.name, prefix: code, code });
+                }
+              });
+            }
+          }
+        } catch (e) {}
+
+        // 4. Fetch classes from Firestore & LocalStorage
+        try {
+          const gDoc1 = await getDoc(doc(db, 'state', 'grades_list'));
+          if (gDoc1.exists() && Array.isArray(gDoc1.data()?.data)) {
+            gDoc1.data().data.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
+          }
+          const gDoc2 = await getDoc(doc(db, 'state', 'grades'));
+          if (gDoc2.exists() && Array.isArray(gDoc2.data()?.data)) {
+            gDoc2.data().data.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
+          }
+        } catch (e) {}
+
+        try {
+          const gradesStr = localStorage.getItem("grades_list") || localStorage.getItem("grades");
+          if (gradesStr) {
+            const arr = JSON.parse(gradesStr);
+            if (Array.isArray(arr)) {
+              arr.forEach((g: any) => classesSet.add(typeof g === 'string' ? g : g?.name));
+            }
+          }
+        } catch (e) {}
+
+        // 5. Fetch exams from Firestore & LocalStorage
+        try {
+          const exDoc = await getDoc(doc(db, 'state', 'exams'));
+          if (exDoc.exists() && Array.isArray(exDoc.data()?.data)) {
+            exDoc.data().data.forEach((ex: any) => examsSet.add(typeof ex === 'string' ? ex : (ex?.title || ex?.name)));
+          }
+        } catch (e) {}
+
+        try {
+          const examsStr = localStorage.getItem("exams");
+          if (examsStr) {
+            const arr = JSON.parse(examsStr);
+            if (Array.isArray(arr)) {
+              arr.forEach((ex: any) => examsSet.add(typeof ex === 'string' ? ex : (ex?.title || ex?.name)));
+            }
+          }
+        } catch (e) {}
+
+        // 6. Fetch results batches from Firestore & LocalStorage to discover published classes & exams
+        try {
+          const resDoc = await getDoc(doc(db, 'state', 'all_exam_results'));
+          if (resDoc.exists() && Array.isArray(resDoc.data()?.data)) {
+            resDoc.data().data.forEach((r: any) => {
+              if (r?.className) classesSet.add(r.className);
+              if (r?.examType) examsSet.add(r.examType);
+            });
+          }
+        } catch (e) {}
+
+        try {
+          const resultsStr = localStorage.getItem("all_exam_results");
+          if (resultsStr) {
+            const arr = JSON.parse(resultsStr);
+            if (Array.isArray(arr)) {
+              arr.forEach((r: any) => {
+                if (r?.className) classesSet.add(r.className);
+                if (r?.examType) examsSet.add(r.examType);
+              });
+            }
+          }
+        } catch (e) {}
+
+        if (isMounted) {
+          setSchoolsList(schools);
+          if (schools.length > 0 && !resultSearchSchool) {
+            setResultSearchSchool(schools[0].prefix);
+          }
+
+          const classList = Array.from(classesSet).filter(Boolean);
+          if (classList.length > 0) {
+            setAvailableClasses(classList);
+            setResultSearchClass(prev => (prev && classList.includes(prev)) ? prev : classList[0]);
+          } else {
+            setAvailableClasses(["Class 10 (Matric)", "Class 9 (Matric)", "Class 8", "Class 7", "Class 6", "Class 5"]);
+            setResultSearchClass("Class 10 (Matric)");
+          }
+
+          const examList = Array.from(examsSet).filter(Boolean);
+          if (examList.length > 0) {
+            setAvailableExams(examList);
+            setResultSearchExam(prev => (prev && examList.includes(prev)) ? prev : examList[0]);
+          } else {
+            setAvailableExams(["Annual Examination 2026", "First Term Exam 2026", "Mid Term Exam 2026"]);
+            setResultSearchExam("Annual Examination 2026");
+          }
+        }
+      } catch (err) {
+        console.error("Error syncing Firestore portal data:", err);
+      }
+    };
+
+    loadRealPortalData();
+    return () => { isMounted = false; };
+  }, [activeTab]);
+
+  const handleSearchResult = async (rollToSearch?: string, classToSearch?: string, examToSearch?: string, schoolToSearch?: string) => {
+    const targetRoll = (rollToSearch !== undefined ? rollToSearch : resultRollNoInput).trim();
+    if (!targetRoll) {
+      alert("Please enter a Roll Number or GR Number to search.");
+      return;
+    }
     const targetClass = classToSearch || resultSearchClass;
     const targetExam = examToSearch || resultSearchExam;
+    const effectivePrefix = resultSearchSchool === 'custom' ? (customSchoolPrefix || 'MSA-01511') : (schoolToSearch || resultSearchSchool);
 
     setIsSearchingResult(true);
     setHasSearchedResult(false);
 
-    setTimeout(() => {
-      setIsSearchingResult(false);
-      setHasSearchedResult(true);
+    // Find school name
+    const matchedSchool = schoolsList.find(s => 
+      s.prefix === effectivePrefix || s.code === effectivePrefix || s.id === effectivePrefix || (s.name && s.name.toLowerCase().includes(effectivePrefix.toLowerCase()))
+    ) || { name: "Modern School Academy", prefix: effectivePrefix, code: effectivePrefix };
 
-      const rollNum = parseInt(targetRoll) || 101;
-      let sName = "Muhammad Ahsan Raza";
-      let fName = "Tariq Mahmood";
-      let pos = "1st Position";
-      let totalObt = 738;
-      let gradeStr = "A-1 Grade (Outstanding)";
-      let statusStr = "PASSED (PROMOTED TO NEXT CLASS)";
+    try {
+      // 1. Fetch real results from Firebase Firestore & LocalStorage
+      let allResults: any[] = [];
+      try {
+        const resDoc = await getDoc(doc(db, 'state', 'all_exam_results'));
+        if (resDoc.exists() && Array.isArray(resDoc.data()?.data)) {
+          allResults = resDoc.data().data;
+        }
+      } catch (e) {}
 
-      if (rollNum % 5 === 0) {
-        sName = "Fatima Zahra";
-        fName = "Syed Ahmad Ali";
-        pos = "2nd Position";
-        totalObt = 715;
-        gradeStr = "A-1 Grade (Excellent)";
-      } else if (rollNum % 5 === 1) {
-        sName = "Hamza Ali Khan";
-        fName = "Muhammad Aslam Khan";
-        pos = "3rd Position";
-        totalObt = 692;
-        gradeStr = "A Grade (Very Good)";
-      } else if (rollNum % 5 === 2) {
-        sName = "Ayesha Bibi";
-        fName = "Zahid Iqbal";
-        pos = "5th Position";
-        totalObt = 654;
-        gradeStr = "A Grade (Good)";
-      } else if (rollNum % 5 === 3) {
-        sName = "Bilal Ahmed";
-        fName = "Sajjad Ahmed";
-        pos = "8th Position";
-        totalObt = 618;
-        gradeStr = "B Grade (Satisfactory)";
+      if (allResults.length === 0) {
+        try {
+          const localStr = localStorage.getItem("all_exam_results");
+          if (localStr) allResults = JSON.parse(localStr);
+        } catch (e) {}
       }
 
+      // 2. Fetch real students list from Firebase Firestore & LocalStorage
+      let allStudents: any[] = [];
+      try {
+        const stdDoc = await getDoc(doc(db, 'state', 'students'));
+        if (stdDoc.exists() && Array.isArray(stdDoc.data()?.data)) {
+          allStudents = stdDoc.data().data;
+        }
+      } catch (e) {}
+
+      if (allStudents.length === 0) {
+        try {
+          const stdStr = localStorage.getItem("students") || localStorage.getItem("students_list") || localStorage.getItem("mms_students");
+          if (stdStr) allStudents = JSON.parse(stdStr);
+        } catch (e) {}
+      }
+
+      // Search matching record in exam batches
+      let foundExamBatch: any = null;
+      let foundStudentInExam: any = null;
+
+      if (Array.isArray(allResults)) {
+        for (const batch of allResults) {
+          const examMatch = !targetExam || targetExam === 'All Exams' || batch.examType === targetExam || (batch.examType && batch.examType.includes(targetExam)) || (targetExam && targetExam.includes(batch.examType));
+          const classMatch = !targetClass || targetClass === 'All Classes' || batch.className === targetClass || (batch.className && batch.className.includes(targetClass)) || (targetClass && targetClass.includes(batch.className));
+
+          if (batch.records && Array.isArray(batch.records)) {
+            const match = batch.records.find((r: any) => 
+              String(r.rollNo || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+              String(r.id || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+              String(r.grNo || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+              (r.studentName && String(r.studentName).trim().toLowerCase() === targetRoll.toLowerCase())
+            );
+            if (match && (examMatch || classMatch)) {
+              foundExamBatch = batch;
+              foundStudentInExam = match;
+              break;
+            }
+          }
+        }
+      }
+
+      // Search registered student profile
+      let registeredStudent: any = null;
+      if (Array.isArray(allStudents)) {
+        registeredStudent = allStudents.find((s: any) => 
+          String(s.rollNo || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+          String(s.id || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+          String(s.grNo || s.registrationNo || '').trim().toLowerCase() === targetRoll.toLowerCase() ||
+          (s.name && String(s.name).trim().toLowerCase() === targetRoll.toLowerCase())
+        );
+      }
+
+      // IF NO REAL DATA FOUND -> DO NOT GENERATE TEMP / FAKE MOCK DATA
+      if (!foundStudentInExam && !registeredStudent) {
+        setIsSearchingResult(false);
+        setHasSearchedResult(true);
+        setCurrentResultData({
+          notFound: true,
+          searchedRoll: targetRoll,
+          searchedClass: targetClass,
+          searchedExam: targetExam,
+          searchedSchool: matchedSchool.name
+        });
+        return;
+      }
+
+      // Extract real properties from matching records
+      const studentName = foundStudentInExam?.studentName || registeredStudent?.name || `Student #${targetRoll}`;
+      const fatherName = registeredStudent?.fatherName || foundStudentInExam?.fatherName || "N/A";
+      const rollNo = registeredStudent?.rollNo || foundStudentInExam?.rollNo || targetRoll;
+      const grNo = registeredStudent?.grNo || registeredStudent?.registrationNo || foundStudentInExam?.grNo || `GR-${effectivePrefix.replace(/[^A-Z0-9]/gi, '')}-${targetRoll}`;
+      const actualClass = foundExamBatch?.className || registeredStudent?.class || registeredStudent?.grade || targetClass;
+      const actualExam = foundExamBatch?.examType || targetExam;
+
+      let subjectsList: any[] = [];
+      let totalObt = 0;
+      let totalMax = 0;
+
+      if (foundStudentInExam && foundStudentInExam.marks && Object.keys(foundStudentInExam.marks).length > 0) {
+        Object.entries(foundStudentInExam.marks).forEach(([subName, val]: [string, any]) => {
+          const obtVal = Number(val) || 0;
+          const maxVal = 100;
+          const passVal = 33;
+          const pct = (obtVal / maxVal) * 100;
+          let gradeStr = "F";
+          if (pct >= 85) gradeStr = "A+";
+          else if (pct >= 75) gradeStr = "A";
+          else if (pct >= 60) gradeStr = "B";
+          else if (pct >= 50) gradeStr = "C";
+          else if (pct >= 33) gradeStr = "D";
+
+          subjectsList.push({
+            name: subName,
+            max: maxVal,
+            pass: passVal,
+            obt: obtVal,
+            grade: gradeStr,
+            status: obtVal >= passVal ? "PASS" : "FAIL"
+          });
+          totalObt += obtVal;
+          totalMax += maxVal;
+        });
+      } else if (foundStudentInExam && (foundStudentInExam.totalObtained !== undefined || foundStudentInExam.totalMarks !== undefined)) {
+        totalObt = Number(foundStudentInExam.totalObtained || foundStudentInExam.totalMarks) || 0;
+        totalMax = Number(foundStudentInExam.totalMax) || 800;
+      }
+
+      const calculatedPct = totalMax > 0 ? ((totalObt / totalMax) * 100).toFixed(1) : (foundStudentInExam?.percentage || "0.0");
+      const pctNum = parseFloat(calculatedPct);
+      let overallGrade = foundStudentInExam?.grade || "F";
+      let resultStatus = "PASSED";
+
+      if (pctNum >= 85) overallGrade = "A-1 Grade (Outstanding)";
+      else if (pctNum >= 75) overallGrade = "A Grade (Excellent)";
+      else if (pctNum >= 65) overallGrade = "B Grade (Good)";
+      else if (pctNum >= 50) overallGrade = "C Grade (Satisfactory)";
+      else if (pctNum >= 33) overallGrade = "D Grade (Pass)";
+      else {
+        overallGrade = "F Grade (Unsuccessful)";
+        resultStatus = "NEEDS IMPROVEMENT / RE-APPEAR";
+      }
+
+      setIsSearchingResult(false);
+      setHasSearchedResult(true);
       setCurrentResultData({
-        studentName: sName,
-        fatherName: fName,
-        rollNo: targetRoll,
-        grNo: `GR-${2023 + (rollNum % 3)}-${1000 + rollNum}`,
-        schoolName: "Al-Huda Model High School & College, KPK / Abbottabad",
-        board: "Board of Intermediate & Secondary Education (BISE) Abbottabad",
-        class: targetClass,
-        examSession: targetExam,
-        dob: "14 March 2010",
-        totalMax: 800,
+        notFound: false,
+        studentName,
+        fatherName,
+        rollNo,
+        grNo,
+        schoolName: matchedSchool.name,
+        registrationPrefix: effectivePrefix,
+        board: `Academic Examinations Board (${effectivePrefix})`,
+        class: actualClass,
+        examSession: actualExam,
+        totalMax: totalMax || 100,
         totalObtained: totalObt,
-        percentage: ((totalObt / 800) * 100).toFixed(1) + "%",
-        overallGrade: gradeStr,
-        position: pos,
-        resultStatus: statusStr,
-        attendance: "98% (192 / 196 Days)",
-        remarks: "Outstanding academic record with excellent discipline and class attendance.",
-        subjects: [
-          { name: "English Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.126)), grade: "A+", status: "PASS" },
-          { name: "Urdu Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.122)), grade: "A+", status: "PASS" },
-          { name: "Mathematics", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.134)), grade: "A+", status: "PASS" },
-          { name: "Physics / General Science", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.128)), grade: "A+", status: "PASS" },
-          { name: "Chemistry / Social Studies", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.124)), grade: "A+", status: "PASS" },
-          { name: "Computer Science", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.132)), grade: "A+", status: "PASS" },
-          { name: "Islamiyat Compulsory", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.118)), grade: "A+", status: "PASS" },
-          { name: "Pakistan Studies", max: 100, pass: 33, obt: Math.min(100, Math.round(totalObt * 0.116)), grade: "A+", status: "PASS" },
-        ]
+        percentage: calculatedPct + "%",
+        overallGrade,
+        position: foundStudentInExam?.position || "Verified",
+        resultStatus,
+        attendance: registeredStudent?.attendance || "Verified",
+        remarks: foundStudentInExam?.remarks || "Official verified result generated from Academic Assessment Portal.",
+        subjects: subjectsList
       });
-    }, 500);
+    } catch (err) {
+      console.error("Error performing search:", err);
+      setIsSearchingResult(false);
+      setHasSearchedResult(true);
+      setCurrentResultData({
+        notFound: true,
+        searchedRoll: targetRoll,
+        searchedClass: targetClass,
+        searchedExam: targetExam,
+        searchedSchool: matchedSchool.name
+      });
+    }
   };
 
   // Login states
@@ -2450,7 +2735,36 @@ export const LandingView: React.FC<{
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#a1d044]/10 rounded-full blur-2xl pointer-events-none"></div>
 
               <div className="space-y-6 relative z-10">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                  {/* School / Registration Code Selector */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase text-slate-800 tracking-wider flex items-center justify-between">
+                      <span>0. Select School / Reg. Code</span>
+                      <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded font-mono font-bold">Prefix</span>
+                    </label>
+                    <select
+                      value={resultSearchSchool}
+                      onChange={(e) => setResultSearchSchool(e.target.value)}
+                      className="w-full px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
+                    >
+                      {schoolsList.map((sch) => (
+                        <option key={sch.id || sch.prefix} value={sch.prefix}>
+                          {sch.name} ({sch.prefix})
+                        </option>
+                      ))}
+                      <option value="custom">✏️ Enter Custom Code / Prefix...</option>
+                    </select>
+                    {resultSearchSchool === 'custom' && (
+                      <input
+                        type="text"
+                        placeholder="e.g. MSA-01511 or MSA-001"
+                        value={customSchoolPrefix}
+                        onChange={(e) => setCustomSchoolPrefix(e.target.value.toUpperCase())}
+                        className="w-full px-3 py-2 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-mono font-extrabold text-emerald-950 uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-emerald-500 mt-2"
+                      />
+                    )}
+                  </div>
+
                   {/* Class Selector */}
                   <div className="space-y-2">
                     <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
@@ -2459,47 +2773,34 @@ export const LandingView: React.FC<{
                     <select
                       value={resultSearchClass}
                       onChange={(e) => setResultSearchClass(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
+                      className="w-full px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
                     >
-                      <option value="Playgroup / Nursery">Playgroup / Nursery</option>
-                      <option value="Prep / KG">Prep / KG</option>
-                      <option value="Class 1">Class 1</option>
-                      <option value="Class 2">Class 2</option>
-                      <option value="Class 3">Class 3</option>
-                      <option value="Class 4">Class 4</option>
-                      <option value="Class 5">Class 5</option>
-                      <option value="Class 6">Class 6</option>
-                      <option value="Class 7">Class 7</option>
-                      <option value="Class 8">Class 8</option>
-                      <option value="Class 9 (Matric)">Class 9 (Matric Part 1)</option>
-                      <option value="Class 10 (Matric)">Class 10 (Matric Part 2)</option>
-                      <option value="F.Sc Pre-Medical">F.Sc Pre-Medical (1st / 2nd Year)</option>
-                      <option value="F.Sc Pre-Engineering">F.Sc Pre-Engineering</option>
-                      <option value="ICS / Computer Science">ICS / Computer Science</option>
+                      {availableClasses.map((cls) => (
+                        <option key={cls} value={cls}>{cls}</option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Exam Session Selector */}
                   <div className="space-y-2">
                     <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
-                      2. Examination Term / Session
+                      2. Examination Term
                     </label>
                     <select
                       value={resultSearchExam}
                       onChange={(e) => setResultSearchExam(e.target.value)}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
+                      className="w-full px-3 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs"
                     >
-                      <option value="Annual Examination 2026">Annual Examination 2026</option>
-                      <option value="First Term Exam 2026">First Term Examination 2026</option>
-                      <option value="Mid Term Exam 2026">Mid Term Examination 2026</option>
-                      <option value="Final Send-Up Test 2026">Final Send-Up Test 2026</option>
+                      {availableExams.map((ex) => (
+                        <option key={ex} value={ex}>{ex}</option>
+                      ))}
                     </select>
                   </div>
 
                   {/* Roll Number Input */}
                   <div className="space-y-2">
                     <label className="block text-xs font-black uppercase text-slate-800 tracking-wider">
-                      3. Enter Roll Number / GR No
+                      3. Enter Roll No / GR No
                     </label>
                     <div className="relative">
                       <input
@@ -2508,12 +2809,12 @@ export const LandingView: React.FC<{
                         value={resultRollNoInput}
                         onChange={(e) => setResultRollNoInput(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') handleSearchResult(); }}
-                        className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs uppercase tracking-wider"
+                        className="w-full pl-3 pr-8 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#1b8755] focus:bg-white transition-all shadow-xs uppercase tracking-wider"
                       />
                       {resultRollNoInput && (
                         <button
                           onClick={() => setResultRollNoInput('')}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
                         >
                           ✕
                         </button>
@@ -2522,41 +2823,11 @@ export const LandingView: React.FC<{
                   </div>
                 </div>
 
-                {/* Submit button & Quick Demos */}
+                {/* Submit button & Live Info */}
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100">
-                  {/* Quick Demo Roll Tags */}
-                  <div className="flex flex-wrap items-center gap-2 text-xs">
-                    <span className="font-extrabold text-slate-500 uppercase text-[10px]">Try Demo Students:</span>
-                    <button
-                      onClick={() => {
-                        setResultRollNoInput('101');
-                        setResultSearchClass('Class 10 (Matric)');
-                        handleSearchResult('101', 'Class 10 (Matric)');
-                      }}
-                      className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-lg border border-emerald-200 transition-colors text-[11px]"
-                    >
-                      Roll # 101 (A+ Grade)
-                    </button>
-                    <button
-                      onClick={() => {
-                        setResultRollNoInput('102');
-                        setResultSearchClass('Class 9 (Matric)');
-                        handleSearchResult('102', 'Class 9 (Matric)');
-                      }}
-                      className="px-2.5 py-1 bg-sky-50 hover:bg-sky-100 text-sky-800 font-bold rounded-lg border border-sky-200 transition-colors text-[11px]"
-                    >
-                      Roll # 102 (Fatima Zahra)
-                    </button>
-                    <button
-                      onClick={() => {
-                        setResultRollNoInput('105');
-                        setResultSearchClass('Class 5');
-                        handleSearchResult('105', 'Class 5');
-                      }}
-                      className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold rounded-lg border border-amber-200 transition-colors text-[11px]"
-                    >
-                      Roll # 105 (Class 5)
-                    </button>
+                  <div className="flex items-center space-x-2 text-xs text-slate-500 font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Live Firebase Database Sync Active &bull; Enter real Roll No or GR No</span>
                   </div>
 
                   {/* Search Button */}
@@ -2568,7 +2839,7 @@ export const LandingView: React.FC<{
                     {isSearchingResult ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Searching Result...</span>
+                        <span>Searching Database...</span>
                       </>
                     ) : (
                       <>
@@ -2581,8 +2852,32 @@ export const LandingView: React.FC<{
               </div>
             </div>
 
-            {/* Result Marksheet Display */}
-            {hasSearchedResult && currentResultData && (
+            {/* Result Not Found UI */}
+            {hasSearchedResult && currentResultData?.notFound && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-amber-50/90 border-2 border-amber-300 rounded-3xl p-6 sm:p-10 text-center space-y-4 shadow-xl"
+              >
+                <div className="w-16 h-16 bg-amber-100 text-amber-900 rounded-2xl border border-amber-300 flex items-center justify-center mx-auto text-3xl font-black shadow-inner">
+                  ⚠️
+                </div>
+                <div className="space-y-2 max-w-xl mx-auto">
+                  <h3 className="text-xl sm:text-2xl font-black text-amber-950 uppercase tracking-tight">
+                    Result Record Not Found
+                  </h3>
+                  <p className="text-xs sm:text-sm text-amber-900 font-semibold leading-relaxed">
+                    Koi real result record nahi mila baraye Roll No / Name: <span className="font-mono font-black text-amber-950 bg-amber-200/70 px-2 py-0.5 rounded border border-amber-400">{currentResultData.searchedRoll}</span> in <span className="font-bold">{currentResultData.searchedClass}</span> ({currentResultData.searchedExam}) for <span className="font-bold">{currentResultData.searchedSchool}</span>.
+                  </p>
+                  <p className="text-xs text-amber-800 font-bold pt-2">
+                    💡 Baraye meherbani Roll Number check karain ya Exam Management / Academic Assessment Portal mein is student ka result enter/publish karain.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Result Marksheet Display (Only if real result found) */}
+            {hasSearchedResult && currentResultData && !currentResultData.notFound && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -2626,6 +2921,14 @@ export const LandingView: React.FC<{
                 {/* Student Details Grid */}
                 <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-semibold">
                   <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">School / Institute</span>
+                    <span className="text-sm font-black text-slate-900">{currentResultData.schoolName}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Registration Prefix / Code</span>
+                    <span className="text-xs font-mono font-black text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-300 inline-block mt-0.5">{currentResultData.registrationPrefix}</span>
+                  </div>
+                  <div>
                     <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Student Name</span>
                     <span className="text-sm font-black text-slate-900">{currentResultData.studentName}</span>
                   </div>
@@ -2643,7 +2946,7 @@ export const LandingView: React.FC<{
                   </div>
                   <div>
                     <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Class & Section</span>
-                    <span className="text-xs font-extrabold text-slate-900">{currentResultData.class} (Sec A)</span>
+                    <span className="text-xs font-extrabold text-slate-900">{currentResultData.class}</span>
                   </div>
                   <div>
                     <span className="block text-[10px] text-slate-400 uppercase font-black tracking-wider">Exam Session</span>

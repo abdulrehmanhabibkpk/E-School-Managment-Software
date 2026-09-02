@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -66,7 +66,7 @@ import {
   Check,
   AlertTriangle
 } from "lucide-react";
-import { db, setDoc, doc, collection, getDocs, deleteDoc } from '../../firebase';
+import { db, setDoc, doc, collection, getDocs, deleteDoc, onSnapshot } from '../../firebase';
 import { updateCentralKey } from '../../syncService';
 import {
   ResponsiveContainer,
@@ -127,8 +127,8 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
   });
   const [teachers] = useState(() => {
-    const saved = localStorage.getItem("mms_teachers");
-    return saved ? JSON.parse(saved) : INITIAL_TEACHERS;
+    const saved = localStorage.getItem("staff") || localStorage.getItem("mms_teachers") || localStorage.getItem("teachers");
+    return saved ? JSON.parse(saved) : [];
   });
   const [finances, setFinances] = useState(() => {
     const saved = localStorage.getItem("mms_finances");
@@ -166,33 +166,29 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   useEffect(() => {
     const loadSyncedMmsData = () => {
       try {
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
         const savedSchools = localStorage.getItem("mms_schools");
         if (savedSchools) {
           const parsed = JSON.parse(savedSchools);
-          if (JSON.stringify(parsed) !== JSON.stringify(schools)) {
-            setSchools(parsed);
+          if (Array.isArray(parsed)) {
+            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name));
+            setSchools(prev => JSON.stringify(prev) === JSON.stringify(clean) ? prev : clean);
           }
         }
         const savedParents = localStorage.getItem("mms_parents");
         if (savedParents) {
           const parsed = JSON.parse(savedParents);
-          if (JSON.stringify(parsed) !== JSON.stringify(parents)) {
-            setParents(parsed);
-          }
+          setParents(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
         const savedStudents = localStorage.getItem("mms_students");
         if (savedStudents) {
           const parsed = JSON.parse(savedStudents);
-          if (JSON.stringify(parsed) !== JSON.stringify(students)) {
-            setStudents(parsed);
-          }
+          setStudents(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
         const savedFinances = localStorage.getItem("mms_finances");
         if (savedFinances) {
           const parsed = JSON.parse(savedFinances);
-          if (JSON.stringify(parsed) !== JSON.stringify(finances)) {
-            setFinances(parsed);
-          }
+          setFinances(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
       } catch (e) {
         console.error("Error reading synced corporate data:", e);
@@ -200,14 +196,62 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     };
     loadSyncedMmsData();
 
+    // Firestore real-time listener for "schools" collection (e.g. comp_1)
+    const unsubSchools = onSnapshot(collection(db, "schools"), (snapshot) => {
+      if (!snapshot.empty) {
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const firestoreList: any[] = [];
+        snapshot.docs.forEach((docSnap) => {
+          const data = docSnap.data() || {};
+          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? "Modern School Academy" : `Campus ${docSnap.id}`);
+          if (!dummyNames.includes(name)) {
+            firestoreList.push({
+              id: docSnap.id,
+              name,
+              code: data.code || docSnap.id.toUpperCase(),
+              type: data.type || "Registered Campus",
+              city: data.city || "Pakistan",
+              principal: data.principal || data.contactPerson || "Principal / Administrator",
+              phone: data.phone || data.contactNumber || "0300-0000000",
+              email: data.email || "info@assanaccounts.com",
+              studentsCount: data.studentsCount || 0,
+              teachersCount: data.teachersCount || 0,
+              monthlyFee: data.monthlyFee || 15000,
+              paymentStatus: data.paymentStatus || "PAID",
+              dueMonth: data.dueMonth || "September 2026",
+              lastPaidDate: data.lastPaidDate || new Date().toISOString().split("T")[0],
+              lastPaidAmount: data.lastPaidAmount || 15000,
+              packagePlan: data.packagePlan || "Enterprise",
+              enabledFeatures: data.enabledFeatures || [
+                "exams", "lms", "library", "fleet", "hostel",
+                "cafeteria", "health", "docs", "gateway", "aiRisk", "tickets"
+              ]
+            });
+          }
+        });
+        if (firestoreList.length > 0) {
+          localStorage.setItem("mms_schools", JSON.stringify(firestoreList));
+          setSchools(prev => JSON.stringify(prev) === JSON.stringify(firestoreList) ? prev : firestoreList);
+        }
+      }
+    }, (error) => {
+      console.warn("Firestore schools listener:", error);
+    });
+
     window.addEventListener('storage_updated', loadSyncedMmsData);
     return () => {
+      unsubSchools();
       window.removeEventListener('storage_updated', loadSyncedMmsData);
     };
-  }, [schools, parents, students, finances]);
+  }, []);
 
   // Sync state to local storage and Firestore
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     updateCentralKey("mms_schools", schools);
   }, [schools]);
 
@@ -402,9 +446,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const t = {
     EN: {
       appName: "EduManage Enterprise",
-      tagline: "Multi-Campus Corporate Suite",
+      tagline: "Corporate Suite",
       overview: "Overview & AI Analytics",
-      schools: "Multi-School Network",
+      schools: "Schools",
       parents: "Parent Accounts Portal",
       students: "Students Directory",
       teachers: "Faculty & HR Payroll",
@@ -428,9 +472,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     },
     UR: {
       appName: "ایڈو مینیج انٹرپرائز",
-      tagline: "ملٹی کیمپس کارپوریٹ پورٹل",
+      tagline: "کارپوریٹ پورٹل",
       overview: "خلاصہ اور AI تجزیہ",
-      schools: "سکولوں کا نیٹ ورک",
+      schools: "سکول",
       parents: "والدین کے اکاؤنٹس",
       students: "طلباء کی ڈائرکٹری",
       teachers: "اساتذہ اور پے رول",

@@ -43,7 +43,7 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onBack }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [districtFilter, setDistrictFilter] = useState('');
 
-  // Data Persistence
+  // Data Persistence - Clean up temporary dummy staff
   const [staff, setStaff] = useState<StaffMember[]>(() => {
     try {
       const saved = localStorage.getItem('staff');
@@ -63,36 +63,16 @@ const StaffManagement: React.FC<StaffManagementProps> = ({ onBack }) => {
         "Mr. Imdadullah Shah", "Mr. Abdullah Shah", "Mr. Muhammad Hamza"
       ];
 
-      let changed = false;
-      teacherNames.forEach((name, index) => {
-        if (!currentStaff.some(s => s.name === name)) {
-          const empId = `S-${String(index + 1).padStart(3, '0')}`;
-          if (!currentStaff.some(s => s.employeeId === empId)) {
-            currentStaff.push({
-              id: empId,
-              employeeId: empId,
-              name: name,
-              fatherName: '',
-              maritalStatus: '',
-              cnic: '',
-              dob: '',
-              phone: '---',
-              currentAddress: '',
-              currentDistrict: '',
-              permanentAddress: '',
-              permanentDistrict: '',
-              religiousEdu: '',
-              worldlyEdu: '',
-              additionalEdu: '',
-              startDate: new Date().toISOString().split('T')[0],
-            });
-            changed = true;
-          }
-        }
-      });
+      // Remove temp 33 mock teachers if present
+      const initialLength = currentStaff.length;
+      currentStaff = currentStaff.filter(s => 
+        !teacherNames.includes(s.name) && 
+        (!s.employeeId.startsWith('S-0') || (s.phone && s.phone !== '---') || (s.cnic && s.cnic !== ''))
+      );
 
-      if (changed) {
+      if (currentStaff.length !== initialLength || saved === null) {
         localStorage.setItem('staff', JSON.stringify(currentStaff));
+        localStorage.setItem('mms_teachers', JSON.stringify(currentStaff));
         setTimeout(() => window.dispatchEvent(new Event('storage_updated')), 0);
       }
       

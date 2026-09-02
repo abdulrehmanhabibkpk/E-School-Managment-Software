@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -66,7 +66,7 @@ import {
   Check,
   AlertTriangle
 } from "lucide-react";
-import { db, setDoc, doc, collection, getDocs, deleteDoc } from '../firebase';
+import { db, setDoc, doc, collection, getDocs, deleteDoc, onSnapshot } from '../firebase';
 import { syncToServer, updateCentralKey } from '../syncService';
 import {
   ResponsiveContainer,
@@ -142,9 +142,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     } catch (e) {}
 
     const defaultRegisteredSchool = {
-      id: "sch_1",
+      id: "comp_1",
       name: jamiaName,
-      code: code,
+      code: code || "COMP-1",
       type: "Registered Main Campus",
       city: "Pakistan",
       principal: principal,
@@ -164,29 +164,37 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       ]
     };
 
+    const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
     const saved = localStorage.getItem("mms_schools");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Sync real student and teacher counts onto the registered school
-          return parsed.map((s: any) => {
-            if (s.id === "sch_1") {
-              return {
-                ...s,
-                name: s.name || jamiaName,
-                studentsCount: realStudentsCount,
-                teachersCount: realTeachersCount
-              };
-            }
-            return s;
-          });
+          // Filter out legacy dummy mock schools
+          const filtered = parsed.filter((s: any) => !dummyNames.includes(s.name));
+          if (filtered.length > 0) {
+            const synced = filtered.map((s: any) => {
+              if (s.id === "sch_1" || s.id === "comp_1") {
+                return {
+                  ...s,
+                  id: "comp_1",
+                  name: s.name || jamiaName,
+                  studentsCount: realStudentsCount,
+                  teachersCount: realTeachersCount
+                };
+              }
+              return s;
+            });
+            localStorage.setItem("mms_schools", JSON.stringify(synced));
+            setDoc(doc(db, "schools", "comp_1"), synced[0]).catch(() => {});
+            return synced;
+          }
         }
       } catch (e) {}
     }
 
     localStorage.setItem("mms_schools", JSON.stringify([defaultRegisteredSchool]));
-    updateCentralKey("mms_schools", [defaultRegisteredSchool]);
+    setDoc(doc(db, "schools", "comp_1"), defaultRegisteredSchool).catch(() => {});
     return [defaultRegisteredSchool];
   };
 
@@ -197,12 +205,12 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     return saved ? JSON.parse(saved) : INITIAL_PARENTS;
   });
   const [students, setStudents] = useState(() => {
-    const saved = localStorage.getItem("mms_students");
-    return saved ? JSON.parse(saved) : INITIAL_STUDENTS;
+    const saved = localStorage.getItem("students") || localStorage.getItem("mms_students") || localStorage.getItem("parent_portal_students");
+    return saved ? JSON.parse(saved) : [];
   });
-  const [teachers] = useState(() => {
-    const saved = localStorage.getItem("mms_teachers");
-    return saved ? JSON.parse(saved) : INITIAL_TEACHERS;
+  const [teachers, setTeachers] = useState(() => {
+    const saved = localStorage.getItem("staff") || localStorage.getItem("mms_teachers") || localStorage.getItem("teachers");
+    return saved ? JSON.parse(saved) : [];
   });
   const [finances, setFinances] = useState(() => {
     const saved = localStorage.getItem("mms_finances");
@@ -251,6 +259,10 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const [showPayMonthlyModal, setShowPayMonthlyModal] = useState<boolean>(false);
   const [showCertModal, setShowCertModal] = useState<any>(null);
   const [editingCampusFeatures, setEditingCampusFeatures] = useState<any>(null);
+  const [inspectingSchool, setInspectingSchool] = useState<any>(null);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState<any>(null);
+  const [newPasswordInput, setNewPasswordInput] = useState<string>("");
+  const [inspectorTab, setInspectorTab] = useState<"overview" | "students" | "teachers" | "security">("overview");
 
   // Form Field States
   const [newSchool, setNewSchool] = useState({
@@ -292,33 +304,34 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
     const loadSyncedMmsData = () => {
       try {
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
         const savedSchools = localStorage.getItem("mms_schools");
         if (savedSchools) {
           const parsed = JSON.parse(savedSchools);
-          if (JSON.stringify(parsed) !== JSON.stringify(schools)) {
-            setSchools(parsed);
+          if (Array.isArray(parsed)) {
+            const clean = parsed.filter((s: any) => !dummyNames.includes(s.name));
+            setSchools(prev => JSON.stringify(prev) === JSON.stringify(clean) ? prev : clean);
           }
         }
         const savedParents = localStorage.getItem("mms_parents");
         if (savedParents) {
           const parsed = JSON.parse(savedParents);
-          if (JSON.stringify(parsed) !== JSON.stringify(parents)) {
-            setParents(parsed);
-          }
+          setParents(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
-        const savedStudents = localStorage.getItem("mms_students");
+        const savedStudents = localStorage.getItem("students") || localStorage.getItem("mms_students") || localStorage.getItem("parent_portal_students");
         if (savedStudents) {
           const parsed = JSON.parse(savedStudents);
-          if (JSON.stringify(parsed) !== JSON.stringify(students)) {
-            setStudents(parsed);
-          }
+          setStudents(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
+        }
+        const savedTeachers = localStorage.getItem("staff") || localStorage.getItem("mms_teachers") || localStorage.getItem("teachers");
+        if (savedTeachers) {
+          const parsed = JSON.parse(savedTeachers);
+          setTeachers(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
         const savedFinances = localStorage.getItem("mms_finances");
         if (savedFinances) {
           const parsed = JSON.parse(savedFinances);
-          if (JSON.stringify(parsed) !== JSON.stringify(finances)) {
-            setFinances(parsed);
-          }
+          setFinances(prev => JSON.stringify(prev) === JSON.stringify(parsed) ? prev : parsed);
         }
       } catch (e) {
         console.error("Error reading synced corporate data:", e);
@@ -326,18 +339,139 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     };
     loadSyncedMmsData();
 
-    window.addEventListener('storage_updated', () => {
+    const handleStorageUpdate = () => {
       loadPendingUsers();
       loadSyncedMmsData();
-    });
-    return () => {
-      window.removeEventListener('storage_updated', loadPendingUsers);
-      window.removeEventListener('storage_updated', loadSyncedMmsData);
     };
-  }, [schools, parents, students, finances]);
+
+    // Firestore real-time listener for "schools" collection (e.g. comp_1, comp_2)
+    const unsubSchools = onSnapshot(collection(db, "schools"), (snapshot) => {
+      if (!snapshot.empty) {
+        const dummyNames = ["Siraj-ul-Uloom Academy", "Apex Model School", "Oasis Girls College"];
+        const firestoreList: any[] = [];
+        snapshot.docs.forEach((docSnap) => {
+          const data = docSnap.data() || {};
+          const name = data.name || data.jamiaName || (docSnap.id === 'comp_1' ? "Modern School Academy" : `Campus ${docSnap.id}`);
+          if (!dummyNames.includes(name)) {
+            firestoreList.push({
+              id: docSnap.id,
+              name,
+              code: data.code || docSnap.id.toUpperCase(),
+              type: data.type || "Registered Campus",
+              city: data.city || "Pakistan",
+              principal: data.principal || data.contactPerson || "Principal / Administrator",
+              phone: data.phone || data.contactNumber || "0300-0000000",
+              email: data.email || "info@assanaccounts.com",
+              studentsCount: data.studentsCount || 0,
+              teachersCount: data.teachersCount || 0,
+              monthlyFee: data.monthlyFee || 15000,
+              paymentStatus: data.paymentStatus || "PAID",
+              dueMonth: data.dueMonth || "September 2026",
+              lastPaidDate: data.lastPaidDate || new Date().toISOString().split("T")[0],
+              lastPaidAmount: data.lastPaidAmount || 15000,
+              packagePlan: data.packagePlan || "Enterprise",
+              status: data.status || "ACTIVE",
+              adminPassword: data.adminPassword || "admin123",
+              enabledFeatures: data.enabledFeatures || [
+                "exams", "lms", "library", "fleet", "hostel",
+                "cafeteria", "health", "docs", "gateway", "aiRisk", "tickets"
+              ]
+            });
+          }
+        });
+        if (firestoreList.length > 0) {
+          localStorage.setItem("mms_schools", JSON.stringify(firestoreList));
+          setSchools(prev => JSON.stringify(prev) === JSON.stringify(firestoreList) ? prev : firestoreList);
+        }
+      }
+    }, (error) => {
+      console.warn("Firestore schools listener:", error);
+    });
+
+    // Firestore real-time listener for global state/students & state/mms_students
+    const unsubStudents = onSnapshot(doc(db, "state", "mms_students"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()?.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setStudents(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+        }
+      }
+    }, (err) => console.warn("Firestore mms_students listener error:", err));
+
+    // Firestore real-time listener for global state/mms_teachers & state/staff
+    const unsubTeachers = onSnapshot(doc(db, "state", "mms_teachers"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()?.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setTeachers(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+        }
+      }
+    }, (err) => console.warn("Firestore mms_teachers listener error:", err));
+
+    window.addEventListener('storage_updated', handleStorageUpdate);
+    return () => {
+      unsubSchools();
+      unsubStudents();
+      unsubTeachers();
+      window.removeEventListener('storage_updated', handleStorageUpdate);
+    };
+  }, []);
+
+  // Dedicated real-time sync for inspectingSchool from Firestore
+  useEffect(() => {
+    if (!inspectingSchool) return;
+
+    const schId = inspectingSchool.id;
+
+    // Listen to real-time changes of the selected school document in Firestore
+    const unsubDoc = onSnapshot(doc(db, "schools", schId), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data() || {};
+        setInspectingSchool((prev: any) => prev ? {
+          ...prev,
+          name: data.name || prev.name,
+          code: data.code || prev.code,
+          principal: data.principal || prev.principal,
+          phone: data.phone || prev.phone,
+          status: data.status || prev.status,
+          adminPassword: data.adminPassword || prev.adminPassword,
+          paymentStatus: data.paymentStatus || prev.paymentStatus,
+          monthlyFee: data.monthlyFee || prev.monthlyFee,
+        } : null);
+      }
+    }, (err) => console.warn("Firestore inspect doc error:", err));
+
+    // Listen to campus-specific students in Firestore
+    const unsubCampusStudents = onSnapshot(doc(db, `schools/${schId}/state`, "mms_students"), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data()?.data;
+        if (Array.isArray(data)) {
+          setStudents(prev => {
+            const merged = [...prev];
+            data.forEach((std: any) => {
+              const idx = merged.findIndex((x: any) => x.id === std.id);
+              if (idx >= 0) merged[idx] = std;
+              else merged.push(std);
+            });
+            return merged;
+          });
+        }
+      }
+    }, (err) => console.warn("Firestore campus students error:", err));
+
+    return () => {
+      unsubDoc();
+      unsubCampusStudents();
+    };
+  }, [inspectingSchool?.id]);
 
   // Sync state to local storage and Firestore
+  const isInitialMount = useRef(true);
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     updateCentralKey("mms_schools", schools);
   }, [schools]);
 
@@ -408,11 +542,19 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
       phone: newSchool.phone || "0300-0000000",
       packagePlan: newSchool.packagePlan || "Enterprise",
       enabledFeatures: newSchool.enabledFeatures || PACKAGE_PRESETS[newSchool.packagePlan] || PACKAGE_PRESETS.Enterprise,
-      totalStudents: 0,
-      budget: "₨ 3.0M"
+      studentsCount: 0,
+      teachersCount: 0,
+      monthlyFee: 15000,
+      paymentStatus: "PAID",
+      dueMonth: "September 2026",
+      lastPaidDate: new Date().toISOString().split("T")[0],
+      lastPaidAmount: 15000
     };
-    setSchools([...schools, created]);
-    addLog(`Registered new institution branch: ${created.name} (${created.packagePlan} Package)`, "Institutions");
+    const updated = [...schools, created];
+    setSchools(updated);
+    localStorage.setItem("mms_schools", JSON.stringify(updated));
+    setDoc(doc(db, "schools", created.id), created).catch(console.error);
+    addLog(`Registered new campus: ${created.name} (${created.packagePlan} Package)`, "Schools");
     setShowAddSchoolModal(false);
     setNewSchool({
       name: "",
@@ -462,9 +604,50 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
   const handleDeleteCampus = (campusId: string, name: string) => {
     if (window.confirm(`Are you sure you want to remove ${name}? This will delete all branch records.`)) {
-      setSchools((prev: any[]) => prev.filter((s) => s.id !== campusId));
+      const updated = schools.filter((s: any) => s.id !== campusId);
+      setSchools(updated);
+      localStorage.setItem("mms_schools", JSON.stringify(updated));
+      updateCentralKey("mms_schools", updated);
       if (selectedSchool === campusId) setSelectedSchool("all");
+      deleteDoc(doc(db, "schools", campusId)).catch(console.error);
       addLog(`Deleted campus branch: ${name}`, "Institutions");
+    }
+  };
+
+  const handleResetPassword = (schoolId: string, schoolName: string, newPass: string) => {
+    if (!newPass.trim()) {
+      alert("Please enter a valid new password.");
+      return;
+    }
+    const updated = schools.map((s: any) => s.id === schoolId ? { ...s, adminPassword: newPass } : s);
+    setSchools(updated);
+    localStorage.setItem("mms_schools", JSON.stringify(updated));
+    updateCentralKey("mms_schools", updated);
+    setDoc(doc(db, "schools", schoolId), { adminPassword: newPass }, { merge: true }).catch(console.error);
+    addLog(`Reset Admin Password for ${schoolName}`, "Security");
+    alert(`Password for ${schoolName} reset successfully to: ${newPass}`);
+    setShowResetPasswordModal(null);
+    setNewPasswordInput("");
+    if (inspectingSchool && inspectingSchool.id === schoolId) {
+      setInspectingSchool({ ...inspectingSchool, adminPassword: newPass });
+    }
+  };
+
+  const handleToggleBanSchool = (schoolId: string, schoolName: string, currentStatus?: string) => {
+    const isBanned = currentStatus === "BANNED";
+    const newStatus = isBanned ? "ACTIVE" : "BANNED";
+    const actionName = isBanned ? "Unbanned / Reactivated" : "Banned / Suspended";
+
+    if (window.confirm(`Are you sure you want to ${isBanned ? 'Unban and reactivate' : 'Ban and suspend access for'} ${schoolName}?`)) {
+      const updated = schools.map((s: any) => s.id === schoolId ? { ...s, status: newStatus } : s);
+      setSchools(updated);
+      localStorage.setItem("mms_schools", JSON.stringify(updated));
+      updateCentralKey("mms_schools", updated);
+      setDoc(doc(db, "schools", schoolId), { status: newStatus }, { merge: true }).catch(console.error);
+      addLog(`${actionName} school campus: ${schoolName}`, "Security");
+      if (inspectingSchool && inspectingSchool.id === schoolId) {
+        setInspectingSchool({ ...inspectingSchool, status: newStatus });
+      }
     }
   };
 
@@ -581,9 +764,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
   const t = {
     EN: {
       appName: "EduManage Enterprise",
-      tagline: "Multi-Campus Corporate Suite",
+      tagline: "Corporate Suite",
       overview: "Overview & AI Analytics",
-      schools: "Multi-School Network",
+      schools: "Schools",
       requests: "Registration Requests",
       parents: "Parent Accounts Portal",
       students: "Students Directory",
@@ -608,9 +791,9 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
     },
     UR: {
       appName: "ایڈو مینیج انٹرپرائز",
-      tagline: "ملٹی کیمپس کارپوریٹ پورٹل",
+      tagline: "کارپوریٹ پورٹل",
       overview: "خلاصہ اور AI تجزیہ",
-      schools: "سکولوں کا نیٹ ورک",
+      schools: "سکول",
       requests: "نئی درخواستیں",
       parents: "والدین کے اکاؤنٹس",
       students: "طلباء کی ڈائرکٹری",
@@ -1373,7 +1556,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-black">{t.schools}</h2>
-                  <p className="text-xs text-slate-400">Manage multi-school network, monthly subscription fees, feature access, and automated billing alerts.</p>
+                  <p className="text-xs text-slate-400">Manage registered schools, subscription packages, feature access, and campus details.</p>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setShowPayMonthlyModal(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-emerald-500/20 flex items-center gap-2">
@@ -1403,16 +1586,24 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                     const isPaid = sch.paymentStatus === "PAID";
                     const feeRate = sch.monthlyFee || (sch.packagePlan === "Enterprise" ? 15000 : sch.packagePlan === "Standard" ? 10000 : 5000);
 
+                    const isBanned = sch.status === "BANNED";
+
                     return (
-                      <div key={sch.id} className={`p-6 rounded-3xl border flex flex-col justify-between transition-all hover:shadow-lg ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                      <div key={sch.id} className={`p-6 rounded-3xl border flex flex-col justify-between transition-all hover:shadow-lg ${
+                        isBanned 
+                          ? 'bg-red-50/50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' 
+                          : darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+                      }`}>
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-2">
                             <span className="px-2.5 py-1 bg-blue-500/10 text-blue-500 rounded-full font-black text-[10px]">{sch.code}</span>
                             <div className="flex items-center gap-1.5">
                               <span className={`px-2.5 py-1 rounded-full font-black text-[10px] ${
-                                isPaid ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                                isBanned
+                                  ? 'bg-red-500 text-white animate-pulse'
+                                  : isPaid ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
                               }`}>
-                                {isPaid ? '🟢 PAID' : '🔴 UNPAID'}
+                                {isBanned ? '⛔ BANNED' : isPaid ? '🟢 PAID' : '🔴 UNPAID'}
                               </span>
                               <span className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
                                 sch.packagePlan === 'Enterprise' ? 'bg-indigo-500/10 text-indigo-500' :
@@ -1449,7 +1640,7 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
 
                         <div className="mt-5 space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800">
                           {/* Payment & Alert Quick Controls */}
-                          {!isPaid && (
+                          {!isPaid && !isBanned && (
                             <div className="grid grid-cols-2 gap-1.5 mb-2">
                               <button 
                                 onClick={() => handleSendWhatsAppReminder(sch)}
@@ -1467,6 +1658,28 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                               </button>
                             </div>
                           )}
+
+                          {/* Security & Password Action Bar */}
+                          <div className="grid grid-cols-2 gap-1.5 mb-2">
+                            <button
+                              onClick={() => setShowResetPasswordModal(sch)}
+                              className="bg-indigo-500/10 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1"
+                              title="Reset Admin Password for this campus"
+                            >
+                              🔑 Reset Password
+                            </button>
+                            <button
+                              onClick={() => handleToggleBanSchool(sch.id, sch.name, sch.status)}
+                              className={`${
+                                isBanned 
+                                  ? 'bg-emerald-500/10 hover:bg-emerald-600 hover:text-white text-emerald-600 dark:text-emerald-400' 
+                                  : 'bg-red-500/10 hover:bg-red-600 hover:text-white text-red-600 dark:text-red-400'
+                              } py-1.5 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1`}
+                              title={isBanned ? "Unban campus account" : "Ban and lock campus access"}
+                            >
+                              {isBanned ? '🟢 Unban Account' : '🚫 Ban Account'}
+                            </button>
+                          </div>
 
                           <button 
                             onClick={() => {
@@ -1495,14 +1708,12 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
                           <div className="flex gap-2">
                             <button 
                               onClick={() => {
-                                localStorage.setItem('active_school_id', sch.id);
-                                localStorage.setItem('currentSchoolName', sch.name);
-                                window.dispatchEvent(new Event('storage_updated'));
-                                window.location.reload();
+                                setInspectingSchool(sch);
+                                setInspectorTab("overview");
                               }}
                               className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5"
                             >
-                              <Eye className="w-4 h-4" /> Open Panel
+                              <Eye className="w-4 h-4" /> Open Panel Data
                             </button>
                             <button 
                               onClick={() => handleDeleteCampus(sch.id, sch.name)}
@@ -2045,6 +2256,296 @@ export default function AdminDashboard({ onBack }: AdminDashboardProps) {
               ✅ Record Monthly Payment & Update Campus Status to PAID
             </button>
           </form>
+        </ModalWrapper>
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPasswordModal && (
+        <ModalWrapper 
+          title={`Reset Password: ${showResetPasswordModal.name}`} 
+          onClose={() => setShowResetPasswordModal(null)} 
+          darkMode={darkMode}
+        >
+          <div className="space-y-4">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400 text-xs">
+              <strong>🔑 Admin Account Password Reset</strong>
+              <p className="mt-1">Enter a new password for <strong>{showResetPasswordModal.name}</strong>. This will immediately update the campus login credentials.</p>
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">New Password *</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="e.g. Pass@1234 or Admin#2026" 
+                value={newPasswordInput} 
+                onChange={e => setNewPasswordInput(e.target.value)} 
+                className={`w-full p-3 rounded-xl border text-xs font-mono font-bold outline-none ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`} 
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <button 
+                type="button" 
+                onClick={() => setShowResetPasswordModal(null)} 
+                className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold py-2.5 rounded-xl text-xs"
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onClick={() => handleResetPassword(showResetPasswordModal.id, showResetPasswordModal.name, newPasswordInput)} 
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md shadow-indigo-500/20"
+              >
+                ✅ Update & Save Password
+              </button>
+            </div>
+          </div>
+        </ModalWrapper>
+      )}
+
+      {/* Real Data Reader & Campus Control Panel Modal */}
+      {inspectingSchool && (
+        <ModalWrapper 
+          title={`Campus Control Panel & Live Data: ${inspectingSchool.name}`} 
+          onClose={() => setInspectingSchool(null)} 
+          darkMode={darkMode}
+        >
+          <div className="space-y-4">
+            {/* Top Header Card */}
+            <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+              inspectingSchool.status === 'BANNED' 
+                ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50' 
+                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+            }`}>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded font-mono font-bold text-[10px]">{inspectingSchool.code}</span>
+                  <span className={`px-2 py-0.5 rounded font-black text-[10px] ${
+                    inspectingSchool.status === 'BANNED' 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : inspectingSchool.paymentStatus === 'PAID' ? 'bg-emerald-500/15 text-emerald-600' : 'bg-rose-500/15 text-rose-600'
+                  }`}>
+                    {inspectingSchool.status === 'BANNED' ? '⛔ BANNED / SUSPENDED' : inspectingSchool.paymentStatus === 'PAID' ? '🟢 PAID & ACTIVE' : '🔴 UNPAID'}
+                  </span>
+                </div>
+                <h3 className="text-base font-black mt-1">{inspectingSchool.name}</h3>
+                <p className="text-xs text-slate-400">{inspectingSchool.type} • {inspectingSchool.city || 'Pakistan'}</p>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('active_school_id', inspectingSchool.id);
+                    localStorage.setItem('currentSchoolName', inspectingSchool.name);
+                    window.dispatchEvent(new Event('storage_updated'));
+                    window.location.reload();
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-bold shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                >
+                  <Eye className="w-3.5 h-3.5" /> <span>Switch & Enter Panel</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Navigation Tabs inside Modal */}
+            <div className="flex border-b border-slate-200 dark:border-slate-800 text-xs font-bold gap-4">
+              <button 
+                onClick={() => setInspectorTab("overview")} 
+                className={`pb-2 border-b-2 transition-all ${inspectorTab === "overview" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400"}`}
+              >
+                📊 Overview & Security
+              </button>
+              <button 
+                onClick={() => setInspectorTab("students")} 
+                className={`pb-2 border-b-2 transition-all ${inspectorTab === "students" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400"}`}
+              >
+                🎓 Live Students Data
+              </button>
+              <button 
+                onClick={() => setInspectorTab("teachers")} 
+                className={`pb-2 border-b-2 transition-all ${inspectorTab === "teachers" ? "border-blue-600 text-blue-600" : "border-transparent text-slate-400"}`}
+              >
+                👨‍🏫 Live Teachers / Staff
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            {inspectorTab === "overview" && (
+              <div className="space-y-4">
+                {/* Security Controls Box */}
+                <div className={`p-4 rounded-2xl border space-y-3 ${darkMode ? 'bg-slate-800/40 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">🔐 Security & Credentials Control</h4>
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Admin Username</span>
+                      <strong className="font-mono text-slate-800 dark:text-slate-200">{inspectingSchool.email || "admin"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Admin Password</span>
+                      <strong className="font-mono text-indigo-500">{inspectingSchool.adminPassword || "admin123"}</strong>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-2 border-t dark:border-slate-700">
+                    <button
+                      onClick={() => setShowResetPasswordModal(inspectingSchool)}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"
+                    >
+                      🔑 Reset Password
+                    </button>
+                    <button
+                      onClick={() => handleToggleBanSchool(inspectingSchool.id, inspectingSchool.name, inspectingSchool.status)}
+                      className={`flex-1 ${
+                        inspectingSchool.status === 'BANNED'
+                          ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                          : 'bg-red-600 hover:bg-red-700 text-white'
+                      } py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5`}
+                    >
+                      {inspectingSchool.status === 'BANNED' ? '🟢 Unban Account' : '🚫 Ban & Lock Account'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-slate-800/20 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <span className="text-slate-400 block text-[10px]">Principal Name</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{inspectingSchool.principal || 'Principal Officer'}</strong>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-slate-800/20 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <span className="text-slate-400 block text-[10px]">Contact Phone</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{inspectingSchool.phone || '0300-0000000'}</strong>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-slate-800/20 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <span className="text-slate-400 block text-[10px]">Subscription Package</span>
+                    <strong className="text-indigo-500">{inspectingSchool.packagePlan || 'Enterprise'}</strong>
+                  </div>
+                  <div className={`p-3 rounded-xl border ${darkMode ? 'bg-slate-800/20 border-slate-800' : 'bg-white border-slate-200'}`}>
+                    <span className="text-slate-400 block text-[10px]">Monthly Fee</span>
+                    <strong className="text-emerald-500 font-black">₨ {(inspectingSchool.monthlyFee || 15000).toLocaleString()} / mo</strong>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {inspectorTab === "students" && (() => {
+              // Compute live students for this campus from state & local storage
+              const rawSaved = localStorage.getItem("students") || localStorage.getItem("mms_students") || localStorage.getItem("parent_portal_students");
+              const localStudents = rawSaved ? JSON.parse(rawSaved) : [];
+              const mergedStudents = Array.from(new Map([...students, ...localStudents].map(s => [s.id || s.name, s])).values());
+
+              const campusStudents = mergedStudents.filter((s: any) => {
+                if (s.schoolId) return s.schoolId === inspectingSchool.id || s.schoolId === inspectingSchool.code;
+                return true;
+              });
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <span>Total Registered Students</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono font-bold">🔥 Firebase Live</span>
+                    </span>
+                    <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full font-black">{campusStudents.length} Students</span>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto rounded-xl border dark:border-slate-800">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b bg-slate-50 dark:bg-slate-800 text-slate-500">
+                          <th className="p-2.5">Roll No</th>
+                          <th className="p-2.5">Student Name</th>
+                          <th className="p-2.5">Class</th>
+                          <th className="p-2.5">Fee Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {campusStudents.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="p-6 text-center text-slate-400">
+                              No student records found in Firebase for this campus.
+                            </td>
+                          </tr>
+                        ) : (
+                          campusStudents.map((std: any, i: number) => (
+                            <tr key={std.id || i}>
+                              <td className="p-2.5 font-mono font-bold text-blue-500">{std.rollNo || `STD-${101 + i}`}</td>
+                              <td className="p-2.5 font-bold">{std.name}</td>
+                              <td className="p-2.5 text-slate-400">{std.class || std.grade || "Class 9"}</td>
+                              <td className="p-2.5">
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                                  std.feeStatus === 'Paid' || std.feeStatus === 'PAID' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                                }`}>
+                                  {std.feeStatus || 'Paid'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {inspectorTab === "teachers" && (() => {
+              // Compute live teachers for this campus from state & local storage
+              const rawSaved = localStorage.getItem("staff") || localStorage.getItem("mms_teachers") || localStorage.getItem("teachers");
+              const localTeachers = rawSaved ? JSON.parse(rawSaved) : [];
+              const mergedTeachers = Array.from(new Map([...teachers, ...localTeachers].map(t => [t.id || t.name, t])).values());
+
+              const campusTeachers = mergedTeachers.filter((t: any) => {
+                if (t.schoolId) return t.schoolId === inspectingSchool.id || t.schoolId === inspectingSchool.code;
+                return true;
+              });
+
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs font-bold">
+                    <span className="flex items-center gap-1.5">
+                      <span>Faculty & Teaching Staff</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 font-mono font-bold">🔥 Firebase Live</span>
+                    </span>
+                    <span className="px-2 py-0.5 bg-purple-500/10 text-purple-500 rounded-full font-black">{campusTeachers.length} Teachers</span>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto rounded-xl border dark:border-slate-800">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b bg-slate-50 dark:bg-slate-800 text-slate-500">
+                          <th className="p-2.5">Teacher Name</th>
+                          <th className="p-2.5">Designation</th>
+                          <th className="p-2.5">Contact</th>
+                          <th className="p-2.5">Monthly Salary</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {campusTeachers.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="p-6 text-center text-slate-400">
+                              No teacher / faculty records found in Firebase for this campus.
+                            </td>
+                          </tr>
+                        ) : (
+                          campusTeachers.map((tch: any, i: number) => (
+                            <tr key={tch.id || i}>
+                              <td className="p-2.5 font-bold">{tch.name}</td>
+                              <td className="p-2.5 text-slate-400">{tch.designation || tch.subject || tch.role || "Senior Lecturer"}</td>
+                              <td className="p-2.5 font-mono text-slate-400">{tch.phone || tch.contact || "0300-1112233"}</td>
+                              <td className="p-2.5 font-bold text-emerald-500">₨ {(tch.salary || 45000).toLocaleString()}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
         </ModalWrapper>
       )}
     </div>
